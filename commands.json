@@ -1,0 +1,20 @@
+[
+  {
+  "command":"hello",
+  "lines":[
+    "Hello I am Parkertron"
+  ]}, {
+  "command":"help",
+  "lines": [
+    "I am just a simple bot with knowledge about 'example1' and 'example 2'"
+  ]}, {
+  "command":"example1",
+  "lines": [
+    "This command is just a example"
+  ]}, {
+  "command":"example 2",
+  "lines": [
+    "commands can have spaces",
+    "They can also be multi-line"
+  ]}
+]
