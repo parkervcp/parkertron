@@ -45,6 +45,7 @@ type Perms struct {
 }
 
 func getConfig(a string) string {
+	//Opens config.json and returns values
 	file, _ := os.Open("config.json")
 	decoder := json.NewDecoder(file)
 	config := Config{}
@@ -70,6 +71,7 @@ func getConfig(a string) string {
 }
 
 func getCommands() []Commands {
+	//Opens commands.json and returns values
 	raw, err := ioutil.ReadFile("./commands.json")
 	if err != nil {
 		fmt.Println(err.Error())
@@ -81,6 +83,8 @@ func getCommands() []Commands {
 }
 
 func getLines(a string) string {
+	//Returns the lines from the commands file as a response.
+	//Needs to actually send back the correct response.
 	commands := getCommands()
 	for _, p := range commands {
 		if p.Cmd == a {
