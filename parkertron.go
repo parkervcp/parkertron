@@ -36,8 +36,8 @@ type Commands struct {
 
 //Perms structure
 type Perms struct {
-	Adm []string `json:"admin"`
-	Blk []string `json:"blacklist"`
+	Grp string   `json:"group"`
+	UID []string `json:"uid"`
 }
 
 func init() {
@@ -84,6 +84,33 @@ func getCommands() []Commands {
 	return c
 }
 
+func getPerms() []Perms {
+	//Opens commands.json and returns values
+	raw, err := ioutil.ReadFile("./permissions.json")
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+	var c []Perms
+	json.Unmarshal(raw, &c)
+	return c
+}
+
+func blacklisted(a string) bool {
+	perms := getPerms()
+
+	for _, p := range perms {
+		if p.Grp == "blacklist" {
+			for _, u := range p.UID {
+				if u == a {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
 func main() {
 	// Create a new Discord session using the provided bot token.
 	dg, err := discordgo.New("Bot " + getConfig("token"))
@@ -125,6 +152,15 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
+	//Ignore all users on blacklist
+	if blacklisted(m.Author.ID) == true {
+		return
+	}
+
+	//
+	// Message Handling
+	//
+
 	// Set input
 	input := m.Content
 
@@ -137,8 +173,11 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Command with prefix gets ran
 	if strings.HasPrefix(input, getConfig("prefix")) == true {
+		//Reset response every message
 		response = ""
+		//Trim prefix from command
 		input = strings.TrimPrefix(input, getConfig("prefix"))
+		//Search command file for command and prep response
 		for _, p := range commands {
 			if p.Cmd == input {
 				for _, line := range p.Lns {
@@ -146,6 +185,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 				}
 			}
 		}
+		//Send response
 		s.ChannelMessageSend(m.ChannelID, response)
 	}
 

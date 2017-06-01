@@ -1,7 +1,7 @@
 [
   {
   "command":"hello",
-  "lines":[
+  "lines": [
     "Hello I am Parkertron"
   ]}, {
   "command":"help",

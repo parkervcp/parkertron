@@ -1,10 +1,12 @@
 [
-{
-  "admin":[
+  {
+  "group":"admin",
+  "uid": [
     "",
     ""
-  ]},  {
-  "blacklist":[
+  ]}, {
+  "group":"blacklist",
+  "uid": [
     "",
     ""
   ]}
