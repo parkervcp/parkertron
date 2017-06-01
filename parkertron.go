@@ -12,17 +12,13 @@ import (
 )
 
 var (
-	//BotID is
+	//BotID is the Discord Bot ID
 	BotID string
-	//ShowConfig is
+	//ShowConfig is part of the init process
 	ShowConfig string
+	//response is the bot response on the channel
+	response string
 )
-
-func init() {
-
-	flag.StringVar(&ShowConfig, "S", "", "Show Config")
-	flag.Parse()
-}
 
 //Config structure
 type Config struct {
@@ -42,6 +38,12 @@ type Commands struct {
 type Perms struct {
 	Adm []string `json:"admin"`
 	Blk []string `json:"blacklist"`
+}
+
+func init() {
+
+	flag.StringVar(&ShowConfig, "S", "", "Show Config")
+	flag.Parse()
 }
 
 func getConfig(a string) string {
@@ -80,19 +82,6 @@ func getCommands() []Commands {
 	var c []Commands
 	json.Unmarshal(raw, &c)
 	return c
-}
-
-func getLines(a string) string {
-	//Returns the lines from the commands file as a response.
-	//Needs to actually send back the correct response.
-	commands := getCommands()
-	for _, p := range commands {
-		if p.Cmd == a {
-			return string(a)
-		}
-	}
-	var badcmd string
-	return badcmd
 }
 
 func main() {
@@ -148,15 +137,16 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Command with prefix gets ran
 	if strings.HasPrefix(input, getConfig("prefix")) == true {
+		response = ""
 		input = strings.TrimPrefix(input, getConfig("prefix"))
 		for _, p := range commands {
 			if p.Cmd == input {
 				for _, line := range p.Lns {
-					s.ChannelMessageSend(m.ChannelID, line)
+					response = response + "\n" + line
 				}
 			}
 		}
-
+		s.ChannelMessageSend(m.ChannelID, response)
 	}
 
 }

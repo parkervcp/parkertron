@@ -14,7 +14,7 @@
   ]}, {
   "command":"example 2",
   "lines": [
-    "commands can have spaces",
+    "Commands can have spaces",
     "They can also be multi-line"
   ]}
 ]
