@@ -144,10 +144,19 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
+	commands := getCommands()
+
 	// Command with prefix gets ran
 	if strings.HasPrefix(input, getConfig("prefix")) == true {
 		input = strings.TrimPrefix(input, getConfig("prefix"))
-		s.ChannelMessageSend(m.ChannelID, getLines(input))
+		for _, p := range commands {
+			if p.Cmd == input {
+				for _, line := range p.Lns {
+					s.ChannelMessageSend(m.ChannelID, line)
+				}
+			}
+		}
+
 	}
 
 }
