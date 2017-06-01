@@ -1,6 +1,6 @@
 # parkertron
 
-A simple discord chat bot with a simple configuration.
+A simple discord chat bot with a simple configuration. Written using [discordgo](https://github.com/bwmarrin/discordgo).
 
 Working on adding other services and additions.
 
@@ -13,7 +13,8 @@ The checklist so far
 - [ ] Respond with multi-line output in a single message
 - [ ] Mitigate spam with cooldown per user/channel/global
 - [ ] Impliment permissions
-- [ ] Impliment user management
+- [ ] Impliment permissions management
+- [ ] Impliment blacklist/whitelist mode
 - [ ] Full OSS release
 - [ ] Log user join/leave 
 - [ ] Log chats
@@ -21,3 +22,19 @@ The checklist so far
 - [ ] Log chats/edits to separate files/folders
 - [ ] Join voice channels
 - [ ] Play audio from links
+
+
+So far I have the chat bot part down with no limiting or administration.
+
+Configuration is done in json.  
+If you have a Bot account already you can add the token and client ID's on your own.  
+If you don't you will need to set your own account up.
+
+The "owner" option in the configs is basically a super admin that will not be able to be blacklisted.
+
+The prefix is the command prefix and is customizable.  
+Set to "." by default it can be changed to whatever you want.
+
+
+The Commands set up is simple and is also in json.  
+See the commands.json for examples.  
