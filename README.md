@@ -10,7 +10,7 @@ The checklist so far
 - [x] Get inbound messages
 - [x] Respond to inbound messages
 - [x] Respond with correct output from configs
-- [ ] Respond with multi-line output in a single message
+- [x] Respond with multi-line output in a single message
 - [ ] Mitigate spam with cooldown per user/channel/global
 - [ ] Impliment permissions
 - [ ] Impliment permissions management
