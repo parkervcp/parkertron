@@ -1,20 +1,31 @@
 [
   {
   "command":"hello",
+  "type":"chat",
   "lines": [
     "Hello I am Parkertron"
-  ]}, {
+    ]},  {
   "command":"help",
+  "type":"chat",
   "lines": [
     "I am just a simple bot with knowledge about 'example1' and 'example 2'"
   ]}, {
   "command":"example1",
+  "type":"chat",
   "lines": [
     "This command is just a example"
   ]}, {
   "command":"example 2",
+  "type":"chat",
   "lines": [
+    "```",
     "Commands can have spaces",
-    "They can also be multi-line"
+    "They can also be multi-line",
+    "```"
+  ]}, {
+  "command":"geo",
+  "type":"group",
+  "lines": [
+    "this"
   ]}
 ]
