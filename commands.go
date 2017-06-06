@@ -76,7 +76,10 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 						response = response + "\n" + line
 					}
 				} else if p.Typ == "group" {
-					fmt.Println()
+					if getAdmin(m.Author.ID) == false {
+						return
+					}
+					s.ChannelMessageSend(m.ChannelID, "You're an admin")
 				}
 			}
 		}

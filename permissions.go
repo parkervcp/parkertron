@@ -25,6 +25,7 @@ func getPerms() []Perms {
 	return c
 }
 
+//returns if user is blacklisted
 func blacklisted(a string) bool {
 	perms := getPerms()
 
@@ -40,6 +41,7 @@ func blacklisted(a string) bool {
 	return false
 }
 
+//returns if user is an admin
 func getAdmin(a string) bool {
 	perms := getPerms()
 
