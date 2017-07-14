@@ -6,8 +6,13 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
+)
+
+var (
+	nextSend = time.Now()
 )
 
 //Commands structure
@@ -29,6 +34,10 @@ func getCommands() []Commands {
 	return c
 }
 
+func hasPrefix(a string) bool {
+	return strings.HasPrefix(a, getConfig("prefix"))
+}
+
 // This function will be called (due to AddHandler above) every time a new
 // message is created on any channel that the autenticated bot has access to.
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -37,8 +46,13 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	//Ignore all users on blacklist
+	// Ignore all users on blacklist
 	if blacklisted(m.Author.ID) == true {
+		return
+	}
+
+	//	Ignore if Cooldown is still active
+	if time.Now().Before(nextSend) {
 		return
 	}
 
@@ -46,27 +60,19 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Message Handling
 	//
 
+	commands := getCommands()
+
 	// Set input
 	input := m.Content
 
-	// Ignore commands without prefix
-	if strings.HasPrefix(input, getConfig("prefix")) == false {
-		return
-	}
+	// Reset response every message
+	response = ""
 
-	commands := getCommands()
+	// If the prefix is present
+	if hasPrefix(input) == true {
 
-	// Command with prefix gets ran
-	if strings.HasPrefix(input, getConfig("prefix")) == true {
-		//Reset response every message
-		response = ""
 		//Trim prefix from command
 		input = strings.TrimPrefix(input, getConfig("prefix"))
-
-		//drop prefix only commands
-		if input == "" {
-			return
-		}
 
 		//Search command file for command and prep response
 		for _, p := range commands {
@@ -83,8 +89,19 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 				}
 			}
 		}
-		//Send response
-		s.ChannelMessageSend(m.ChannelID, response)
+	} else if hasPrefix(input) == false {
+		for _, p := range commands {
+			if strings.Contains(input, p.Cmd) {
+				if p.Typ == "listen" {
+					for _, line := range p.Lns {
+						response = response + "\n" + line
+					}
+				}
+			}
+		}
 	}
 
+	//Send response
+	s.ChannelMessageSend(m.ChannelID, response)
+	nextSend = time.Now().Add(time.Second * time.Duration(getCooldown()))
 }

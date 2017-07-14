@@ -24,10 +24,7 @@ type Config struct {
 	Client string `json:"client"`
 	Owner  string `json:"owner"`
 	Prefix string `json:"prefix"`
-	GTime  int    `json:"gtime"`
-	STime  int    `json:"stime"`
-	CTime  int    `json:"ctime"`
-	UTime  int    `json:"utime"`
+	Cool   int    `json:"cooldown"`
 }
 
 func init() {
@@ -61,6 +58,24 @@ func getConfig(a string) string {
 	default:
 		b = "error"
 	}
+
+	return b
+}
+
+func getCooldown() int {
+	var b int
+
+	//Opens config.json and returns values
+	file, _ := os.Open("config.json")
+	decoder := json.NewDecoder(file)
+	config := Config{}
+	err := decoder.Decode(&config)
+
+	if err != nil {
+		fmt.Println("error", err)
+	}
+
+	b = config.Cool
 
 	return b
 }

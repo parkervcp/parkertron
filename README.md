@@ -11,9 +11,10 @@ The checklist so far
 - [x] Respond to inbound messages
 - [x] Respond with correct output from configs
 - [x] Respond with multi-line output in a single message
+- [x] Respond to key words/phrases
 - [x] Impliment blacklist/whitelist mode
-- [ ] Mitigate spam with cooldown per user/channel/global
-  - [ ] global cooldown
+- [x] Mitigate spam with cooldown per user/channel/global
+  - [x] global cooldown
   - [ ] channel cooldown
   - [ ] user cooldown
 - [ ] Impliment permissions

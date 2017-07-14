@@ -23,9 +23,17 @@
     "They can also be multi-line",
     "```"
   ]}, {
-  "command":"geo",
-  "type":"group",
+  "command":"example code",
+  "type":"chat",
   "lines": [
-    "this"
+    "```",
+    "Code blocks are also supported",
+    "They are quite nice",
+    "```"
+  ]},  {
+  "command":"gather logs",
+  "type":"chat",
+  "lines": [
+    "You need to get logs"
   ]}
 ]
