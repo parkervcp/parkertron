@@ -7,11 +7,13 @@ Working on adding other services and additions.
 The checklist so far
 - [x] Get bot connected to discord
 - [x] Read config files
+  - [ ] Separate server config
 - [x] Get inbound messages
 - [x] Respond to inbound messages
+  - [x] Respond to key words/phrases
+  - [ ] Separate server commands 
 - [x] Respond with correct output from configs
 - [x] Respond with multi-line output in a single message
-- [x] Respond to key words/phrases
 - [x] Impliment blacklist/whitelist mode
 - [x] Mitigate spam with cooldown per user/channel/global
   - [x] global cooldown
