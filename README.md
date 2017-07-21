@@ -9,6 +9,7 @@ The checklist so far
 - [x] Read config files
   - [ ] Separate server config
 - [x] Get inbound messages
+  - [ ] Listen to specific channels
 - [x] Respond to inbound messages
   - [x] Respond to key words/phrases
   - [ ] Separate server commands 
