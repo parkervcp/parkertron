@@ -25,6 +25,7 @@ type Config struct {
 	Owner  string `json:"owner"`
 	Prefix string `json:"prefix"`
 	Cool   int    `json:"cooldown"`
+	PerC   bool   `json:"per_chan"`
 }
 
 func init() {
@@ -76,6 +77,24 @@ func getCooldown() int {
 	}
 
 	b = config.Cool
+
+	return b
+}
+
+func getChannelStat() bool {
+	var b bool
+
+	//Opens config.json and returns values
+	file, _ := os.Open("config.json")
+	decoder := json.NewDecoder(file)
+	config := Config{}
+	err := decoder.Decode(&config)
+
+	if err != nil {
+		fmt.Println("error", err)
+	}
+
+	b = config.PerC
 
 	return b
 }

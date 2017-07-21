@@ -46,6 +46,12 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
+	if getChannelStat() == true {
+		if listening(m.ChannelID) == false {
+			return
+		}
+	}
+
 	// Ignore all users on blacklist
 	if blacklisted(m.Author.ID) == true {
 		return

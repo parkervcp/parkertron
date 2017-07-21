@@ -18,10 +18,8 @@
   "command":"example 2",
   "type":"chat",
   "lines": [
-    "```",
     "Commands can have spaces",
-    "They can also be multi-line",
-    "```"
+    "Responses can also be multi-line"
   ]}, {
   "command":"example code",
   "type":"chat",
@@ -30,10 +28,10 @@
     "Code blocks are also supported",
     "They are quite nice",
     "```"
-  ]},  {
-  "command":"gather logs",
-  "type":"chat",
+  ]}, {
+  "command":"example match",
+  "type":"listen",
   "lines": [
-    "You need to get logs"
+    "this matched part of a sentance"
   ]}
 ]
