@@ -12,7 +12,7 @@ The checklist so far
   - [ ] Listen to specific channels
 - [x] Respond to inbound messages
   - [x] Respond to key words/phrases
-  - [ ] Separate server commands 
+  - [ ] Separate server commands
 - [x] Respond with correct output from configs
 - [x] Respond with multi-line output in a single message
 - [x] Impliment blacklist/whitelist mode
@@ -23,12 +23,13 @@ The checklist so far
 - [ ] Impliment permissions
 - [ ] Impliment permissions management
 - [ ] Full OSS release
-- [ ] Log user join/leave 
-- [ ] Log chats
-- [ ] Log edits (show original and edited)
-- [ ] Log chats/edits to separate files/folders
+- [ ] Logging
+  - [ ] Log user join/leave 
+  - [ ] Log chats
+  - [ ] Log edits (show original and edited)
+  - [ ] Log chats/edits to separate files/folders
 - [ ] Join voice channels
-- [ ] Play audio from links
+  - [ ] Play audio from links
 
 
 So far I have the chat bot part down with no limiting or administration.
