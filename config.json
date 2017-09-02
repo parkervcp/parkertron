@@ -1,8 +1,7 @@
 {
   "token": "",
-  "client": "",
   "owner": "",
   "prefix": ".",
   "cooldown":5,
-  "per_chan":true
+  "per_chan":false
 }
