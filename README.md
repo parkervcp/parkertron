@@ -12,7 +12,9 @@ The checklist so far
   - [ ] Listen to specific channels
   - [ ] Listen for mentions
 - [x] Respond to inbound messages
-  - [x] Respond to key words/phrases
+  - [x] respond to commands with prefix
+  - [x] respond to key words/phrases
+  - [ ] Comma separated word lists
   - [ ] Separate server commands
 - [x] Respond with correct output from configs
 - [x] Respond with multi-line output in a single message
