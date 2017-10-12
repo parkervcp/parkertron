@@ -25,7 +25,7 @@ The checklist so far
   - [ ] user cooldown
 - [ ] Impliment permissions
 - [ ] Impliment permissions management
-- [ ] Full OSS release
+- [x] Full OSS release
 - [ ] Logging
   - [ ] Log user join/leave 
   - [ ] Log chats
