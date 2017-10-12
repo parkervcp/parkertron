@@ -32,6 +32,6 @@
   "command":"example match",
   "type":"listen",
   "lines": [
-    "this matched part of a sentance"
+    "this matched part of a sentence"
   ]}
 ]
