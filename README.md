@@ -3,13 +3,16 @@
 A simple discord chat bot with a simple configuration. Written using
 
 [discordgo](https://github.com/bwmarrin/discordgo)  
+[viper](https://github.com/spf13/viper)  
+[logrus](https://github.com/sirupsen/logrus)
 
 
-Working on adding other services and additions.
+### This is a full rewrite and won't be working for some time.
+
 
 - [x] Full OSS release
 
-###### Console Requirements
+##### Console Requirements
 - [ ] Read config files
 - [ ] Console commands
 - [ ] Logging
@@ -17,7 +20,7 @@ Working on adding other services and additions.
 - [ ] Respond with multi-line output in a single message
 - [ ] multithreading (goroutines)
 
-###### Discord specific
+##### Discord specific
 - [ ] Get bot connected to discord
   - [ ] Per server configs
   - [ ] Multiple bots on different threads
@@ -44,11 +47,6 @@ Working on adding other services and additions.
 - [ ] Join voice channels
   - [ ] Play audio from links
 
-###### Other Services
+##### Other Services
 
-Configuration is done in json.  
-If you have a Bot account already you can add the token and client ID's on your own.  
-If you don't you will need to set your own account up.
-
-The prefix is the command prefix and is customizable.  
-Set to "." by default it can be changed to whatever you want.
+Working on adding other services and additions.
