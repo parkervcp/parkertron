@@ -1,0 +1,16 @@
+{
+    "cmdType":{
+        "chatFilter":{
+            "hello":[
+                "Hello there",
+                "I am parkertron"
+            ]
+        },
+        "command":{
+            "help":[
+                "",
+                ""
+            ]
+        }
+    }
+}

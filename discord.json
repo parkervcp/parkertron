@@ -1,0 +1,13 @@
+{
+    "botTokn":"",
+    "chanFltr":"false",
+    "cmdPrefix":".",
+    "actvChan": [
+        "",
+        ""
+    ],
+    "adminUsers":[
+        "",
+        ""
+    ]
+}

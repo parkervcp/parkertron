@@ -1,0 +1,8 @@
+{
+    "botName":"parkertron",
+    "actvCon": [
+        "console",
+        "discord"
+    ],
+    "logsLoc":"logs/"
+}
