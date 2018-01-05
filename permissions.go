@@ -41,6 +41,22 @@ func blacklisted(a string) bool {
 	return false
 }
 
+//returns if user is an moderator
+func getMod(a string) bool {
+	perms := getPerms()
+
+	for _, p := range perms {
+		if p.Grp == "moderator" {
+			for _, u := range p.UID {
+				if u == a {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
 //returns if user is an admin
 func getAdmin(a string) bool {
 	perms := getPerms()

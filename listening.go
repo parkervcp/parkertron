@@ -40,3 +40,13 @@ func listening(a string) bool {
 	}
 	return false
 }
+
+func listenon(channel string) bool {
+	if getChannelStat() == false {
+		return true
+	} else if listening(channel) == false {
+		return false
+	} else {
+		return true
+	}
+}
