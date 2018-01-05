@@ -62,48 +62,50 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Reset response every message
 	response = ""
 
-	// If the prefix is present
-	if hasPrefix(input) == true {
+	// If the prefix is not present
+	if hasPrefix(input) == false {
+		for _, p := range commands {
+			if strings.Contains(strings.ToLower(input), p.Cmd) {
+				if p.Typ == "listen" {
+					for _, line := range p.Lns {
+						response = response + "\n" + line
+					}
+				}
+			}
+		}
+	} else if hasPrefix(input) == true {
+		log.Info("Cleared command message.")
 		s.ChannelMessageDelete(m.ChannelID, m.ID)
 		//Trim prefix from command
-		input = strings.ToLower(strings.TrimPrefix(input, getConfig("prefix")))
 
 		if strings.Contains(input, "ggl") {
 			response = "<https://lmgtfy.com/?q=" + strings.Replace(strings.TrimPrefix(input, "ggl "), " ", "+", -1) + ">"
-			log.Info("Message Sent" + response)
-			s.ChannelMessageSend(m.ChannelID, response)
+			return
 		} else {
 			//Search command file for command and prep response
 			for _, p := range commands {
-				if p.Cmd == input {
+				if p.Cmd == strings.ToLower(strings.TrimPrefix(input, getConfig("prefix"))) {
 					if p.Typ == "chat" {
 						for _, line := range p.Lns {
 							response = response + "\n" + line
 							log.Info("Message Sent" + response)
-							s.ChannelMessageSend(m.ChannelID, response)
 						}
 					} else if p.Typ == "group" {
 						if getAdmin(m.Author.ID) == false {
-							return
 						}
 						s.ChannelMessageSend(m.ChannelID, "You're an admin")
 					}
 				}
 			}
 		}
-	} else if hasPrefix(input) == false {
-		for _, p := range commands {
-			if strings.Contains(input, p.Cmd) {
-				if p.Typ == "listen" {
-					for _, line := range p.Lns {
-						response = response + "\n" + line
-						log.Info("Message Sent" + response)
-						s.ChannelMessageSend(m.ChannelID, response)
-					}
-				}
-			}
-		}
 	} else {
 		response = "That's not a recognized command."
+	}
+
+	if response == "" {
+
+	} else {
+		log.Info("Message Sent" + response)
+		s.ChannelMessageSend(m.ChannelID, response)
 	}
 }
