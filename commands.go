@@ -170,8 +170,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	if response == "" {
 		return
-	} else {
-		log.Info("Message Sent" + "\n" + response)
-		s.ChannelMessageSend(m.ChannelID, response)
 	}
+	log.Debug("Message Sent" + "\n" + response)
+	s.ChannelMessageSend(m.ChannelID, response)
 }
