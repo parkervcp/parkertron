@@ -30,8 +30,12 @@ type Config struct {
 
 func init() {
 
-	flag.StringVar(&ShowConfig, "S", "", "Show Config")
+	verbose := flag.String("v", "info", "set the console verbosity of the bot")
 	flag.Parse()
+	if *verbose == "debug" {
+		log.SetLevel(log.DebugLevel)
+		log.Debug("Log level set to debug")
+	}
 }
 
 func getConfig(a string) string {
