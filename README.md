@@ -9,13 +9,18 @@ The checklist so far
 - [x] Read config files
   - [ ] Separate server config
 - [x] Get inbound messages
-  - [ ] Listen to specific channels
+  - [x] Listen to specific channels
   - [ ] Listen for mentions
 - [x] Respond to inbound messages
   - [x] respond to commands with prefix
   - [x] respond to key words/phrases
   - [ ] Comma separated word lists
   - [ ] Separate server commands
+- [x] Image parsing
+  - [x] image from url support
+    - [x] png support
+    - [x] jpg support
+  - [ ] direct embedded images
 - [x] Respond with correct output from configs
 - [x] Respond with multi-line output in a single message
 - [x] Impliment blacklist/whitelist mode
