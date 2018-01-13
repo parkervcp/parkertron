@@ -43,6 +43,38 @@ func hasPrefix(a string) bool {
 	return strings.HasPrefix(a, getConfig("prefix"))
 }
 
+func parseChat(input string) string {
+	commands := getCommands()
+	log.Debug("Parsing chat")
+	//Search command file for command and prep response
+	for _, p := range commands {
+		if strings.Contains(strings.ToLower(input), p.Cmd) {
+			if p.Typ == "listen" {
+				for _, line := range p.Lns {
+					response = response + "\n" + line
+				}
+			}
+		}
+	}
+	return response
+}
+
+func parseCommand(input string) string {
+	commands := getCommands()
+	log.Debug("Parsing command")
+	//Search command file for command and prep response
+	for _, p := range commands {
+		if p.Cmd == strings.ToLower(strings.TrimPrefix(input, getConfig("prefix"))) {
+			if p.Typ == "chat" {
+				for _, line := range p.Lns {
+					response = response + "\n" + line
+				}
+			}
+		}
+	}
+	return response
+}
+
 func parseImage(remoteURL string) string {
 	log.Info("Reading from " + remoteURL)
 
@@ -69,7 +101,7 @@ func parseImage(remoteURL string) string {
 	}
 
 	file.Close()
-	log.Info("Image File Pulled and saved to /tmp/" + fileName)
+	log.Debug("Image File Pulled and saved to /tmp/" + fileName)
 
 	client := gosseract.NewClient()
 	defer client.Close()
@@ -79,6 +111,10 @@ func parseImage(remoteURL string) string {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
+
+	text = text[:len(text)-1]
+	log.Debug(text)
+	log.Debug("Image Parsed")
 
 	return text
 }
@@ -99,7 +135,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	//
 	// Message Handling
 	//
-	commands := getCommands()
 
 	// Set input
 	input := m.Content
@@ -107,47 +142,31 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Reset response every message
 	response = ""
 
-	// If the prefix is not present
 	if hasPrefix(input) == false {
-		if strings.Contains(strings.ToLower(input), ".png") == true {
+		// If the prefix is not present
+		if strings.Contains(strings.ToLower(input), ".png") == true || strings.Contains(strings.ToLower(input), ".jpg") {
 			remoteURL := xurls.Relaxed().FindString(input)
 			input = parseImage(remoteURL)
 		}
-		for _, p := range commands {
-			if strings.Contains(strings.ToLower(input), p.Cmd) {
-				if p.Typ == "listen" {
-					for _, line := range p.Lns {
-						response = response + "\n" + line
-					}
-				}
-			}
-		}
+		response = parseChat(input)
 	} else if hasPrefix(input) == true {
-		log.Info("Cleared command message.")
-		s.ChannelMessageDelete(m.ChannelID, m.ID)
-		//Trim prefix from command
-
+		// If the prefix is present
 		if strings.Contains(input, "ggl") {
 			response = "<https://lmgtfy.com/?q=" + strings.Replace(strings.TrimPrefix(input, "ggl "), " ", "+", -1) + ">"
 			return
 		}
-		//Search command file for command and prep response
-		for _, p := range commands {
-			if p.Cmd == strings.ToLower(strings.TrimPrefix(input, getConfig("prefix"))) {
-				if p.Typ == "chat" {
-					for _, line := range p.Lns {
-						response = response + "\n" + line
-					}
-				} else if p.Typ == "group" {
-					if getAdmin(m.Author.ID) == false {
-					}
-					s.ChannelMessageSend(m.ChannelID, "You're an admin")
-				}
-			}
+		response = parseCommand(input)
+		if response == "" {
+			return
 		}
+		s.ChannelMessageDelete(m.ChannelID, m.ID)
+		log.Info("Cleared command message.")
+
 	} else {
 		response = "That's not a recognized command."
 	}
+
+	log.Debug("Job's done")
 
 	if response == "" {
 		return
