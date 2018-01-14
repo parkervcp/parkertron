@@ -11,6 +11,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/otiai10/gosseract"
+	"github.com/spf13/viper"
 	"mvdan.cc/xurls"
 
 	log "github.com/sirupsen/logrus"
@@ -40,7 +41,7 @@ func getCommands() []Commands {
 }
 
 func hasPrefix(a string) bool {
-	return strings.HasPrefix(a, getConfig("prefix"))
+	return strings.HasPrefix(a, viper.GetString("prefix"))
 }
 
 func parseChat(input string) string {
@@ -64,7 +65,7 @@ func parseCommand(input string) string {
 	log.Debug("Parsing command")
 	//Search command file for command and prep response
 	for _, p := range commands {
-		if p.Cmd == strings.ToLower(strings.TrimPrefix(input, getConfig("prefix"))) {
+		if p.Cmd == strings.ToLower(strings.TrimPrefix(input, viper.GetString("prefix"))) {
 			if p.Typ == "chat" {
 				for _, line := range p.Lns {
 					response = response + "\n" + line
