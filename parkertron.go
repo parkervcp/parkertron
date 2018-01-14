@@ -1,12 +1,11 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
-	"os"
 
 	"github.com/bwmarrin/discordgo"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -29,79 +28,25 @@ type Config struct {
 }
 
 func init() {
-
-	flag.StringVar(&ShowConfig, "S", "", "Show Config")
+	verbose := flag.String("v", "info", "set the console verbosity of the bot")
 	flag.Parse()
-}
-
-func getConfig(a string) string {
-	var b string
-
-	//Opens config.json and returns values
-	file, _ := os.Open("config.json")
-	decoder := json.NewDecoder(file)
-	config := Config{}
-	err := decoder.Decode(&config)
-
-	if err != nil {
-		log.Error("error", err)
+	if *verbose == "debug" {
+		log.SetLevel(log.DebugLevel)
+		log.Debug("Log level set to debug")
 	}
 
-	switch {
-	case a == "token":
-		b = config.Token
-	case a == "client":
-		b = config.Client
-	case a == "owner":
-		b = config.Owner
-	case a == "prefix":
-		b = config.Prefix
-	default:
-		b = "error"
+	viper.AddConfigPath(".")
+	viper.SetConfigName("config")
+	viper.WatchConfig()
+	if err := viper.ReadInConfig(); err != nil {
+		log.WithError(err).Fatal("Could not load configuration.")
+		return
 	}
-
-	return b
-}
-
-func getCooldown() int {
-	var b int
-
-	//Opens config.json and returns values
-	file, _ := os.Open("config.json")
-	decoder := json.NewDecoder(file)
-	config := Config{}
-	err := decoder.Decode(&config)
-
-	if err != nil {
-		log.Error("error", err)
-	}
-
-	b = config.Cool
-
-	return b
-}
-
-func getChannelStat() bool {
-	var b bool
-
-	//Opens config.json and returns values
-	file, _ := os.Open("config.json")
-	decoder := json.NewDecoder(file)
-	config := Config{}
-	err := decoder.Decode(&config)
-
-	if err != nil {
-		log.Error("error", err)
-	}
-
-	b = config.PerC
-
-	return b
 }
 
 func main() {
 	// Create a new Discord session using the provided bot token.
-	dg, err := discordgo.New("Bot " + getConfig("token"))
+	dg, err := discordgo.New("Bot " + viper.GetString("token"))
 	if err != nil {
 		log.Fatal("error creating Discord session,", err)
 		return
