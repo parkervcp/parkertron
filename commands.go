@@ -76,6 +76,37 @@ func parseCommand(input string) string {
 	return response
 }
 
+func parseBin(remoteURL string) string {
+	log.Info("Reading from " + remoteURL)
+
+	lastBin := strings.LastIndex(remoteURL, "/")
+
+	binName := remoteURL[lastBin+1:]
+
+	rawBin := strings.Trim(binName, ".")
+
+	baseURL := strings.Replace(remoteURL, binName, "", -1)
+
+	log.Debug("Base URL is " + baseURL)
+
+	rawURL := baseURL + "raw/" + rawBin
+
+	log.Debug("Raw text URL is " + rawURL)
+
+	resp, err := http.Get(rawURL)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+
+	content := string(body)
+
+	log.Debug("Contents = \n" + content)
+
+	return content
+}
+
 func parseImage(remoteURL string) string {
 	log.Info("Reading from " + remoteURL)
 
@@ -138,16 +169,20 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	//
 
 	// Set input
-	input := m.Content
+	input := strings.ToLower(m.Content)
 
 	// Reset response every message
 	response = ""
 
 	if hasPrefix(input) == false {
 		// If the prefix is not present
-		if strings.Contains(strings.ToLower(input), ".png") == true || strings.Contains(strings.ToLower(input), ".jpg") {
+		if strings.Contains(input, ".png") == true || strings.Contains(input, ".jpg") {
 			remoteURL := xurls.Relaxed().FindString(input)
 			input = parseImage(remoteURL)
+		}
+		if strings.Contains(input, "astebin") == true {
+			remoteURL := xurls.Relaxed().FindString(input)
+			input = parseBin(remoteURL)
 		}
 		response = parseChat(input)
 	} else if hasPrefix(input) == true {
