@@ -3,3 +3,5 @@ debug
 \.vscode/
 
 config.yml
+
+\.DS_Store
