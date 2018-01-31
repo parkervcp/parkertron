@@ -189,7 +189,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		// If the prefix is present
 		if strings.Contains(input, "ggl") == true {
 			log.Info("Googling for user.")
-			response = "<https://lmgtfy.com/?q=" + strings.Replace(strings.TrimPrefix(input, "ggl "), " ", "+", -1) + ">"
+			response = "<https://lmgtfy.com/?q=" + strings.Replace(strings.TrimPrefix(input, ".ggl "), " ", "+", -1) + ">"
 		} else {
 			response = parseCommand(input)
 		}
