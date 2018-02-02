@@ -89,6 +89,11 @@ func parseBin(remoteURL string) string {
 
 	log.Debug("Base URL is " + baseURL)
 
+	if baseURL == "" {
+		log.Debug("just the domain and no file")
+		return ""
+	}
+
 	rawURL := baseURL + "raw/" + rawBin
 
 	log.Debug("Raw text URL is " + rawURL)
@@ -179,10 +184,12 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if strings.Contains(input, ".png") == true || strings.Contains(input, ".jpg") {
 			remoteURL := xurls.Relaxed().FindString(input)
 			input = parseImage(remoteURL)
+			log.Debug("Contains link to image")
 		}
 		if strings.Contains(input, "astebin") == true {
 			remoteURL := xurls.Relaxed().FindString(input)
 			input = parseBin(remoteURL)
+			log.Debug("Is a bin link")
 		}
 		response = parseChat(input)
 	} else if hasPrefix(input) == true {

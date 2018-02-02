@@ -5,3 +5,5 @@ debug
 config.yml
 
 \.DS_Store
+
+config\.json
