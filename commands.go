@@ -182,7 +182,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if hasPrefix(input) == false {
 		// If the prefix is not present
 		if strings.Contains(input, ".png") == true || strings.Contains(input, ".jpg") {
-			remoteURL := xurls.Relaxed().FindString(input)
+			remoteURL := xurls.Relaxed().FindString(m.Content)
 			input = parseImage(remoteURL)
 			log.Debug("Contains link to image")
 		}
