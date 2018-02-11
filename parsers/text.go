@@ -1,5 +1,0 @@
-package parsers
-
-func parseText() {
-
-}

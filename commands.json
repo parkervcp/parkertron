@@ -1,0 +1,37 @@
+[
+  {
+  "command":"hello",
+  "type":"chat",
+  "lines": [
+    "Hello I am Parkertron"
+    ]},  {
+  "command":"help",
+  "type":"chat",
+  "lines": [
+    "I am just a simple bot with knowledge about 'example1' and 'example 2'"
+  ]}, {
+  "command":"example1",
+  "type":"chat",
+  "lines": [
+    "This command is just a example"
+  ]}, {
+  "command":"example 2",
+  "type":"chat",
+  "lines": [
+    "Commands can have spaces",
+    "Responses can also be multi-line"
+  ]}, {
+  "command":"example code",
+  "type":"chat",
+  "lines": [
+    "```",
+    "Code blocks are also supported",
+    "They are quite nice",
+    "```"
+  ]}, {
+  "command":"example match",
+  "type":"listen",
+  "lines": [
+    "this matched part of a sentence"
+  ]}
+]

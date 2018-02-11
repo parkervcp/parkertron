@@ -1,0 +1,6 @@
+prefix: "."
+cooldown: 5
+per_chan: false
+services:
+    - "discord"
+    - "console"
