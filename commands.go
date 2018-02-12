@@ -6,14 +6,10 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/otiai10/gosseract"
-	"github.com/spf13/viper"
-
-	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -31,7 +27,7 @@ func getCommands() []Commands {
 	//Opens commands.json and returns values
 	raw, err := ioutil.ReadFile("./commands.json")
 	if err != nil {
-		log.Error(err.Error())
+		writeLog("error", "error reading commands ", err)
 		os.Exit(1)
 	}
 	var c []Commands
@@ -39,14 +35,9 @@ func getCommands() []Commands {
 	return c
 }
 
-func hasPrefix(a string) bool {
-	writeLog("debug", "prefix: "+strconv.FormatBool(strings.HasPrefix(a, viper.GetString("prefix"))), nil)
-	return strings.HasPrefix(a, viper.GetString("prefix"))
-}
-
 func parseChat(input string) string {
 	commands := getCommands()
-	log.Debug("Parsing chat")
+	writeLog("debug", "Parsing inbound chat", nil)
 	//Search command file for command and prep response
 	for _, p := range commands {
 		if strings.Contains(strings.ToLower(input), p.Cmd) {
@@ -62,10 +53,10 @@ func parseChat(input string) string {
 
 func parseCommand(input string) string {
 	commands := getCommands()
-	log.Debug("Parsing command")
+	writeLog("debug", "Parsing inbound command", nil)
 	//Search command file for command and prep response
 	for _, p := range commands {
-		if p.Cmd == strings.ToLower(strings.TrimPrefix(input, viper.GetString("prefix"))) {
+		if p.Cmd == strings.ToLower(strings.TrimPrefix(input, getBotConfigString("prefix"))) {
 			if p.Typ == "chat" {
 				for _, line := range p.Lns {
 					response = response + "\n" + line
@@ -77,7 +68,7 @@ func parseCommand(input string) string {
 }
 
 func parseBin(remoteURL string) string {
-	log.Info("Reading from " + remoteURL)
+	writeLog("info", "Reading from "+remoteURL, nil)
 
 	lastBin := strings.LastIndex(remoteURL, "/")
 
@@ -87,58 +78,58 @@ func parseBin(remoteURL string) string {
 
 	baseURL := strings.Replace(remoteURL, binName, "", -1)
 
-	log.Debug("Base URL is " + baseURL)
+	writeLog("debug", "Base URL is "+baseURL, nil)
 
 	if baseURL == "" {
-		log.Debug("just the domain and no file")
+		writeLog("debug", "just the domain and no file", nil)
 		return ""
 	}
 
 	rawURL := baseURL + "raw/" + rawBin
 
-	log.Debug("Raw text URL is " + rawURL)
+	writeLog("debug", "Raw text URL is "+rawURL, nil)
 
 	resp, err := http.Get(rawURL)
 	if err != nil {
-		log.Fatal(err)
+		writeLog("fatal", "", err)
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 
 	content := string(body)
 
-	log.Debug("Contents = \n" + content)
+	writeLog("debug", "Contents = \n"+content, nil)
 
 	return content
 }
 
 func parseImage(remoteURL string) string {
-	log.Info("Reading from " + remoteURL)
+	writeLog("info", "Reading from "+remoteURL, nil)
 
 	remote, e := http.Get(remoteURL)
 	if e != nil {
-		log.Fatal(e)
+		writeLog("fatal", "", e)
 	}
 
 	defer remote.Body.Close()
 	lastBin := strings.LastIndex(remoteURL, "/")
 	fileName := remoteURL[lastBin+1:]
 
-	log.Info("Filename is " + fileName)
+	writeLog("debug", "Filename is "+fileName, nil)
 
 	//open a file for writing
 	file, err := os.Create("/tmp/" + fileName)
 	if err != nil {
-		log.Fatal(err)
+		writeLog("fatal", "", err)
 	}
 	// Use io.Copy to just dump the response body to the file. This supports huge files
 	_, err = io.Copy(file, remote.Body)
 	if err != nil {
-		log.Fatal(err)
+		writeLog("fatal", "", err)
 	}
 
 	file.Close()
-	log.Debug("Image File Pulled and saved to /tmp/" + fileName)
+	writeLog("debug", "Image File Pulled and saved to /tmp/"+fileName, nil)
 
 	client := gosseract.NewClient()
 	defer client.Close()
@@ -146,12 +137,12 @@ func parseImage(remoteURL string) string {
 	client.SetImage("/tmp/" + fileName)
 	text, err := client.Text()
 	if err != nil {
-		log.Fatal(err.Error())
+		writeLog("fatal", "", err)
 	}
 
 	text = text[:len(text)-1]
-	log.Debug(text)
-	log.Debug("Image Parsed")
+	writeLog("debug", text, nil)
+	writeLog("debug", "Image Parsed", nil)
 
 	return text
 }

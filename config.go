@@ -1,38 +1,59 @@
 package main
 
 import (
+	"strings"
+
 	"github.com/spf13/viper"
 )
 
-var ()
-
-type viperConfig struct {
-}
+var (
+	//Bot base config
+	Bot = viper.New()
+	//Discord Config for the bot
+	Discord = viper.New()
+)
 
 func setConfig() {
 
-	discord := viper.New()
+	Bot.SetConfigName("bot")
+	Bot.AddConfigPath("configs/")
+	Bot.WatchConfig()
 
-	discord.SetConfigName("discord")
-	discord.AddConfigPath("configs/")
-	discord.WatchConfig()
+	if err := Bot.ReadInConfig(); err != nil {
+		writeLog("fatal", "Could not load configuration.", err)
+		return
+	}
 
-	if err := discord.ReadInConfig(); err != nil {
+	Discord.SetConfigName("discord")
+	Discord.AddConfigPath("configs/")
+	Discord.WatchConfig()
+
+	if err := Discord.ReadInConfig(); err != nil {
 		writeLog("fatal", "Could not load configuration.", err)
 		return
 	}
 }
 
-func botConfig() {
-	bot := viper.New()
-	discord := viper.New()
+func getBotServices() string {
+	return strings.Join(Bot.GetStringSlice("services"), " ")
+}
 
-	bot.SetConfigName("bot")
-	bot.AddConfigPath("configs/")
-	bot.WatchConfig()
+func getBotConfigString(req string) string {
+	return Bot.GetString(req)
+}
 
-	if err := bot.ReadInConfig(); err != nil {
-		writeLog("fatal", "Could not load configuration.", err)
-		return
-	}
+func getBotConfigInt(req string) int {
+	return Bot.GetInt(req)
+}
+
+func getBotConfigBool(req string) bool {
+	return Bot.GetBool(req)
+}
+
+func getDiscordConfigString(req string) string {
+	return Discord.GetString(req)
+}
+
+func getDiscordConfigInt(req string) int {
+	return Discord.GetInt(req)
 }

@@ -27,12 +27,12 @@ func init() {
 
 	setConfig()
 
-	writeLog("debug", "bot prefix is "+getConfig("prefix"), nil)
-	writeLog("debug", "services loaded are "+getConfig("services"), nil)
+	writeLog("debug", "bot prefix is "+getBotConfigString("prefix"), nil)
+	writeLog("debug", "services loaded are "+getBotServices(), nil)
 }
 
 func main() {
-	if strings.Contains(getConfig("services"), "discord") == true {
+	if strings.Contains(getBotServices(), "discord") == true {
 		writeLog("info", "Starting discord connector", nil)
 		go startDiscordConnection()
 	}

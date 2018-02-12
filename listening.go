@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-
-	"github.com/spf13/viper"
 )
 
 //Channel structure
@@ -44,7 +42,7 @@ func listening(a string) bool {
 }
 
 func listenon(channel string) bool {
-	if viper.GetBool("per_chan") == false {
+	if getBotConfigBool("per_chan") == false {
 		return true
 	} else if listening(channel) == false {
 		return false

@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/spf13/viper"
 	"mvdan.cc/xurls"
 )
 
@@ -34,7 +33,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Reset response every message
 	response = ""
 
-	if strings.HasPrefix(input, viper.GetString("prefix")) == false {
+	if strings.HasPrefix(input, getBotConfigString("prefix")) == false {
 		// If the prefix is not present
 		if strings.Contains(input, ".png") == true || strings.Contains(input, ".jpg") {
 			remoteURL := xurls.Relaxed().FindString(m.Content)
@@ -47,7 +46,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			writeLog("debug", "Is a bin link", nil)
 		}
 		response = parseChat(input)
-	} else if strings.HasPrefix(input, viper.GetString("prefix")) == true {
+	} else if strings.HasPrefix(input, getBotConfigString("prefix")) == true {
 		// If the prefix is present
 		if strings.Contains(input, "ggl") == true {
 			writeLog("debug", "Googling for user.", nil)
@@ -77,9 +76,9 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 func startDiscordConnection() {
 
 	// Create a new Discord session using the provided bot token.
-	dg, err := discordgo.New("Bot " + "")
+	dg, err := discordgo.New("Bot " + getDiscordConfigString("discord.token"))
 
-	writeLog("debug", "using "+""+" for discord", nil)
+	writeLog("debug", "using "+getDiscordConfigString("discord.token")+" for discord", nil)
 
 	if err != nil {
 		writeLog("fatal", "error creating Discord session,", err)
