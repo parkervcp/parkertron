@@ -1,2 +1,16 @@
-discord_token: "MzExODU0ODY3MDYyODQ5NTQ2.DTzxJQ.kTDCfWld4mP2RO17CU3i9pKp-ts"
-discord_owner: ""
+discord:
+  token: "MzExODU0ODY3MDYyODQ5NTQ2.DTzxJQ.kTDCfWld4mP2RO17CU3i9pKp-ts"
+  owner: ""
+  channels: 
+    - "317335672245452801"
+    - "335164088139382785"
+    - "380426955842912256"
+    - 
+      filter: true
+  group:
+    admin:
+      - "122906021160026112"
+    mods:
+      - 
+    blacklist:
+      - 

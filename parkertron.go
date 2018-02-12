@@ -33,11 +33,11 @@ func init() {
 
 func main() {
 	if strings.Contains(getBotServices(), "discord") == true {
-		writeLog("info", "Starting discord connector", nil)
+		writeLog("info", "Starting discord connector\n", nil)
 		go startDiscordConnection()
 	}
 
-	writeLog("info", "Bot is now running.  Press CTRL-C to exit.", nil)
+	writeLog("info", "Bot is now running.  Press CTRL-C to exit.\n", nil)
 	// Simple way to keep program running until CTRL-C is pressed.
 	<-make(chan struct{})
 	return

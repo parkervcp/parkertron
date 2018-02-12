@@ -1,23 +1,36 @@
 package main
 
 import (
-	"strconv"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
 	"mvdan.cc/xurls"
 )
 
+func channelFilter(req string) bool {
+	if getDiscordConfigBool("discord.channels.filter") == true {
+		if strings.Contains(getDiscordChannels(), req) {
+			return true
+		}
+	}
+	return false
+}
+
 // This function will be called (due to AddHandler above) every time a new
 // message is created on any channel that the autenticated bot has access to.
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Ignore all messages created by the bot itself, blacklisted members, channels it's not listening on
-	if m.Author.Bot == true || blacklisted(m.Author.ID) == true || listenon(m.ChannelID) == false {
-		writeLog("debug", "Author: "+m.Author.ID, nil)
-		writeLog("debug", "Bot: "+strconv.FormatBool(m.Author.Bot), nil)
-		writeLog("debug", "Blacklisted: "+strconv.FormatBool(blacklisted(m.Author.ID)), nil)
-		writeLog("debug", "Channel: "+strconv.FormatBool(listening(m.ChannelID)), nil)
-		writeLog("debug", "Message caught", nil)
+	if m.Author.Bot == true || strings.Contains(getGroup("blacklist"), m.Author.ID) == true || channelFilter(m.ChannelID) == false {
+		if m.Author.Bot == true {
+			writeLog("debug", "User is a bot and being ignored", nil)
+		}
+		if strings.Contains(getGroup("blacklist")) == true {
+			writeLog("debug", "User is blacklisted and being ignored", nil)
+		}
+		if getBotConfigBool("discord.channels.filter") == true {
+			writeLog("debug", "This channel is being filtered out and ignored", nil)
+		}
+		writeLog("debug", "Message caught\n", nil)
 		return
 	}
 
@@ -75,10 +88,10 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 func startDiscordConnection() {
 
+	writeLog("debug", "using "+getDiscordConfigString("discord.token")+" for discord\n", nil)
+
 	// Create a new Discord session using the provided bot token.
 	dg, err := discordgo.New("Bot " + getDiscordConfigString("discord.token"))
-
-	writeLog("debug", "using "+getDiscordConfigString("discord.token")+" for discord", nil)
 
 	if err != nil {
 		writeLog("fatal", "error creating Discord session,", err)
