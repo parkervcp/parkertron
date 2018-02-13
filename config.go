@@ -12,9 +12,6 @@ var (
 	Bot = viper.New()
 	//Discord Config for the bot
 	Discord = viper.New()
-
-	//Group config
-	Group = viper.New()
 )
 
 func setConfig() {
@@ -28,7 +25,7 @@ func setConfig() {
 	})
 
 	if err := Bot.ReadInConfig(); err != nil {
-		writeLog("fatal", "Could not load configuration.", err)
+		writeLog("fatal", "Could not load Bot configuration.", err)
 		return
 	}
 
@@ -41,7 +38,7 @@ func setConfig() {
 	})
 
 	if err := Discord.ReadInConfig(); err != nil {
-		writeLog("fatal", "Could not load configuration.", err)
+		writeLog("fatal", "Could not load Discord configuration.", err)
 		return
 	}
 }
@@ -50,18 +47,6 @@ func setConfig() {
 
 func getBotServices() string {
 	return strings.Join(Bot.GetStringSlice("services"), " ")
-}
-
-func getBotConfigString(req string) string {
-	return Bot.GetString(req)
-}
-
-func getBotConfigInt(req string) int {
-	return Bot.GetInt(req)
-}
-
-func getBotConfigBool(req string) bool {
-	return Bot.GetBool(req)
 }
 
 //Discord get func
@@ -82,6 +67,6 @@ func getDiscordChannels() string {
 	return strings.Join(Discord.GetStringSlice("discord.channels"), " ")
 }
 
-func getDiscordGroupMembers(req) string {
+func getDiscordGroupMembers(req string) string {
 	return strings.Join(Discord.GetStringSlice("discord.group."+req), " ")
 }

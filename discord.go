@@ -20,17 +20,17 @@ func channelFilter(req string) bool {
 // message is created on any channel that the autenticated bot has access to.
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Ignore all messages created by the bot itself, blacklisted members, channels it's not listening on
-	if m.Author.Bot == true || strings.Contains(getGroup("blacklist"), m.Author.ID) == true || channelFilter(m.ChannelID) == false {
+	if m.Author.Bot == true || strings.Contains(getDiscordGroupMembers("blacklist"), m.Author.ID) == true || channelFilter(m.ChannelID) == false {
 		if m.Author.Bot == true {
-			writeLog("debug", "User is a bot and being ignored", nil)
+			writeLog("debug", "User is a bot and being ignored.", nil)
 		}
-		if strings.Contains(getGroup("blacklist")) == true {
-			writeLog("debug", "User is blacklisted and being ignored", nil)
+		if strings.Contains(getDiscordGroupMembers("blacklist"), m.Author.ID) == true {
+			writeLog("debug", "User is blacklisted and being ignored.", nil)
 		}
-		if getBotConfigBool("discord.channels.filter") == true {
-			writeLog("debug", "This channel is being filtered out and ignored", nil)
+		if getDiscordConfigBool("discord.channels.filter") == true {
+			writeLog("debug", "This channel is being filtered out and ignored.", nil)
 		}
-		writeLog("debug", "Message caught\n", nil)
+		writeLog("debug", "Message has been ignored.\n", nil)
 		return
 	}
 
@@ -46,7 +46,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Reset response every message
 	response = ""
 
-	if strings.HasPrefix(input, getBotConfigString("prefix")) == false {
+	if strings.HasPrefix(input, getDiscordConfigString("prefix")) == false {
 		// If the prefix is not present
 		if strings.Contains(input, ".png") == true || strings.Contains(input, ".jpg") {
 			remoteURL := xurls.Relaxed().FindString(m.Content)
@@ -59,7 +59,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			writeLog("debug", "Is a bin link", nil)
 		}
 		response = parseChat(input)
-	} else if strings.HasPrefix(input, getBotConfigString("prefix")) == true {
+	} else if strings.HasPrefix(input, getDiscordConfigString("prefix")) == true {
 		// If the prefix is present
 		if strings.Contains(input, "ggl") == true {
 			writeLog("debug", "Googling for user.", nil)

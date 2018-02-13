@@ -27,7 +27,6 @@ func init() {
 
 	setConfig()
 
-	writeLog("debug", "bot prefix is "+getBotConfigString("prefix"), nil)
 	writeLog("debug", "services loaded are "+getBotServices(), nil)
 }
 

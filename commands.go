@@ -56,7 +56,7 @@ func parseCommand(input string) string {
 	writeLog("debug", "Parsing inbound command", nil)
 	//Search command file for command and prep response
 	for _, p := range commands {
-		if p.Cmd == strings.ToLower(strings.TrimPrefix(input, getBotConfigString("prefix"))) {
+		if p.Cmd == strings.ToLower(input) {
 			if p.Typ == "chat" {
 				for _, line := range p.Lns {
 					response = response + "\n" + line
