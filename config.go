@@ -8,14 +8,22 @@ import (
 )
 
 var (
-	//Bot base config
+	//Bot Config
 	Bot = viper.New()
-	//Discord Config for the bot
+
+	//Discord Config
 	Discord = viper.New()
+
+	//Command Config
+	Command = viper.New()
+
+	//Chat Config
+	Chat = viper.New()
 )
 
 func setConfig() {
 
+	//Setting Bot config settings
 	Bot.SetConfigName("bot")
 	Bot.AddConfigPath("configs/")
 	Bot.WatchConfig()
@@ -29,6 +37,7 @@ func setConfig() {
 		return
 	}
 
+	//Setting Discord config settings
 	Discord.SetConfigName("discord")
 	Discord.AddConfigPath("configs/")
 	Discord.WatchConfig()
@@ -41,32 +50,76 @@ func setConfig() {
 		writeLog("fatal", "Could not load Discord configuration.", err)
 		return
 	}
+
+	//Setting Command config settings
+	Command.SetConfigName("command")
+	Command.AddConfigPath("configs/")
+	Command.WatchConfig()
+
+	Command.OnConfigChange(func(e fsnotify.Event) {
+		writeLog("info", "Command config changed", nil)
+	})
+
+	if err := Command.ReadInConfig(); err != nil {
+		writeLog("fatal", "Could not load Command configuration.", err)
+		return
+	}
+
+	//Setting Chat config settings
+	Chat.SetConfigName("chat")
+	Chat.AddConfigPath("configs/")
+	Chat.WatchConfig()
+
+	Chat.OnConfigChange(func(e fsnotify.Event) {
+		writeLog("info", "Chat config changed", nil)
+	})
+
+	if err := Chat.ReadInConfig(); err != nil {
+		writeLog("fatal", "Could not load Chat configuration.", err)
+		return
+	}
 }
 
 //Bot Get funcs
-
 func getBotServices() string {
-	return strings.Join(Bot.GetStringSlice("services"), " ")
+	return strings.ToLower(strings.Join(Bot.GetStringSlice("services"), " "))
 }
 
-//Discord get func
-
+//Discord get funcs
 func getDiscordConfigString(req string) string {
-	return Discord.GetString(req)
+	return Discord.GetString("discord." + req)
 }
 
 func getDiscordConfigInt(req string) int {
-	return Discord.GetInt(req)
+	return Discord.GetInt("discord." + req)
 }
 
 func getDiscordConfigBool(req string) bool {
-	return Discord.GetBool(req)
+	return Discord.GetBool("discord." + req)
 }
 
 func getDiscordChannels() string {
-	return strings.Join(Discord.GetStringSlice("discord.channels"), " ")
+	return strings.ToLower(strings.Join(Discord.GetStringSlice("discord.channels"), " "))
 }
 
 func getDiscordGroupMembers(req string) string {
-	return strings.Join(Discord.GetStringSlice("discord.group."+req), " ")
+	return strings.ToLower(strings.Join(Discord.GetStringSlice("discord.group."+req), " "))
+}
+
+//Command get funcs
+func getCommands() string {
+	return strings.ToLower(strings.Join(Command.GetStringSlice("command"), ", "))
+}
+
+func getCommandResonse(req string) string {
+	return strings.ToLower(strings.Join(Command.GetStringSlice("command."+req), "\n"))
+}
+
+//Chat get funcs
+func getChats() string {
+	return strings.ToLower(strings.Join(Chat.GetStringSlice("chat"), ", "))
+}
+
+func getChatResonse(req string) string {
+	return strings.ToLower(strings.Join(Chat.GetStringSlice("chat."+req), "\n"))
 }

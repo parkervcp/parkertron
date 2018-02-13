@@ -1,0 +1,8 @@
+chat:
+  hello, hi:
+    - "I am parkertron, I am a simple bot."
+    - 
+  example match:
+    - "I can match parts of sentances."
+    -
+  

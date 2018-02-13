@@ -36,6 +36,8 @@ func main() {
 		go startDiscordConnection()
 	}
 
+	writeLog("debug", "Comamnds being loaded are "+getCommands(), nil)
+
 	writeLog("info", "Bot is now running.  Press CTRL-C to exit.\n", nil)
 	// Simple way to keep program running until CTRL-C is pressed.
 	<-make(chan struct{})

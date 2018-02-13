@@ -1,69 +1,69 @@
 package main
 
 import (
-	"encoding/json"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/otiai10/gosseract"
+	"mvdan.cc/xurls"
 )
 
-var (
-	nextSend = time.Now()
-)
-
-//Commands structure
-type Commands struct {
-	Cmd string   `json:"command"`
-	Typ string   `json:"type"`
-	Lns []string `json:"lines"`
-}
-
-func getCommands() []Commands {
-	//Opens commands.json and returns values
-	raw, err := ioutil.ReadFile("./commands.json")
+// isValidUrl tests a string to determine if it is a url or not.
+func isValidURL(toTest string) bool {
+	_, err := url.ParseRequestURI(toTest)
 	if err != nil {
-		writeLog("error", "error reading commands ", err)
-		os.Exit(1)
+		return false
 	}
-	var c []Commands
-	json.Unmarshal(raw, &c)
-	return c
+	return true
 }
 
 func parseChat(input string) string {
-	commands := getCommands()
 	writeLog("debug", "Parsing inbound chat", nil)
-	//Search command file for command and prep response
-	for _, p := range commands {
-		if strings.Contains(strings.ToLower(input), p.Cmd) {
-			if p.Typ == "listen" {
-				for _, line := range p.Lns {
-					response = response + "\n" + line
-				}
-			}
+	if strings.Contains(input, ".png") == true || strings.Contains(input, ".jpg") == true {
+		remoteURL := xurls.Relaxed().FindString(input)
+		if isValidURL(remoteURL) == false {
+			return ""
 		}
+		input = parseImage(remoteURL)
+		writeLog("debug", "Contains link to image", nil)
 	}
-	return response
+	if strings.Contains(input, "astebin") == true {
+		remoteURL := xurls.Relaxed().FindString(input)
+		if isValidURL(remoteURL) == false {
+			return ""
+		}
+		input = parseBin(remoteURL)
+		writeLog("debug", "Is a bin link", nil)
+	}
+
+	return "response"
 }
 
 func parseCommand(input string) string {
-	commands := getCommands()
-	writeLog("debug", "Parsing inbound command", nil)
-	//Search command file for command and prep response
-	for _, p := range commands {
-		if p.Cmd == strings.ToLower(input) {
-			if p.Typ == "chat" {
-				for _, line := range p.Lns {
-					response = response + "\n" + line
-				}
-			}
-		}
+
+	writeLog("debug", "Parsing inbound command: "+input, nil)
+
+	if strings.HasPrefix(input, "ggl") == true {
+		writeLog("debug", "Googling for user. \n", nil)
+		response = "<https://lmgtfy.com/?q=" + strings.Replace(strings.TrimPrefix(input, "ggl "), " ", "+", -1) + ">"
+
+	} else if strings.HasPrefix(input, "list") {
+		req := strings.TrimPrefix(input, "list ")
+		response = "This is the list of current " + req + "\n"
+		response = response + getCommands()
+	} else {
+		response = ""
 	}
+
+	if response == "" {
+
+		return ""
+	}
+
 	return response
 }
 

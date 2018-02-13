@@ -3,3 +3,7 @@ debug
 configs/bot\.yml
 
 configs/discord\.yml
+
+configs/chat\.yml
+
+configs/command\.yml
