@@ -1,16 +1,9 @@
 command:
-  "help":
+  help:
     - "Please check the github page at <https://github.com/parkervcp/parkertron>"
     - "The default config is a good example of how to set commands up. Try `.help command`"
-    - "My base chat parsing function is also available. Try `.help chat` for more info"
-    - "You can use for more information"
-    - 
-  "help command":
-    - ""
-    - 
-  "help chat": 
-    - ""
-    - 
-  "example":
-    - ""
-    - 
+    - "My base chat parsing function is also available. Try `.help keyword` for more info"
+  help command:
+    - "Commands are stored in the commands.yml"
+  help keywords: 
+    - "Keywords are stored in the keywords.yml"

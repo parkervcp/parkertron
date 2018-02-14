@@ -99,7 +99,7 @@ func getDiscordConfigBool(req string) bool {
 }
 
 func getDiscordChannels() string {
-	return strings.ToLower(strings.Join(Discord.GetStringSlice("discord.channels"), " "))
+	return strings.ToLower(strings.Join(Discord.GetStringSlice("discord.channels.listening"), " "))
 }
 
 func getDiscordGroupMembers(req string) string {
@@ -107,19 +107,35 @@ func getDiscordGroupMembers(req string) string {
 }
 
 //Command get funcs
-func getCommands() string {
-	return strings.ToLower(strings.Join(Command.GetStringSlice("command"), ", "))
+func getCommands() []string {
+	return Command.AllKeys()
 }
 
-func getCommandResonse(req string) string {
+func getCommandsString() string {
+	return strings.ToLower(strings.Replace(strings.Join(Command.AllKeys(), ", "), "command.", "", -1))
+}
+
+func getCommandResonse(req string) []string {
+	return Command.GetStringSlice("command." + req)
+}
+
+func getCommandResponseString(req string) string {
 	return strings.ToLower(strings.Join(Command.GetStringSlice("command."+req), "\n"))
 }
 
-//Chat get funcs
-func getKeywords() string {
-	return strings.ToLower(strings.Join(Keyword.GetStringSlice("keywords"), ", "))
+//Keyword get funcs
+func getKeywords() []string {
+	return Keyword.AllKeys()
 }
 
-func getKeywordResonse(req string) string {
-	return strings.ToLower(strings.Join(Keyword.GetStringSlice("keywords."+req), "\n"))
+func getKeywordsString() string {
+	return strings.ToLower(strings.Replace(strings.Join(Keyword.AllKeys(), ", "), "keyword.", "", -1))
+}
+
+func getKeywordResponse(req string) []string {
+	return Keyword.GetStringSlice("keyword." + req)
+}
+
+func getKeywordResponseString(req string) string {
+	return strings.ToLower(strings.Join(Keyword.GetStringSlice("keyword."+req), "\n"))
 }

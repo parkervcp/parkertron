@@ -6,10 +6,6 @@ import (
 )
 
 var (
-	//BotID is the Discord Bot ID
-	BotID string
-	//ShowConfig is part of the init process
-	ShowConfig string
 	//response is the bot response on the channel
 	response string
 )
@@ -36,7 +32,8 @@ func main() {
 		go startDiscordConnection()
 	}
 
-	writeLog("debug", "Commands being loaded are "+getCommands(), nil)
+	writeLog("debug", "Commands being loaded are: "+getCommandsString(), nil)
+	writeLog("debug", "Keywords being loaded are: "+getKeywordsString(), nil)
 
 	writeLog("info", "Bot is now running.  Press CTRL-C to exit.\n", nil)
 	// Simple way to keep program running until CTRL-C is pressed.

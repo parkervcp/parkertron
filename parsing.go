@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/otiai10/gosseract"
@@ -21,26 +22,39 @@ func isValidURL(toTest string) bool {
 	return true
 }
 
-func parseChat(input string) string {
+func parseKeyword(input string) string {
+
 	writeLog("debug", "Parsing inbound chat", nil)
+
 	if strings.Contains(input, ".png") == true || strings.Contains(input, ".jpg") == true {
 		remoteURL := xurls.Relaxed().FindString(input)
 		if isValidURL(remoteURL) == false {
 			return ""
 		}
-		input = parseImage(remoteURL)
 		writeLog("debug", "Contains link to image", nil)
+		input = parseImage(remoteURL)
 	}
+
 	if strings.Contains(input, "astebin") == true {
 		remoteURL := xurls.Relaxed().FindString(input)
 		if isValidURL(remoteURL) == false {
 			return ""
 		}
-		input = parseBin(remoteURL)
 		writeLog("debug", "Is a bin link", nil)
+		input = parseBin(remoteURL)
 	}
 
-	return "response"
+	//Search keywords file for keyword and prep response
+	for _, kr := range getKeywords() {
+		writeLog("debug", "Testing on '"+strings.TrimPrefix(kr, "keyword.")+"' and match is "+strconv.FormatBool(strings.Contains(strings.ToLower(strings.TrimPrefix(kr, "keyword.")), input)), nil)
+		if strings.Contains(strings.ToLower(strings.TrimPrefix(kr, "keyword.")), input) == true {
+			writeLog("debug", getKeywordResponseString(kr), nil)
+			response = getKeywordResponseString(input)
+			writeLog("debug", "response: "+response, nil)
+		}
+	}
+
+	return response
 }
 
 func parseCommand(input string) string {
@@ -53,10 +67,21 @@ func parseCommand(input string) string {
 
 	} else if strings.HasPrefix(input, "list") {
 		req := strings.TrimPrefix(input, "list ")
-		response = "This is the list of current " + req + "\n"
-		response = response + getCommands()
+		response = "This is the list of current " + req + ": "
+		if req == "commands" {
+			response = response + getCommandsString()
+		} else if req == "keywords" {
+			response = response + getKeywordsString()
+		} else {
+			response = "There was no match for " + req + " options"
+		}
 	} else {
-		response = ""
+		//Search command file for command and prep response
+		for _, cr := range getCommands() {
+			if strings.Contains(strings.TrimPrefix(cr, "command."), input) == true {
+				response = getCommandResponseString(input)
+			}
+		}
 	}
 
 	if response == "" {

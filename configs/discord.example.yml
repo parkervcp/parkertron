@@ -2,10 +2,11 @@ discord:
   token: "MzExODU0ODY3MDYyODQ5NTQ2.DTzxJQ.kTDCfWld4mP2RO17CU3i9pKp-ts"
   owner: "317335672245452801"
   prefix: "."
-  channels: 
-    - "317335672245452801"
-    - 
-      filter: true
+  channels:
+    filter: true
+    listening:
+      - "317335672245452801"
+      - 
   group:
     admin:
       - "122906021160026112"
