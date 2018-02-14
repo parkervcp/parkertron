@@ -65,7 +65,7 @@ func setupConfig() {
 		return
 	}
 
-	//Setting Chat config settings
+	//Setting Keyword config settings
 	Keyword.SetConfigName("keywords")
 	Keyword.AddConfigPath("configs/")
 	Keyword.WatchConfig()
@@ -76,6 +76,20 @@ func setupConfig() {
 
 	if err := Keyword.ReadInConfig(); err != nil {
 		writeLog("fatal", "Could not load Keyword configuration.", err)
+		return
+	}
+
+	//Setting Keyword config settings
+	Parsing.SetConfigName("parsing")
+	Parsing.AddConfigPath("configs/")
+	Parsing.WatchConfig()
+
+	Parsing.OnConfigChange(func(e fsnotify.Event) {
+		writeLog("info", "Parsing config changed", nil)
+	})
+
+	if err := Parsing.ReadInConfig(); err != nil {
+		writeLog("fatal", "Could not load Parsing configuration.", err)
 		return
 	}
 }
@@ -139,3 +153,5 @@ func getKeywordResponse(req string) []string {
 func getKeywordResponseString(req string) string {
 	return strings.ToLower(strings.Join(Keyword.GetStringSlice("keyword."+req), "\n"))
 }
+
+//Parsing get funcs

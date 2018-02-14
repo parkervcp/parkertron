@@ -32,7 +32,6 @@ func parseKeyword(input string) string {
 			return ""
 		}
 		writeLog("debug", "Contains link to image", nil)
-		input = parseImage(remoteURL)
 	}
 
 	if strings.Contains(input, "astebin") == true {
@@ -41,7 +40,10 @@ func parseKeyword(input string) string {
 			return ""
 		}
 		writeLog("debug", "Is a bin link", nil)
-		input = parseBin(remoteURL)
+	}
+
+	if isValidURL(xurls.Relaxed().FindString(input)) == true {
+		writeLog("debug", "Contains a Valid URL: "+xurls.Relaxed().FindString(input), nil)
 	}
 
 	//Search keywords file for keyword and prep response
@@ -90,6 +92,10 @@ func parseCommand(input string) string {
 	}
 
 	return response
+}
+
+func parseDomain() string {
+
 }
 
 func parseBin(remoteURL string) string {

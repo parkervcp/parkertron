@@ -1,0 +1,20 @@
+parse:
+  domain:
+    pastebin:
+      URL: "https://pastebin.com/"
+      type: "bin"
+      append: "raw/"
+      format: "&URL&&append&&filename&"
+
+    hastebin:
+      URL: "https://hastebin.com/"
+      type: "bin"
+      append: "raw/"
+      format: "&URL&&append&&filename&"
+
+    image:
+      url: "*"
+      type: "image"
+      filetype:
+        - "png"
+        - "jpg"
