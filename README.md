@@ -9,51 +9,51 @@ The checklist so far
 - [x] Full OSS release
 
 - [x] Read config files
-  - [] Separate service config
+  - [ ] Separate service config
 
-- [] support multiple services
+- [ ] support multiple services
   - [x] Discord
-  - [] Slack
-  - [] IRC
+  - [ ] Slack
+  - [ ] IRC
 
 - [x] Get inbound messages
   - [x] Listen to specific channels
-  - [] Listen for mentions
+  - [ ] Listen for mentions
 
 
-- [] Respond to inbound messages
-  - [] respond to commands with prefix
-  - [] respond to key words/phrases
-  - [] Comma separated word lists
-  - [] Separate server commands
+- [ ] Respond to inbound messages
+  - [ ] respond to commands with prefix
+  - [ ] respond to key words/phrases
+  - [ ] Comma separated word lists
+  - [ ] Separate server commands
 - [x] Image parsing
   - [x] image from url support
     - [x] png support
     - [x] jpg support
-  - [] direct embedded images
+  - [ ] direct embedded images
 
-- [] Respond with correct output from configs
+- [ ] Respond with correct output from configs
 
-- [] Respond with multi-line output in a single message
+- [ ] Respond with multi-line output in a single message
 
-- [] Impliment blacklist/whitelist mode
+- [ ] Impliment blacklist/whitelist mode
 
-- [] Mitigate spam with cooldown per user/channel/global
-  - [] global cooldown
-  - [] channel cooldown
-  - [] user cooldown
+- [ ] Mitigate spam with cooldown per user/channel/global
+  - [ ] global cooldown
+  - [ ] channel cooldown
+  - [ ] user cooldown
 
-- [] Permissions
-  - [] Permissions management
+- [ ] Permissions
+  - [ ] Permissions management
 
-- [] Logging
-  - [] Log user join/leave 
-  - [] Log chats
-  - [] Log edits (show original and edited)
-  - [] Log chats/edits to separate files/folders
+- [ ] Logging
+  - [ ] Log user join/leave 
+  - [ ] Log chats
+  - [ ] Log edits (show original and edited)
+  - [ ] Log chats/edits to separate files/folders
   
-- [] Join voice channels
-  - [] Play audio from links
+- [ ] Join voice channels
+  - [ ] Play audio from links
 
 
 So far I have the chat bot part down with no limiting or administration.
