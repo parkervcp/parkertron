@@ -23,9 +23,9 @@ func init() {
 		setLogLevel("info")
 	}
 
-	setupLogger()
+	setupConfig()
 
-	setConfig()
+	setupLogger()
 
 	writeLog("debug", "services loaded are "+getBotServices(), nil)
 }
@@ -36,7 +36,7 @@ func main() {
 		go startDiscordConnection()
 	}
 
-	writeLog("debug", "Comamnds being loaded are "+getCommands(), nil)
+	writeLog("debug", "Commands being loaded are "+getCommands(), nil)
 
 	writeLog("info", "Bot is now running.  Press CTRL-C to exit.\n", nil)
 	// Simple way to keep program running until CTRL-C is pressed.

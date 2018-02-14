@@ -1,0 +1,15 @@
+discord:
+  token: "MjU2OTk4MjgzNjU2ODIyNzg1.DWS9aA.bMgkprKPmO5nO2jCrcYKEbrmd2c"
+  owner: "317335672245452801"
+  prefix: "."
+  channels: 
+    - "317335672245452801"
+    - 
+      filter: true
+  group:
+    admin:
+      - "122906021160026112"
+    mods:
+      - 
+    blacklist:
+      - 

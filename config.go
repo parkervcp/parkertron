@@ -17,11 +17,11 @@ var (
 	//Command Config
 	Command = viper.New()
 
-	//Chat Config
-	Chat = viper.New()
+	//Keyword Config
+	Keyword = viper.New()
 )
 
-func setConfig() {
+func setupConfig() {
 
 	//Setting Bot config settings
 	Bot.SetConfigName("bot")
@@ -66,16 +66,16 @@ func setConfig() {
 	}
 
 	//Setting Chat config settings
-	Chat.SetConfigName("chat")
-	Chat.AddConfigPath("configs/")
-	Chat.WatchConfig()
+	Keyword.SetConfigName("keywords")
+	Keyword.AddConfigPath("configs/")
+	Keyword.WatchConfig()
 
-	Chat.OnConfigChange(func(e fsnotify.Event) {
-		writeLog("info", "Chat config changed", nil)
+	Keyword.OnConfigChange(func(e fsnotify.Event) {
+		writeLog("info", "Keyword config changed", nil)
 	})
 
-	if err := Chat.ReadInConfig(); err != nil {
-		writeLog("fatal", "Could not load Chat configuration.", err)
+	if err := Keyword.ReadInConfig(); err != nil {
+		writeLog("fatal", "Could not load Keyword configuration.", err)
 		return
 	}
 }
@@ -116,10 +116,10 @@ func getCommandResonse(req string) string {
 }
 
 //Chat get funcs
-func getChats() string {
-	return strings.ToLower(strings.Join(Chat.GetStringSlice("chat"), ", "))
+func getKeywords() string {
+	return strings.ToLower(strings.Join(Keyword.GetStringSlice("keywords"), ", "))
 }
 
-func getChatResonse(req string) string {
-	return strings.ToLower(strings.Join(Chat.GetStringSlice("chat."+req), "\n"))
+func getKeywordResonse(req string) string {
+	return strings.ToLower(strings.Join(Keyword.GetStringSlice("keywords."+req), "\n"))
 }
