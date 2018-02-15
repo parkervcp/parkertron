@@ -96,6 +96,7 @@ func parseCommand(input string) string {
 
 func parseDomain() string {
 
+	return ""
 }
 
 func parseBin(remoteURL string) string {

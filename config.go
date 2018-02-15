@@ -19,6 +19,9 @@ var (
 
 	//Keyword Config
 	Keyword = viper.New()
+
+	//Parsing Config
+	Parsing = viper.New()
 )
 
 func setupConfig() {
@@ -155,3 +158,11 @@ func getKeywordResponseString(req string) string {
 }
 
 //Parsing get funcs
+func getParsingDomains() []string {
+	return Parsing.AllKeys()
+}
+
+//Parsing get funcs
+func getParsingDomainsString() string {
+	return strings.ToLower(strings.Replace(strings.Join(Parsing.AllKeys(), ", "), "parsing.domain.", "", -1))
+}
