@@ -34,7 +34,6 @@ func main() {
 
 	writeLog("debug", "Commands being loaded are: "+getCommandsString(), nil)
 	writeLog("debug", "Keywords being loaded are: "+getKeywordsString(), nil)
-	writeLog("debug", "Domains that are being parsed: "+getParsingDomainsString(), nil)
 
 	writeLog("info", "Bot is now running.  Press CTRL-C to exit.\n", nil)
 	// Simple way to keep program running until CTRL-C is pressed.

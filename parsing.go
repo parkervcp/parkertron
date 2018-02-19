@@ -4,8 +4,8 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -13,37 +13,73 @@ import (
 	"mvdan.cc/xurls"
 )
 
-// isValidUrl tests a string to determine if it is a url or not.
-func isValidURL(toTest string) bool {
-	_, err := url.ParseRequestURI(toTest)
-	if err != nil {
-		return false
+func matchImage(input string) bool {
+	ip := getParsingImageFiletypes()
+
+	for _, ro := range ip {
+		if strings.Contains(input, ro) == true {
+			writeLog("debug", "Image found with a "+ro+" format", nil)
+			return true
+		}
 	}
-	return true
+	return false
+}
+
+func matchPasteDomain(input string) (bool, string) {
+	// Watched for matched domains
+	re := regexp.MustCompile("([a-z]*.(url))")
+	rm := re.FindAllStringSubmatch(getParsingPasteKeys(), -1)
+
+	for x, ro := range rm {
+		for y := range ro {
+			if y%2 == 0 && rm[x][y] != "url" {
+				writeLog("debug", rm[x][y], nil)
+				if strings.Contains(input, getParsingPasteString(rm[x][y])) {
+					writeLog("debug", "Matched on: "+rm[x][y], nil)
+					return true, strings.Replace(rm[x][y], ".url", "", -1)
+				}
+			}
+		}
+	}
+	return false, ""
+}
+
+func formatURL(input string) string {
+	// Watched for matched domains
+	re := regexp.MustCompile("&([a-z]*)&")
+	rm := re.FindAllStringSubmatch(getParsingPasteKeys(), -1)
+
+	for x, ro := range rm {
+		for y := range ro {
+			if y%2 == 0 && rm[x][y] != "url" {
+				if strings.Contains(input, rm[x][y]) {
+					writeLog("debug", "Matched on: "+rm[x][y], nil)
+					return rm[x][y]
+				}
+			}
+		}
+	}
+	return ""
 }
 
 func parseKeyword(input string) string {
 
 	writeLog("debug", "Parsing inbound chat", nil)
 
-	if strings.Contains(input, ".png") == true || strings.Contains(input, ".jpg") == true {
-		remoteURL := xurls.Relaxed().FindString(input)
-		if isValidURL(remoteURL) == false {
-			return ""
-		}
-		writeLog("debug", "Contains link to image", nil)
-	}
+	pasteMatched, pasteDomain := matchPasteDomain(input)
 
-	if strings.Contains(input, "astebin") == true {
-		remoteURL := xurls.Relaxed().FindString(input)
-		if isValidURL(remoteURL) == false {
-			return ""
-		}
-		writeLog("debug", "Is a bin link", nil)
-	}
+	writeLog("debug", "Matched domain: "+strconv.FormatBool(pasteMatched), nil)
 
-	if isValidURL(xurls.Relaxed().FindString(input)) == true {
-		writeLog("debug", "Contains a Valid URL: "+xurls.Relaxed().FindString(input), nil)
+	if matchImage(input) == true {
+		writeLog("debug", "xurls matched: "+xurls.Relaxed().FindString(input), nil)
+		if matchImage(xurls.Relaxed().FindString(input)) == true {
+			input = parseImage(xurls.Relaxed().FindString(input))
+		}
+	} else if pasteMatched == true {
+		writeLog("debug", "Sending: "+pasteDomain, nil)
+		writeLog("debug", "xurls matched: "+xurls.Relaxed().FindString(input), nil)
+		writeLog("debug", "Guessing file name is: "+strings.Replace(xurls.Relaxed().FindString(input), getParsingPasteString(pasteDomain+".url"), "", -1), nil)
+		parseBin(pasteDomain, strings.Replace(xurls.Relaxed().FindString(input), getParsingPasteString(pasteDomain+".url"), "", -1))
 	}
 
 	//Search keywords file for keyword and prep response
@@ -94,30 +130,28 @@ func parseCommand(input string) string {
 	return response
 }
 
-func parseDomain() string {
+func parseBin(domain string, filename string) string {
+	writeLog("info", "Reading from "+getParsingPasteString(domain+".url"), nil)
 
-	return ""
-}
+	writeLog("debug", "Filename is: "+filename, nil)
 
-func parseBin(remoteURL string) string {
-	writeLog("info", "Reading from "+remoteURL, nil)
+	formatted := ""
 
-	lastBin := strings.LastIndex(remoteURL, "/")
+	getParsingPasteString(domain + ".format")
 
-	binName := remoteURL[lastBin+1:]
+	re := regexp.MustCompile("&([a-z]*)&")
+	rm := re.FindAllStringSubmatch(getParsingPasteString(domain+".format"), -1)
 
-	rawBin := strings.Trim(binName, ".")
-
-	baseURL := strings.Replace(remoteURL, binName, "", -1)
-
-	writeLog("debug", "Base URL is "+baseURL, nil)
-
-	if baseURL == "" {
-		writeLog("debug", "just the domain and no file", nil)
-		return ""
+	for x, ro := range rm {
+		for y := range ro {
+			if y == 1 {
+				writeLog("debug", rm[x][y], nil)
+				formatted = formatted + getParsingPasteString(domain+"."+rm[x][y])
+			}
+		}
 	}
 
-	rawURL := baseURL + "raw/" + rawBin
+	rawURL := formatted + filename
 
 	writeLog("debug", "Raw text URL is "+rawURL, nil)
 

@@ -158,11 +158,14 @@ func getKeywordResponseString(req string) string {
 }
 
 //Parsing get funcs
-func getParsingDomains() []string {
-	return Parsing.AllKeys()
+func getParsingPasteKeys() string {
+	return strings.Replace(strings.Join(Parsing.AllKeys(), ", "), "parse.paste.", "", -1)
 }
 
-//Parsing get funcs
-func getParsingDomainsString() string {
-	return strings.ToLower(strings.Replace(strings.Join(Parsing.AllKeys(), ", "), "parsing.domain.", "", -1))
+func getParsingPasteString(key string) string {
+	return Parsing.GetString("parse.paste." + key)
+}
+
+func getParsingImageFiletypes() []string {
+	return Parsing.GetStringSlice("parse.image.filetype")
 }

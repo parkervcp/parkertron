@@ -2,6 +2,9 @@
 
 A simple discord chat bot with a simple configuration. Written using [discordgo](https://github.com/bwmarrin/discordgo).
 
+Requirements:
+
+
 Working on adding other services and additions.
 
 The checklist so far
