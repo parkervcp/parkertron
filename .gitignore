@@ -9,3 +9,5 @@ configs/command\.yml
 configs/keywords\.yml
 
 configs/parsing\.yml
+
+logs/
