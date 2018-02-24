@@ -4,14 +4,12 @@
 
 FROM golang:1.9-alpine
 
-WORKDIR /srv/parkertron
+COPY . ./src
 
-RUN apk add --no-cache --update go git lua-stdlib lua musl-dev g++ libc-dev tesseract-ocr tesseract-ocr-dev \
- && go get github.com/bwmarrin/discordgo \
- && go get github.com/sirupsen/logrus \
- && go get github.com/otiai10/gosseract \
- && go get mvdan.cc/xurls
+WORKDIR /go/src/parkertron
 
-COPY . ./
+RUN apk add --no-cache --update go git curl lua-stdlib lua musl-dev g++ libc-dev tesseract-ocr tesseract-ocr-dev \
+ && curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh \
+ && dep ensure
 
 CMD [ "go", "run", "*.go"]
