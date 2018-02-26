@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"time"
 
 	"github.com/rifflock/lfshook"
 	log "github.com/sirupsen/logrus"
@@ -21,6 +22,16 @@ func setupLogger() {
 			// other error
 		}
 	}
+
+	if _, err := os.Stat("./logs/latest.log"); err == nil {
+		err := os.Rename("./logs/latest.log", "./logs/"+time.Now().UTC().Format("2006-01-02-04-05-0700")+".log")
+
+		if err != nil {
+			writeLog("error", "failed to move latest logs.", err)
+			return
+		}
+	}
+	writeLog("info", "Bot logging online", nil)
 }
 
 func setLogLevel(level string) {
@@ -32,26 +43,15 @@ func setLogLevel(level string) {
 		writeLog("debug", "log level set to info", nil)
 	}
 
-	if level == "debug" {
-		pathMap := lfshook.PathMap{
-			log.InfoLevel:  "logs/info.log",
-			log.ErrorLevel: "logs/error.log",
-			log.DebugLevel: "logs/debug.log",
-		}
-		log.AddHook(lfshook.NewHook(
-			pathMap,
-			&log.JSONFormatter{},
-		))
-	} else {
-		pathMap := lfshook.PathMap{
-			log.InfoLevel:  "logs/info.log",
-			log.ErrorLevel: "logs/error.log",
-		}
-		log.AddHook(lfshook.NewHook(
-			pathMap,
-			&log.JSONFormatter{},
-		))
+	pathMap := lfshook.PathMap{
+		log.InfoLevel:  "logs/latest.log",
+		log.ErrorLevel: "logs/latest.log",
 	}
+	log.AddHook(lfshook.NewHook(
+		pathMap,
+		&log.JSONFormatter{},
+	))
+
 }
 
 func writeLog(level string, message string, err error) {
