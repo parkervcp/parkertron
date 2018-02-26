@@ -12,32 +12,39 @@ The checklist so far
 - [x] Full OSS release
 
 - [x] Read config files
-  - [ ] Separate service config
+  - [x] Separate service config (currently only discord)
 
 - [ ] support multiple services
   - [x] Discord
   - [ ] Slack
   - [ ] IRC
 
+#### Discord specific support
+  - [x] Support @mentions for the bot
+  - [ ] Use @mentions for other users
+  - [ ] Watch for @mentions on groups
+
+
+#### General support
 - [x] Get inbound messages
   - [x] Listen to specific channels
   - [ ] Listen for mentions
 
-
-- [ ] Respond to inbound messages
-  - [ ] respond to commands with prefix
-  - [ ] respond to key words/phrases
-  - [ ] Comma separated word lists
+- [x] Respond to inbound messages
+  - [x] respond to commands with prefix
+  - [x] respond to key words/phrases
+  - [x] Comma separated lists
   - [ ] Separate server commands
+
 - [x] Image parsing
   - [x] image from url support
     - [x] png support
     - [x] jpg support
   - [ ] direct embedded images
 
-- [ ] Respond with correct output from configs
+- [x] Respond with correct output from configs
 
-- [ ] Respond with multi-line output in a single message
+- [x] Respond with multi-line output in a single message
 
 - [ ] Impliment blacklist/whitelist mode
 
