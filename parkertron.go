@@ -28,7 +28,7 @@ func init() {
 
 func main() {
 	if strings.Contains(getBotServices(), "discord") == true {
-		writeLog("info", "Starting discord connector\n", nil)
+		writeLog("info", "Starting Discord connector\n", nil)
 		go startDiscordConnection()
 	}
 
