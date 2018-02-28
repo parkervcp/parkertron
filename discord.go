@@ -28,6 +28,22 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	input := m.Content
 
+	// If the owner is making a message always parse
+	// Ignore all messages created by the bot itself, blacklisted members, channels it's not listening on, with debug messaging.
+	if m.Author.Bot == true || strings.Contains(getDiscordGroupMembers("blacklist"), m.Author.ID) == true || channelFilter(m.ChannelID) == false {
+		if m.Author.Bot == true {
+			writeLog("debug", "User is a bot and being ignored.", nil)
+		}
+		if strings.Contains(getDiscordGroupMembers("blacklist"), m.Author.ID) == true {
+			writeLog("debug", "User is blacklisted and being ignored.", nil)
+		}
+		if channelFilter(m.ChannelID) == false {
+			writeLog("debug", "This channel is being filtered out and ignored.", nil)
+		}
+		writeLog("debug", "Message has been ignored.\n", nil)
+		return
+	}
+
 	// Check if the bot is mentioned
 	for _, ment := range m.Mentions {
 		if ment.ID == BotID {
@@ -36,21 +52,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 				input = ""
 				response = "I was mentioned with no other extras. How can I help?"
 			}
-		}
-		// If the owner is making a message always parse
-		// Ignore all messages created by the bot itself, blacklisted members, channels it's not listening on, with debug messaging.
-		if m.Author.Bot == true || strings.Contains(getDiscordGroupMembers("blacklist"), m.Author.ID) == true || channelFilter(m.ChannelID) == false {
-			if m.Author.Bot == true {
-				writeLog("debug", "User is a bot and being ignored.", nil)
-			}
-			if strings.Contains(getDiscordGroupMembers("blacklist"), m.Author.ID) == true {
-				writeLog("debug", "User is blacklisted and being ignored.", nil)
-			}
-			if channelFilter(m.ChannelID) == false {
-				writeLog("debug", "This channel is being filtered out and ignored.", nil)
-			}
-			writeLog("debug", "Message has been ignored.\n", nil)
-			return
 		}
 	}
 
