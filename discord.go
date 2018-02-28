@@ -118,4 +118,5 @@ func startDiscordConnection() {
 		writeLog("fatal", "error opening connection,", err)
 		return
 	}
+	ServStat <- "online"
 }

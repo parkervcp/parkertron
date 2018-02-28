@@ -8,6 +8,9 @@ import (
 var (
 	//response is the bot response on the channel
 	response string
+
+	//ServStat is the Service Status channel
+	ServStat = make(chan string)
 )
 
 func init() {
@@ -34,6 +37,8 @@ func main() {
 
 	writeLog("debug", "Commands being loaded are: "+getCommandsString(), nil)
 	writeLog("debug", "Keywords being loaded are: "+getKeywordsString(), nil)
+
+	<-ServStat
 
 	writeLog("info", "Bot is now running.  Press CTRL-C to exit.\n", nil)
 	// Simple way to keep program running until CTRL-C is pressed.
