@@ -137,7 +137,7 @@ func getCommandResonse(req string) []string {
 }
 
 func getCommandResponseString(req string) string {
-	return strings.ToLower(strings.Join(Command.GetStringSlice("command."+req), "\n"))
+	return strings.Join(Command.GetStringSlice("command."+req), "\n")
 }
 
 //Keyword get funcs
@@ -154,7 +154,7 @@ func getKeywordResponse(req string) []string {
 }
 
 func getKeywordResponseString(req string) string {
-	return strings.ToLower(strings.Join(Keyword.GetStringSlice("keyword."+req), "\n"))
+	return strings.Join(Keyword.GetStringSlice("keyword."+req), "\n")
 }
 
 //Parsing get funcs
