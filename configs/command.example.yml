@@ -1,0 +1,14 @@
+command:
+## Basic rules here for commands
+## 1. Any commands you want need to be here
+## 2. Commands can have spaces
+## 3. Make sure if it fails to load properly that you pass the config through a yaml validator.
+
+  help:
+    - "Please check the github page at <https://github.com/parkervcp/parkertron>"
+    - "The default config is a good example of how to set commands up. Try `.help command`"
+    - "My base chat parsing function is also available. Try `.help keyword` for more info"
+  help command:
+    - "Commands are stored in the commands.yml"
+  help keywords: 
+    - "Keywords are stored in the keywords.yml"

@@ -1,0 +1,3 @@
+services: ## currently the only real service is the discord service.
+    - "discord"
+    - "console"

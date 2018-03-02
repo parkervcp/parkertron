@@ -1,0 +1,16 @@
+parse:
+  image:
+    filetype:
+      - "png"
+      - "jpg"
+
+  paste:
+    pastebin:
+      URL: "https://pastebin.com/"
+      append: "raw/"
+      format: "&url&&append&&filename&"
+
+    hastebin:
+      URL: "https://hastebin.com/"
+      append: "raw/"
+      format: "&url&&append&&filename&"

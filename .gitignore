@@ -1,9 +1,13 @@
 debug
 
-\.vscode/
+configs/bot\.yml
 
-config.yml
+configs/discord\.yml
 
-\.DS_Store
+configs/command\.yml
 
-config\.json
+configs/keywords\.yml
+
+configs/parsing\.yml
+
+logs/

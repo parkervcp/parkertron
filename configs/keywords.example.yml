@@ -1,0 +1,8 @@
+keyword:
+  hello: &hello ## This and the following will return the same response
+    - "Hello, I am parkertron, I am but a simple bot."
+    - "Please try out &prefix&help to get mote info"
+  hi: *hello ## *hello will match the values of &hello
+
+  example match: ## these can have spaces in them
+    - "I can match parts of sentances."
