@@ -71,15 +71,17 @@ func parseKeyword(input string) string {
 	writeLog("debug", "Matched domain: "+strconv.FormatBool(pasteMatched), nil)
 
 	if matchImage(input) == true {
-		writeLog("debug", "xurls matched: "+xurls.Relaxed.FindString(input), nil)
-		if matchImage(xurls.Relaxed.FindString(input)) == true {
-			input = parseImage(xurls.Relaxed.FindString(input))
+		writeLog("debug", "xurls matched: "+xurls.Relaxed().FindString(input), nil)
+		if matchImage(xurls.Relaxed().FindString(input)) == true {
+			input = parseImage(xurls.Relaxed().FindString(input))
 		}
 	} else if pasteMatched == true {
-		writeLog("debug", "Sending: "+pasteDomain, nil)
-		writeLog("debug", "xurls matched: "+xurls.Relaxed.FindString(input), nil)
-		writeLog("debug", "Guessing file name is: "+strings.Replace(xurls.Relaxed.FindString(input), getParsingPasteString(pasteDomain+".url"), "", -1), nil)
-		parseBin(pasteDomain, strings.Replace(xurls.Relaxed.FindString(input), getParsingPasteString(pasteDomain+".url"), "", -1))
+		if xurls.Relaxed().FindString(input) != "" {
+			writeLog("debug", "Sending: "+pasteDomain, nil)
+			writeLog("debug", "xurls matched: "+xurls.Relaxed().FindString(input), nil)
+			writeLog("debug", "Guessing file name is: "+strings.Replace(xurls.Relaxed().FindString(input), getParsingPasteString(pasteDomain+".url"), "", -1), nil)
+			input = parseBin(pasteDomain, strings.Replace(xurls.Relaxed().FindString(input), getParsingPasteString(pasteDomain+".url"), "", -1))
+		}
 	}
 
 	//Search keywords file for keyword and prep response
