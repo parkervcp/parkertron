@@ -86,8 +86,8 @@ func parseKeyword(input string) string {
 
 	//Search keywords file for keyword and prep response
 	for _, kr := range getKeywords() {
-		writeLog("debug", "Testing on '"+strings.TrimPrefix(kr, "keyword.")+"' and match is "+strconv.FormatBool(strings.Contains(input, strings.TrimPrefix(kr, "keyword."))), nil)
-		if strings.Contains(input, strings.TrimPrefix(kr, "keyword.")) == true {
+		writeLog("debug", "Testing on '"+strings.TrimPrefix(kr, "keyword.")+"' and match is "+strconv.FormatBool(strings.Contains(strings.ToLower(input), strings.TrimPrefix(kr, "keyword."))), nil)
+		if strings.Contains(strings.ToLower(input), strings.TrimPrefix(kr, "keyword.")) == true {
 			writeLog("debug", getKeywordResponseString(kr), nil)
 			response = getKeywordResponseString(strings.TrimPrefix(kr, "keyword."))
 			writeLog("debug", "response: "+response, nil)
