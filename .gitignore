@@ -11,3 +11,5 @@ configs/keywords\.yml
 configs/parsing\.yml
 
 logs/
+
+vendor/
