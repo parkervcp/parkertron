@@ -10,6 +10,8 @@ configs/keywords\.yml
 
 configs/parsing\.yml
 
+configs/irc\.yml
+
 logs/
 
 vendor/

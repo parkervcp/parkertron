@@ -14,6 +14,9 @@ var (
 	//Discord Config
 	Discord = viper.New()
 
+	//IRC Config
+	IRC = viper.New()
+
 	//Command Config
 	Command = viper.New()
 
@@ -51,6 +54,20 @@ func setupConfig() {
 
 	if err := Discord.ReadInConfig(); err != nil {
 		writeLog("fatal", "Could not load Discord configuration.", err)
+		return
+	}
+
+	//Setting IRC config settings
+	IRC.SetConfigName("irc")
+	IRC.AddConfigPath("configs/")
+	IRC.WatchConfig()
+
+	IRC.OnConfigChange(func(e fsnotify.Event) {
+		writeLog("info", "IRC config changed", nil)
+	})
+
+	if err := IRC.ReadInConfig(); err != nil {
+		writeLog("fatal", "Could not load irc configuration.", err)
 		return
 	}
 
@@ -98,8 +115,24 @@ func setupConfig() {
 }
 
 //Bot Get funcs
-func getBotServices() string {
-	return strings.ToLower(strings.Join(Bot.GetStringSlice("services"), " "))
+func getBotServices() []string {
+	return Bot.GetStringSlice("bot.services")
+}
+
+func getBotConfigBool(req string) bool {
+	return Bot.GetBool("bot." + req)
+}
+
+func getBotConfigString(req string) string {
+	return Bot.GetString("bot." + req)
+}
+
+func getBotConfigInt(req string) int {
+	return Bot.GetInt("bot." + req)
+}
+
+func getBotConfigFloat(req string) float64 {
+	return Bot.GetFloat64("bot." + req)
 }
 
 //Discord get funcs
@@ -121,6 +154,27 @@ func getDiscordChannels() string {
 
 func getDiscordGroupMembers(req string) string {
 	return strings.ToLower(strings.Join(Discord.GetStringSlice("discord.group."+req), " "))
+}
+
+//IRC get funcs
+func getIRCConfigString(req string) string {
+	return IRC.GetString("irc." + req)
+}
+
+func getIRCConfigInt(req string) int {
+	return IRC.GetInt("irc." + req)
+}
+
+func getIRCConfigBool(req string) bool {
+	return IRC.GetBool("irc." + req)
+}
+
+func getIRCChannels() []string {
+	return IRC.GetStringSlice("irc.channels.listening")
+}
+
+func getIRCGroupMembers(req string) string {
+	return strings.ToLower(strings.Join(IRC.GetStringSlice("irc.group."+req), " "))
 }
 
 //Command get funcs

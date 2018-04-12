@@ -36,6 +36,12 @@
   revision = "23c074d0eceb2b8a5bfdbb271ab780cde70f05a8"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/husio/irc"
+  packages = ["."]
+  revision = "bcf3223356785d65a5f23dced5f647b27cb1e71d"
+
+[[projects]]
   name = "github.com/magiconair/properties"
   packages = ["."]
   revision = "c3beff4c2358b44d0493c7dda585e7db7ff28ae6"
@@ -152,6 +158,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "0df31fdcf3fe04afba84608f0524b3021a2a2c7a2bb5c6627ec09ec0b4d2aa1e"
+  inputs-digest = "11ce3bf0ffe8261325cf53d48f07932b6675d161987494828ac6a1bd989d2636"
   solver-name = "gps-cdcl"
   solver-version = 1

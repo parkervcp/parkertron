@@ -17,7 +17,7 @@ The checklist so far
 - [ ] support multiple services
   - [x] Discord
   - [ ] Slack
-  - [ ] IRC
+  - [x] IRC
 
 #### Discord specific support
   - [x] Support @mentions for the bot

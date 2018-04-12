@@ -44,13 +44,17 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
+	if m.Author.ID == m.ChannelID {
+		writeLog("debug", "This was a DM", nil)
+	}
+
 	// Check if the bot is mentioned
 	for _, ment := range m.Mentions {
 		if ment.ID == BotID {
 			writeLog("debug", "The bot was mentioned\n", nil)
 			if strings.Replace(input, "<@"+BotID+">", "", -1) == "" {
 				input = ""
-				response = "I was mentioned with no other extras. How can I help?"
+				response = "I was mentioned. How can I help?"
 			}
 		}
 	}
@@ -119,5 +123,7 @@ func startDiscordConnection() {
 		writeLog("fatal", "error opening connection,", err)
 		return
 	}
-	ServStat <- "online"
+	writeLog("info", "Discord service started\n", nil)
+
+	ServStat <- "discord_online"
 }
