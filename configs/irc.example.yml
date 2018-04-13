@@ -1,7 +1,7 @@
 irc:
   ident: "parkertron" ## The username the bot will use to log in
-  email: "bot@parkertron.net" ## The email address the username was registered with. The bot will attempt to register if it's not already
-  password: "eA9aE^#XZEuBX5" ## "changemenow" to not use a password. Note The account can be registered and you can lose it.
+  email: "" ## The email address the username was registered with. The bot will attempt to register if it's not already
+  password: "" ## "changemenow" to not use a password. Note The account can be registered and you can lose it.
   nick: "parkertron" ## The nickanme the bot will display
   real: "Parkertron McBot" ## The Real Name displayed on the server
   prefix: "."
@@ -15,7 +15,7 @@ irc:
     address: "irc.freenode.net"
     port: "6667"
   group: ## user groups. Currently These are not implimented. The Blacklist will ignore specific users
-    owner: "parkervcp"
+    owner: ""
     admin:
       - 
     mods:
