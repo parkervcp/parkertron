@@ -11,11 +11,20 @@ var (
 
 	//ServStat is the Service Status channel
 	ServStat = make(chan string)
+
+	title = `                 __                  __                        
+	___________ _______|  | __ ____________/  |________  ____   ____  
+	\____ \__  \\_  __ \  |/ // __ \_  __ \   __\_  __ \/  _ \ /    \ 
+	|  |_> > __ \|  | \/    <\  ___/|  | \/|  |  |  | \(  <_> )   |  \
+	|   __(____  /__|  |__|_ \\_____>__|   |__|  |__|   \____/|___|__/
+	|__| `
 )
 
 func init() {
 	verbose := flag.String("v", "info", "set the console verbosity of the bot")
 	flag.Parse()
+
+	writeLog("info", title, nil)
 
 	setupConfig()
 

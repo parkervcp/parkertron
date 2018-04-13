@@ -15,4 +15,7 @@ configs/irc\.yml
 logs/
 
 vendor/
+
 parkertron
+
+configs/local/

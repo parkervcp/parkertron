@@ -1,3 +1,4 @@
-services: ## currently the only real service is the discord service.
+bot:
+  services: ## currently the only real service is the discord service.
     - "discord"
     ## - "irc"

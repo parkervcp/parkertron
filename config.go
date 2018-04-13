@@ -29,6 +29,10 @@ var (
 
 func setupConfig() {
 
+	if configFilecheck() == false {
+		writeLog("error", "There was an issue setting up the config", nil)
+	}
+
 	//Setting Bot config settings
 	Bot.SetConfigName("bot")
 	Bot.AddConfigPath("configs/")
@@ -112,6 +116,8 @@ func setupConfig() {
 		writeLog("fatal", "Could not load Parsing configuration.", err)
 		return
 	}
+
+	writeLog("info", "Bot configs loaded", nil)
 }
 
 //Bot Get funcs
