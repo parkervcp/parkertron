@@ -4,7 +4,7 @@ configs/bot\.yml
 
 configs/discord\.yml
 
-configs/command\.yml
+configs/commands\.yml
 
 configs/keywords\.yml
 

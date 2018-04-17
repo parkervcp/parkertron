@@ -76,7 +76,7 @@ func setupConfig() {
 	}
 
 	//Setting Command config settings
-	Command.SetConfigName("command")
+	Command.SetConfigName("commands")
 	Command.AddConfigPath("configs/")
 	Command.WatchConfig()
 
@@ -103,7 +103,7 @@ func setupConfig() {
 		return
 	}
 
-	//Setting Keyword config settings
+	//Setting website parsing config settings
 	Parsing.SetConfigName("parsing")
 	Parsing.AddConfigPath("configs/")
 	Parsing.WatchConfig()

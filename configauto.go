@@ -17,16 +17,18 @@ func configFilecheck() bool {
 	} else {
 		writeLog("info", "Config folder exists", nil)
 		if checkConfigExists("bot.yml") == false {
-			writeLog("info", "Need to generate config for the bot. Doing that now.", nil)
 			setupBotConfig()
 		}
 		if checkConfigExists("discord.yml") == false {
-			writeLog("info", "Need to generate config for discord. Doing that now.", nil)
 			setupDiscordConfig()
 		}
 		if checkConfigExists("irc.yml") == false {
-			writeLog("info", "Need to generate config for irc. Doing that now.", nil)
 			setupIRCConfig()
+		}
+		if checkConfigExists("commands.yml") == false {
+			setupCommandsConfig()
+		}
+		if checkConfigExists("keyworkds.yml") == false {
 		}
 		return true
 	}
@@ -38,6 +40,7 @@ func checkConfigExists(file string) bool {
 	if _, err := os.Stat("configs/" + file); err == nil {
 		return true
 	}
+	writeLog("info", "Need to generate the "+file+". Doing that now.", nil)
 	return false
 }
 
@@ -159,6 +162,14 @@ func setupDiscordConfig() {
 			Discord.Set("bot.channels.listening", listening)
 		}
 	}
+
+	/*
+		Discord.Set("irc.channels.groups.admin", admin)
+		Discord.Set("irc.channels.groups.mods", mods)
+		Discord.Set("irc.channels.groups.blacklist", blacklist)
+	*/
+
+	Discord.WriteConfigAs("configs/discord.yml")
 }
 
 func setupIRCConfig() {
@@ -191,14 +202,44 @@ func setupIRCConfig() {
 	IRC.Set("irc.channels.listening", listening)
 
 	/*
+		IRC.Set("irc.channels.groups.admin", admin)
+		IRC.Set("irc.channels.groups.mods", mods)
+		IRC.Set("irc.channels.groups.blacklist", blacklist)
+	*/
+	IRC.WriteConfigAs("configs/irc.yml")
+}
 
+func setupCommandsConfig() {
+	var command map[string][]string
+	var response []string
+
+	if askBoolQuestion("Would you like to set up command now or use the defaults? (you can add and remove commands in the config)[Y/n]") == true {
+		command = make(map[string][]string)
+		commandname := askStringQuestion("What is the command string you want? (can have spaces) (Ex. 'help command'): ")
+		fmt.Println("Multi-line responses are supported, so we will keed adding lines until you specify to stop (blank response)")
+		line := askStringQuestion("What do you want this line to say? (leave blank to exit): ")
+		if line != "" {
+			response = append(response)
+		}
+		command[commandname] = response
+	}
+
+	Command.Set("command", command)
+
+	Command.WriteConfigAs("configs/commands.yml")
+}
+
+func setupKeywordsConfig() {
+
+}
+
+func setupGroup() {
+	/*
 		This block is for future work. Namely permissions and other things.
 
 		// get irc groups
 
-		var admin []string
-		var mods []string
-		var blacklist []string
+		var group []string
 
 		if askBoolQuestion("Do you want to add users to admin group now?? [Y/n]") == true {
 			admin = append(admin, askStringQuestion(""))
@@ -207,30 +248,5 @@ func setupIRCConfig() {
 			}
 		}
 
-		if askBoolQuestion("Do you want to add users to mods group now?? [Y/n]") == true {
-			admin = append(mods, askStringQuestion(""))
-			for askBoolQuestion("Do you want add more mods now? [Y/n]") == true {
-				admin = append(mods, askStringQuestion(""))
-			}
-		}
-
-		if askBoolQuestion("Do you want to add users to admin group now?? [Y/n]") == true {
-			admin = append(blacklist, askStringQuestion(""))
-			for askBoolQuestion("Do you want blacklist more users now? [Y/n]") == true {
-				admin = append(blacklist, askStringQuestion(")"))
-			}
-		}
-
-		IRC.Set("irc.channels.groups.admin", admin)
-		IRC.Set("irc.channels.groups.mods", mods)
-		IRC.Set("irc.channels.groups.blacklist", blacklist)
 	*/
-}
-
-func setupCommandsConfig() {
-
-}
-
-func setupKeywordsConfig() {
-
 }
