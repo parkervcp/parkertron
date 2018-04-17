@@ -82,8 +82,7 @@ func askStringQuestion(question string) string {
 
 	answer, err := ui.Ask(question, &input.Options{
 		// Read the default val from env var
-		Required: true,
-		Loop:     true,
+		Loop: true,
 	})
 	if err != nil {
 		writeLog("fatal", "", err)
@@ -212,14 +211,22 @@ func setupIRCConfig() {
 func setupCommandsConfig() {
 	var command map[string][]string
 	var response []string
+	var line string
+	var exit bool
 
-	if askBoolQuestion("Would you like to set up command now or use the defaults? (you can add and remove commands in the config)[Y/n]") == true {
+	if askBoolQuestion("Would you like to set up command now or use the defaults? (you can add and remove commands in the config) [Y/n]") == true {
 		command = make(map[string][]string)
 		commandname := askStringQuestion("What is the command string you want? (can have spaces) (Ex. 'help command'): ")
 		fmt.Println("Multi-line responses are supported, so we will keed adding lines until you specify to stop (blank response)")
-		line := askStringQuestion("What do you want this line to say? (leave blank to exit): ")
-		if line != "" {
-			response = append(response)
+		exit = false
+		for exit == false {
+			line = askStringQuestion("What do you want this line to say? (leave blank to exit): ")
+			if line == "" {
+				exit = true
+			} else {
+				response = append(response, line)
+				exit = false
+			}
 		}
 		command[commandname] = response
 	}
@@ -247,6 +254,5 @@ func setupGroup() {
 				admin = append(admin, askStringQuestion(""))
 			}
 		}
-
 	*/
 }
