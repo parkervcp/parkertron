@@ -29,6 +29,7 @@ func configFilecheck() bool {
 			setupCommandsConfig()
 		}
 		if checkConfigExists("keyworkds.yml") == false {
+			setupKeywordsConfig()
 		}
 		return true
 	}
@@ -150,7 +151,7 @@ func setupDiscordConfig() {
 	var listening []string
 
 	// set channel filter up
-	if askBoolQuestion("Do you want the bot to listen on specific channels?") == true {
+	if askBoolQuestion("Do you want the bot to listen on specific channels? [Y/n]") == true {
 		if askBoolQuestion("A channel to listen on it required. Would you like to set one now? [Y/n]") == true {
 			listening = append(listening, askStringQuestion("What is the ID of the channel you want to listen on?"))
 			Discord.Set("bot.channels.filter", true)
@@ -163,9 +164,10 @@ func setupDiscordConfig() {
 	}
 
 	/*
-		Discord.Set("irc.channels.groups.admin", admin)
-		Discord.Set("irc.channels.groups.mods", mods)
-		Discord.Set("irc.channels.groups.blacklist", blacklist)
+		TODO:
+			Discord.Set("irc.channels.groups.admin", admin)
+			Discord.Set("irc.channels.groups.mods", mods)
+			Discord.Set("irc.channels.groups.blacklist", blacklist)
 	*/
 
 	Discord.WriteConfigAs("configs/discord.yml")
@@ -185,8 +187,12 @@ func setupIRCConfig() {
 	IRC.Set("irc.real", askStringQuestion("What is the \"Real Name\" the bot should use?"))
 
 	// get irc text parsing settings
-	IRC.Set("irc.prefix", askStringQuestion("What is the prefix the bot should use?"))
-
+	// set bot prefix
+	if askBoolQuestion("Would you like to use the default prefix? '.' [Y/n]") == false {
+		IRC.Set("irc.prefix", askStringQuestion("What is the prefix you'd like to use?"))
+	} else {
+		IRC.Set("irc.prefix", ".")
+	}
 	// get irc channels
 
 	var listening []string
@@ -201,58 +207,94 @@ func setupIRCConfig() {
 	IRC.Set("irc.channels.listening", listening)
 
 	/*
-		IRC.Set("irc.channels.groups.admin", admin)
-		IRC.Set("irc.channels.groups.mods", mods)
-		IRC.Set("irc.channels.groups.blacklist", blacklist)
+		TODO:
+			IRC.Set("irc.channels.groups.admin", admin)
+			IRC.Set("irc.channels.groups.mods", mods)
+			IRC.Set("irc.channels.groups.blacklist", blacklist)
 	*/
 	IRC.WriteConfigAs("configs/irc.yml")
 }
 
 func setupCommandsConfig() {
-	var command map[string][]string
-	var response []string
-	var line string
-	var exit bool
+	var command string
+	commandmap := make(map[string]interface{})
+	exit := false
 
-	if askBoolQuestion("Would you like to set up command now or use the defaults? (you can add and remove commands in the config) [Y/n]") == true {
-		command = make(map[string][]string)
-		commandname := askStringQuestion("What is the command string you want? (can have spaces) (Ex. 'help command'): ")
-		fmt.Println("Multi-line responses are supported, so we will keed adding lines until you specify to stop (blank response)")
-		exit = false
+	if askBoolQuestion("Do you want to set up custom commands now? [Y/n]: ") == false {
+		writeLog("", "Writing default commands config to file", nil)
+	} else {
 		for exit == false {
-			line = askStringQuestion("What do you want this line to say? (leave blank to exit): ")
-			if line == "" {
+			command = askStringQuestion("What is the command you want to add? (It can have spaces in it ex: 'help command') (leave blank to stop adding commands): ")
+			if command == "" {
 				exit = true
 			} else {
-				response = append(response, line)
-				exit = false
+				commandmap[command] = setupStringMap()
 			}
 		}
-		command[commandname] = response
 	}
 
-	Command.Set("command", command)
+	Command.Set("command", commandmap)
 
 	Command.WriteConfigAs("configs/commands.yml")
 }
 
 func setupKeywordsConfig() {
+	var keyword string
+	keywordmap := make(map[string]interface{})
+	exit := false
 
+	if askBoolQuestion("Do you want to set up custom keywords now? [Y/n]: ") == false {
+		writeLog("", "Writing default keywords config to file", nil)
+	} else {
+		for exit == false {
+			keyword = askStringQuestion("What is the keyword you want to add? (It can have spaces in it ex: 'i need help') (leave blank to stop adding commands): ")
+			if keyword == "" {
+				exit = true
+			} else {
+				keywordmap[keyword] = setupStringMap()
+			}
+		}
+	}
+
+	Keyword.Set("keyword", keywordmap)
+
+	Keyword.WriteConfigAs("configs/keywords.yml")
 }
 
 func setupGroup() {
 	/*
-		This block is for future work. Namely permissions and other things.
 
-		// get irc groups
+		TODO:
+			This block is for future work. Namely permissions and other things.
 
-		var group []string
+			// get irc groups
 
-		if askBoolQuestion("Do you want to add users to admin group now?? [Y/n]") == true {
-			admin = append(admin, askStringQuestion(""))
-			for askBoolQuestion("Do you want to add more groups to join now? [Y/n]") == true {
+			var group []string
+
+			if askBoolQuestion("Do you want to add users to admin group now?? [Y/n]") == true {
 				admin = append(admin, askStringQuestion(""))
+				for askBoolQuestion("Do you want to add more groups to join now? [Y/n]") == true {
+					admin = append(admin, askStringQuestion(""))
+				}
 			}
-		}
 	*/
+}
+
+func setupStringMap() []string {
+	var array []string
+	var line string
+	exit := false
+
+	fmt.Println("Multi-line responses are supported, so we will keed adding lines until you specify to stop (blank response)")
+
+	for exit == false {
+		line = askStringQuestion("What do you want this line to say? (leave blank to exit): ")
+		if line == "" {
+			exit = true
+		} else {
+			array = append(array, line)
+		}
+	}
+
+	return array
 }
