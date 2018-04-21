@@ -89,7 +89,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 	response = strings.Replace(response, "&prefix&", getDiscordConfigString("prefix"), -1)
 
-	writeLog("debug", "Message Sent: "+response+"\n", nil)
+	writeLog("debug", "Message Sent: \n"+response+"\n", nil)
 	s.ChannelMessageSend(m.ChannelID, response)
 }
 

@@ -29,6 +29,10 @@ var (
 
 func setupConfig() {
 
+	if configFilecheck() == false {
+		writeLog("error", "There was an issue setting up the config", nil)
+	}
+
 	//Setting Bot config settings
 	Bot.SetConfigName("bot")
 	Bot.AddConfigPath("configs/")
@@ -72,7 +76,7 @@ func setupConfig() {
 	}
 
 	//Setting Command config settings
-	Command.SetConfigName("command")
+	Command.SetConfigName("commands")
 	Command.AddConfigPath("configs/")
 	Command.WatchConfig()
 
@@ -99,7 +103,7 @@ func setupConfig() {
 		return
 	}
 
-	//Setting Keyword config settings
+	//Setting website parsing config settings
 	Parsing.SetConfigName("parsing")
 	Parsing.AddConfigPath("configs/")
 	Parsing.WatchConfig()
@@ -112,6 +116,8 @@ func setupConfig() {
 		writeLog("fatal", "Could not load Parsing configuration.", err)
 		return
 	}
+
+	writeLog("info", "Bot configs loaded", nil)
 }
 
 //Bot Get funcs

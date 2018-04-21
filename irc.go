@@ -75,8 +75,6 @@ func ircMessageHandler() {
 					return
 				}
 
-				writeLog("debug", "Cleared command message. \n", nil)
-
 			} else {
 				response = "That's not a recognized command."
 			}
@@ -84,6 +82,8 @@ func ircMessageHandler() {
 			if response == "" {
 				return
 			}
+
+			writeLog("debug", "Message Sent: \n"+response+"\n", nil)
 
 			multiresp = strings.Split(response, "\n")
 

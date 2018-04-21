@@ -64,7 +64,7 @@ func formatURL(input string) string {
 
 func parseKeyword(input string) string {
 
-	writeLog("debug", "Parsing inbound chat", nil)
+	writeLog("debug", "Parsing inbound chat: \n", nil)
 
 	pasteMatched, pasteDomain := matchPasteDomain(input)
 
@@ -99,7 +99,7 @@ func parseKeyword(input string) string {
 
 func parseCommand(input string) string {
 
-	writeLog("debug", "Parsing inbound command: "+input, nil)
+	writeLog("debug", "Parsing inbound command: \n"+input, nil)
 
 	if strings.HasPrefix(input, "ggl") == true {
 		writeLog("debug", "Googling for user. \n", nil)
