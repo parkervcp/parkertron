@@ -28,7 +28,7 @@ func configFilecheck() bool {
 		if checkConfigExists("commands.yml") == false {
 			setupCommandsConfig()
 		}
-		if checkConfigExists("keyworkds.yml") == false {
+		if checkConfigExists("keywords.yml") == false {
 			setupKeywordsConfig()
 		}
 		return true
