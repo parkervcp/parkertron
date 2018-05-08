@@ -6,6 +6,8 @@ configs/discord\.yml
 
 configs/commands\.yml
 
+configs/command\.yml
+
 configs/keywords\.yml
 
 configs/parsing\.yml
