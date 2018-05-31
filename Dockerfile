@@ -2,7 +2,7 @@
 # Pterodactyl Panel Dockerfile
 # ----------------------------------
 
-FROM golang:1.9-alpine
+FROM golang:1.10-alpine
 
 COPY . ./src/parkertron
 
