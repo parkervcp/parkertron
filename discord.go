@@ -7,8 +7,8 @@ import (
 )
 
 var (
-	//BotID is the Discord Bot ID
-	BotID string
+	//BotSession is the DiscordSession
+	dg *discordgo.Session
 )
 
 func channelFilter(req string) bool {
@@ -16,18 +16,15 @@ func channelFilter(req string) bool {
 		if strings.Contains(getDiscordChannels(), req) {
 			return true
 		}
+		return false
+
 	}
-	return false
+	return true
 }
 
 // This function will be called (due to AddHandler above) every time a new
 // message is created on any channel that the autenticated bot has access to.
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-	// Reset response every message
-	response = ""
-
-	input := m.Content
-
 	// If the owner is making a message always parse
 	// Ignore all messages created by the bot itself, blacklisted members, channels it's not listening on, with debug messaging.
 	if m.Author.Bot == true || strings.Contains(getDiscordGroupMembers("blacklist"), m.Author.ID) == true || channelFilter(m.ChannelID) == false {
@@ -44,17 +41,21 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
+	input := m.Content
+
 	if m.Author.ID == m.ChannelID {
-		writeLog("debug", "This was a DM", nil)
+		writeLog("debug", "A DM was received", nil)
+		sendDiscordMessage(m.ChannelID, "I currently don't respond to DMs")
+		return
 	}
 
 	// Check if the bot is mentioned
 	for _, ment := range m.Mentions {
-		if ment.ID == BotID {
+		if ment.ID == dg.State.User.ID {
 			writeLog("debug", "The bot was mentioned\n", nil)
-			if strings.Replace(input, "<@"+BotID+">", "", -1) == "" {
-				input = ""
-				response = "I was mentioned. How can I help?"
+			if strings.Replace(input, "<@"+dg.State.User.ID+">", "", -1) == "" {
+				sendDiscordMessage(m.ChannelID, "I was mentioned. How can I help?")
+				return
 			}
 		}
 	}
@@ -65,52 +66,37 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if input != "" {
 		writeLog("debug", "Message Content: "+input+"\n", nil)
 
+		// If the string doesn't have the prefix parse as text, if it does parse as a command.
 		if strings.HasPrefix(input, getDiscordConfigString("prefix")) == false {
-			response = parseKeyword(input)
+			parseKeyword("discord", m.ChannelID, input)
 
 		} else if strings.HasPrefix(input, getDiscordConfigString("prefix")) == true {
-			trimmed := strings.TrimPrefix(input, getDiscordConfigString("prefix"))
-			response = parseCommand(trimmed)
-
-			if response == "" {
-				return
-			}
+			input = strings.TrimPrefix(input, getDiscordConfigString("prefix"))
+			parseCommand("discord", m.ChannelID, input)
 
 			s.ChannelMessageDelete(m.ChannelID, m.ID)
 			writeLog("debug", "Cleared command message. \n", nil)
-
-		} else {
-			response = "That's not a recognized command."
 		}
-
-		if response == "" {
-			return
-		}
+		return
 	}
+}
+
+func sendDiscordMessage(ChannelID string, response string) {
 	response = strings.Replace(response, "&prefix&", getDiscordConfigString("prefix"), -1)
 
-	writeLog("debug", "Message Sent: \n"+response+"\n", nil)
-	s.ChannelMessageSend(m.ChannelID, response)
+	writeLog("debug", "ChannelID "+ChannelID+" \n Discord Message Sent: \n"+response+"\n", nil)
+	dg.ChannelMessageSend(ChannelID, response)
 }
 
 func startDiscordConnection() {
 	//Initializing Discord connection
 	// Create a new Discord session using the provided bot token.
-	dg, err := discordgo.New("Bot " + getDiscordConfigString("token"))
+	dg, err = discordgo.New("Bot " + getDiscordConfigString("token"))
 
 	if err != nil {
 		writeLog("fatal", "error creating Discord session,", err)
 		return
 	}
-
-	// Get the account information.
-	u, err := dg.User("@me")
-	if err != nil {
-		writeLog("fatal", "error obtaining Discord account details,", err)
-	}
-
-	// Store the account ID for later use.
-	BotID = u.ID
 
 	// Register messageCreate as a callback for the messageCreate events.
 	dg.AddHandler(messageCreate)

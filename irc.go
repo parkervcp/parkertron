@@ -14,6 +14,7 @@ var (
 	c, err = irc.Connect(address)
 )
 
+//ircMessageHandler the IRC listener that manages inbound messaging
 func ircMessageHandler() {
 	message, err := c.ReadMessage()
 	if err != nil {
@@ -36,25 +37,22 @@ func ircMessageHandler() {
 		return
 	}
 
-	response = ""
-	multiresp := []string{}
-
 	if message.Command == "PRIVMSG" {
 		input := message.Trailing
 
 		if message.Nick() == getIRCConfigString("nick") || strings.Contains(getIRCGroupMembers("blacklist"), message.Params[0]) {
 			if message.Nick() == getIRCConfigString("nick") {
 				writeLog("debug", "User is the bot and being ignored.", nil)
+				return
 			}
 			if strings.Contains(getIRCGroupMembers("blacklist"), message.Params[0]) {
 				writeLog("debug", "User is blacklisted", nil)
+				return
 			}
-			return
 		}
 
 		if message.Params[0] == getIRCConfigString("nick") {
-			response = "Thank you for messaging me, but I only offer support in the main chat."
-			c.Send("PRIVMSG %s :%s \"%s\"", message.Nick(), message.Nick(), response)
+			sendIRCMessage(message.Nick(), "Thank you for messaging me, but I only offer support in the main chat.")
 			return
 		}
 
@@ -65,60 +63,31 @@ func ircMessageHandler() {
 			writeLog("debug", "Message Content: "+input+"\n", nil)
 
 			if strings.HasPrefix(input, getIRCConfigString("prefix")) == false {
-				response = parseKeyword(input)
-
+				writeLog("debug", "sending to \""+message.Params[0], nil)
+				parseKeyword("irc", message.Params[0], input)
+				return
 			} else if strings.HasPrefix(input, getIRCConfigString("prefix")) == true {
-				trimmed := strings.TrimPrefix(input, getIRCConfigString("prefix"))
-				response = parseCommand(trimmed)
-
-				if response == "" {
-					return
-				}
-
-			} else {
-				response = "That's not a recognized command."
-			}
-
-			if response == "" {
+				input := strings.TrimPrefix(input, getIRCConfigString("prefix"))
+				writeLog("debug", "sending to \""+message.Params[0], nil)
+				parseCommand("irc", message.Params[0], input)
 				return
 			}
-
-			writeLog("debug", "Message Sent: \n"+response+"\n", nil)
-
-			multiresp = strings.Split(response, "\n")
-
+			return
 		}
-
 		writeLog("debug", message.Raw, nil)
-
-		for x := range multiresp {
-			writeLog("debug", multiresp[x], nil)
-			c.Send("PRIVMSG %s :%s %s", message.Params[0], message.Nick(), multiresp[x])
-		}
 	}
 }
 
-func ircAuth() {
-	message, err := c.ReadMessage()
-	if err != nil {
-		log.Fatalf("cannot read message: %s", err)
-		return
-	}
+//sendIRCMessage function to send messages separate of the listener
+func sendIRCMessage(ChannelID string, response string) {
+	response = strings.Replace(response, "&prefix&", getIRCConfigString("prefix"), -1)
+	multiresp := strings.Split(response, "\n")
 
-	// check if registered
-	c.Send("PRIVMSG NickServ info")
-	if message.Command == "PRIVMSG" {
-		if message.Params[0] == "NickServ" {
-			// If unregistered start the registration process.
-			if strings.Contains(message.Trailing, getIRCConfigString("nick")+" is not registered") == true {
-				writeLog("debug", "Registereing IRC bot", nil)
-				c.Send("PRIVMSG NickServ register %s %s", getIRCConfigString("password"), getIRCConfigString("email"))
-			}
-			// If Registered log in as the user
-			if strings.Contains(message.Trailing, "You are now identified for "+getIRCConfigString("nick")) {
-				return
-			}
-		}
+	writeLog("debug", "IRC Message Sent:", nil)
+
+	for x := range multiresp {
+		writeLog("debug", "line sent: "+multiresp[x], nil)
+		c.Send("PRIVMSG " + ChannelID + " :" + multiresp[x])
 	}
 }
 

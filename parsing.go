@@ -62,76 +62,6 @@ func formatURL(input string) string {
 	return ""
 }
 
-func parseKeyword(input string) string {
-
-	writeLog("debug", "Parsing inbound chat: \n", nil)
-
-	pasteMatched, pasteDomain := matchPasteDomain(input)
-
-	writeLog("debug", "Matched domain: "+strconv.FormatBool(pasteMatched), nil)
-
-	if matchImage(input) == true {
-		writeLog("debug", "xurls matched: "+xurls.Relaxed.FindString(input), nil)
-		if matchImage(xurls.Relaxed.FindString(input)) == true {
-			input = parseImage(xurls.Relaxed.FindString(input))
-		}
-	} else if pasteMatched == true {
-		if xurls.Relaxed.FindString(input) != "" {
-			writeLog("debug", "Sending: "+pasteDomain, nil)
-			writeLog("debug", "xurls matched: "+xurls.Relaxed.FindString(input), nil)
-			writeLog("debug", "Guessing file name is: "+strings.Replace(xurls.Relaxed.FindString(input), getParsingPasteString(pasteDomain+".url"), "", -1), nil)
-			input = parseBin(pasteDomain, strings.Replace(xurls.Relaxed.FindString(input), getParsingPasteString(pasteDomain+".url"), "", -1))
-		}
-	}
-
-	//Search keywords file for keyword and prep response
-	for _, kr := range getKeywords() {
-		writeLog("debug", "Testing on '"+strings.TrimPrefix(kr, "keyword.")+"' and match is "+strconv.FormatBool(strings.Contains(strings.ToLower(input), strings.TrimPrefix(kr, "keyword."))), nil)
-		if strings.Contains(strings.ToLower(input), strings.TrimPrefix(kr, "keyword.")) == true {
-			writeLog("debug", getKeywordResponseString(kr), nil)
-			response = getKeywordResponseString(strings.TrimPrefix(kr, "keyword."))
-			writeLog("debug", "response: "+response, nil)
-		}
-	}
-
-	return response
-}
-
-func parseCommand(input string) string {
-
-	writeLog("debug", "Parsing inbound command: \n"+input, nil)
-
-	if strings.HasPrefix(input, "ggl") == true {
-		writeLog("debug", "Googling for user. \n", nil)
-		response = "<https://lmgtfy.com/?q=" + strings.Replace(strings.TrimPrefix(input, "ggl "), " ", "+", -1) + ">"
-
-	} else if strings.HasPrefix(input, "list") {
-		req := strings.TrimPrefix(input, "list ")
-		response = "This is the list of current " + req + ": "
-		if req == "commands" {
-			response = response + getCommandsString()
-		} else if req == "keywords" {
-			response = response + getKeywordsString()
-		} else {
-			response = "There was no match for " + req + " options"
-		}
-	} else {
-		//Search command file for command and prep response
-		for _, cr := range getCommands() {
-			if strings.Contains(strings.TrimPrefix(cr, "command."), input) == true {
-				response = getCommandResponseString(input)
-			}
-		}
-	}
-
-	if response == "" {
-
-		return ""
-	}
-
-	return response
-}
-
 func parseBin(domain string, filename string) string {
 	writeLog("info", "Reading from "+getParsingPasteString(domain+".url"), nil)
 
@@ -213,4 +143,92 @@ func parseImage(remoteURL string) string {
 	writeLog("debug", "Image Parsed", nil)
 
 	return text
+}
+
+func parseKeyword(service string, channelID string, input string) {
+
+	writeLog("debug", "Parsing inbound chat: \n", nil)
+
+	pasteMatched, pasteDomain := matchPasteDomain(input)
+
+	writeLog("debug", "Matched domain: "+strconv.FormatBool(pasteMatched), nil)
+
+	//Catch domains and route to the proper controllers (image, binsite parsers)
+
+	if matchImage(input) == true {
+		writeLog("debug", "xurls matched: "+xurls.Relaxed.FindString(input), nil)
+		if matchImage(xurls.Relaxed.FindString(input)) == true {
+			input = parseImage(xurls.Relaxed.FindString(input))
+		}
+	} else if pasteMatched == true {
+		if xurls.Relaxed.FindString(input) != "" {
+			writeLog("debug", "Sending: "+pasteDomain, nil)
+			writeLog("debug", "xurls matched: "+xurls.Relaxed.FindString(input), nil)
+			writeLog("debug", "Guessing file name is: "+strings.Replace(xurls.Relaxed.FindString(input), getParsingPasteString(pasteDomain+".url"), "", -1), nil)
+			input = parseBin(pasteDomain, strings.Replace(xurls.Relaxed.FindString(input), getParsingPasteString(pasteDomain+".url"), "", -1))
+		}
+	}
+
+	//Search keywords file for keyword and prep response
+	writeLog("debug", "Testing partial matches", nil)
+	for _, kr := range getKeywords() {
+		writeLog("debug", "Testing on '"+strings.TrimPrefix(kr, "keyword.")+"' and match is "+strconv.FormatBool(strings.Contains(strings.ToLower(input), strings.TrimPrefix(kr, "keyword."))), nil)
+		if strings.Contains(strings.ToLower(input), strings.TrimPrefix(kr, "keyword.")) == true {
+			writeLog("debug", getKeywordResponseString(kr), nil)
+			writeLog("debug", "response: "+response, nil)
+			sendResponse(service, channelID, getKeywordResponseString(strings.TrimPrefix(kr, "keyword.")))
+		}
+	}
+	//exact match search
+	writeLog("debug", "Testing exact matches", nil)
+	for _, kr := range getKeywords() {
+		writeLog("debug", "Testing on '"+strings.TrimPrefix(kr, "keyword.exact.")+"' and match is "+strconv.FormatBool(strings.Contains(strings.ToLower(input), strings.TrimPrefix(kr, "keyword.exact."))), nil)
+		if strings.ToLower(input) == strings.TrimPrefix(kr, "keyword.exact.") == true {
+			writeLog("debug", getKeywordResponseString(kr), nil)
+			writeLog("debug", "response: "+response, nil)
+			sendResponse(service, channelID, getKeywordResponseString(strings.TrimPrefix(kr, "keyword.")))
+		}
+	}
+	return
+}
+
+func parseCommand(service string, channelID string, input string) {
+	writeLog("debug", "Parsing inbound command: \n"+input, nil)
+
+	if strings.HasPrefix(input, "ggl") == true {
+		writeLog("debug", "Googling for user. \n", nil)
+		sendResponse(service, channelID, "<https://lmgtfy.com/?q="+strings.Replace(strings.TrimPrefix(input, "ggl "), " ", "+", -1)+">")
+		return
+	} else if strings.HasPrefix(input, "list") {
+		req := strings.TrimPrefix(input, "list ")
+		response = "This is the list of current " + req + ": " + getCommandsString()
+		if req == "commands" {
+			sendResponse(service, channelID, "This is the list of current "+req+": "+getCommandsString())
+			return
+		} else if req == "keywords" {
+			sendResponse(service, channelID, "This is the list of current "+req+": "+getKeywordsString())
+			return
+		} else {
+			sendResponse(service, channelID, "There was no match for "+req+" options")
+			return
+		}
+	} else {
+		//Search command file for command and prep response
+		for _, cr := range getCommands() {
+			if strings.Contains(strings.TrimPrefix(cr, "command."), input) == true {
+				sendResponse(service, channelID, getCommandResponseString(input))
+				return
+			}
+		}
+	}
+}
+
+func sendResponse(service string, channelID string, response string) {
+	if service == "discord" {
+		sendDiscordMessage(channelID, response)
+	} else if service == "irc" {
+		sendIRCMessage(channelID, response)
+	} else {
+		return
+	}
 }
