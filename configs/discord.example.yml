@@ -9,10 +9,3 @@ discord:
     listening: ## The list of thannels to filter
       - "317335672245452801"
       - 
-  group: ## user groups. Currently These are not implimented. The Blacklist will ignore specific users
-    admin:
-      - 
-    mods:
-      - 
-    blacklist:
-      - 

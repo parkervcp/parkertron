@@ -21,3 +21,5 @@ vendor/
 parkertron
 
 configs/local/
+
+configs/permissions\.yml

@@ -14,11 +14,3 @@ irc:
   server: 
     address: "irc.freenode.net"
     port: "6667"
-  group: ## user groups. Currently These are not implimented. The Blacklist will ignore specific users
-    owner: ""
-    admin:
-      - 
-    mods:
-      - 
-    blacklist:
-      -

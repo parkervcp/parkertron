@@ -41,6 +41,19 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
+	channel, err := s.State.Channel(m.ChannelID)
+	if err != nil {
+		writeLog("fatal", "", err)
+		return
+	} else if m.Author.ID == s.State.User.ID {
+		return
+	}
+
+	if channel.Type == 1 {
+		writeLog("debug", "This was a DM", nil)
+		sendDiscordMessage(m.ChannelID, "Thank you for messaging me, but I only offer support in the main chat.")
+	}
+
 	input := m.Content
 
 	if m.Author.ID == m.ChannelID {

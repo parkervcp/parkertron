@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/tcnksm/go-input"
 )
@@ -19,12 +20,21 @@ func configFilecheck() bool {
 		if checkConfigExists("bot.yml") == false {
 			setupBotConfig()
 		}
-		if checkConfigExists("discord.yml") == false {
-			setupDiscordConfig()
+		for _, cr := range getBotServices() {
+			if strings.Contains(strings.TrimPrefix(cr, "bot.services."), cr) == true {
+				if strings.Contains(cr, "discord") == true {
+					if checkConfigExists("discord.yml") == false {
+						setupDiscordConfig()
+					}
+				}
+				if strings.Contains(cr, "irc") == true {
+					if checkConfigExists("irc.yml") == false {
+						setupIRCConfig()
+					}
+				}
+			}
 		}
-		if checkConfigExists("irc.yml") == false {
-			setupIRCConfig()
-		}
+
 		if checkConfigExists("commands.yml") == false {
 			setupCommandsConfig()
 		}

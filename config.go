@@ -25,6 +25,9 @@ var (
 
 	//Parsing Config
 	Parsing = viper.New()
+
+	//Perms Config
+	Perms = viper.New()
 )
 
 func setupConfig() {
@@ -47,32 +50,40 @@ func setupConfig() {
 		return
 	}
 
-	//Setting Discord config settings
-	Discord.SetConfigName("discord")
-	Discord.AddConfigPath("configs/")
-	Discord.WatchConfig()
+	for _, cr := range getBotServices() {
+		if strings.Contains(strings.TrimPrefix(cr, "bot.services."), cr) == true {
+			if strings.Contains(cr, "discord") == true {
+				//Setting Discord config settings
+				Discord.SetConfigName("discord")
+				Discord.AddConfigPath("configs/")
+				Discord.WatchConfig()
 
-	Discord.OnConfigChange(func(e fsnotify.Event) {
-		writeLog("info", "Discord config changed", nil)
-	})
+				Discord.OnConfigChange(func(e fsnotify.Event) {
+					writeLog("info", "Discord config changed", nil)
+				})
 
-	if err := Discord.ReadInConfig(); err != nil {
-		writeLog("fatal", "Could not load Discord configuration.", err)
-		return
-	}
+				if err := Discord.ReadInConfig(); err != nil {
+					writeLog("fatal", "Could not load Discord configuration.", err)
+					return
+				}
+			}
 
-	//Setting IRC config settings
-	IRC.SetConfigName("irc")
-	IRC.AddConfigPath("configs/")
-	IRC.WatchConfig()
+			if strings.Contains(cr, "irc") == true {
+				//Setting IRC config settings
+				IRC.SetConfigName("irc")
+				IRC.AddConfigPath("configs/")
+				IRC.WatchConfig()
 
-	IRC.OnConfigChange(func(e fsnotify.Event) {
-		writeLog("info", "IRC config changed", nil)
-	})
+				IRC.OnConfigChange(func(e fsnotify.Event) {
+					writeLog("info", "IRC config changed", nil)
 
-	if err := IRC.ReadInConfig(); err != nil {
-		writeLog("fatal", "Could not load irc configuration.", err)
-		return
+				})
+				if err := IRC.ReadInConfig(); err != nil {
+					writeLog("fatal", "Could not load irc configuration.", err)
+					return
+				}
+			}
+		}
 	}
 
 	//Setting Command config settings
@@ -114,6 +125,20 @@ func setupConfig() {
 
 	if err := Parsing.ReadInConfig(); err != nil {
 		writeLog("fatal", "Could not load Parsing configuration.", err)
+		return
+	}
+
+	//Setting website permissions config settings
+	Perms.SetConfigName("permissions")
+	Perms.AddConfigPath("configs/")
+	Perms.WatchConfig()
+
+	Perms.OnConfigChange(func(e fsnotify.Event) {
+		writeLog("info", "Perms config changed", nil)
+	})
+
+	if err := Perms.ReadInConfig(); err != nil {
+		writeLog("fatal", "Could not load Perms configuration.", err)
 		return
 	}
 
