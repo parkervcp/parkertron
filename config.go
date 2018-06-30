@@ -254,3 +254,12 @@ func getParsingPasteString(key string) string {
 func getParsingImageFiletypes() []string {
 	return Parsing.GetStringSlice("parse.image.filetype")
 }
+
+//Perms Get funcs
+func getPermsGroups(service string) []string {
+	return Perms.GetStringSlice("perms." + service + ".group")
+}
+
+func getPermsGroupUsers(service string, group string) []string {
+	return Perms.GetStringSlice("perms." + service + ".group." + group)
+}

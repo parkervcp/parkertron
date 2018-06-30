@@ -56,12 +56,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	input := m.Content
 
-	if m.Author.ID == m.ChannelID {
-		writeLog("debug", "A DM was received", nil)
-		sendDiscordMessage(m.ChannelID, "I currently don't respond to DMs")
-		return
-	}
-
 	// Check if the bot is mentioned
 	for _, ment := range m.Mentions {
 		if ment.ID == dg.State.User.ID {
@@ -85,7 +79,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 		} else if strings.HasPrefix(input, getDiscordConfigString("prefix")) == true {
 			input = strings.TrimPrefix(input, getDiscordConfigString("prefix"))
-			parseCommand("discord", m.ChannelID, input)
+			parseCommand("discord", m.ChannelID, m.Author.ID, input)
 
 			s.ChannelMessageDelete(m.ChannelID, m.ID)
 			writeLog("debug", "Cleared command message. \n", nil)

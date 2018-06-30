@@ -169,30 +169,26 @@ func parseKeyword(service string, channelID string, input string) {
 		}
 	}
 
-	//Search keywords file for keyword and prep response
-	writeLog("debug", "Testing partial matches", nil)
+	//exact match search
+	lastKeyword := ""
+	lastIndex := -1
 	for _, kr := range getKeywords() {
-		writeLog("debug", "Testing on '"+strings.TrimPrefix(kr, "keyword.")+"' and match is "+strconv.FormatBool(strings.Contains(strings.ToLower(input), strings.TrimPrefix(kr, "keyword."))), nil)
-		if strings.Contains(strings.ToLower(input), strings.TrimPrefix(kr, "keyword.")) == true {
-			writeLog("debug", getKeywordResponseString(kr), nil)
-			writeLog("debug", "response: "+response, nil)
-			sendResponse(service, channelID, getKeywordResponseString(strings.TrimPrefix(kr, "keyword.")))
+		// writeLog("debug", "Testing on '"+strings.TrimPrefix(kr, "keyword.")+"' and match is "+strconv.FormatBool(strings.Contains(strings.ToLower(input), strings.TrimPrefix(kr, "keyword."))), nil)
+		i := strings.LastIndex(strings.ToLower(input), strings.TrimPrefix(kr, "keyword."))
+		if i > lastIndex {
+			lastIndex = i
+			lastKeyword = kr
 		}
 	}
-	//exact match search
-	writeLog("debug", "Testing exact matches", nil)
-	for _, kr := range getKeywords() {
-		writeLog("debug", "Testing on '"+strings.TrimPrefix(kr, "keyword.exact.")+"' and match is "+strconv.FormatBool(strings.Contains(strings.ToLower(input), strings.TrimPrefix(kr, "keyword.exact."))), nil)
-		if strings.ToLower(input) == strings.TrimPrefix(kr, "keyword.exact.") == true {
-			writeLog("debug", getKeywordResponseString(kr), nil)
-			writeLog("debug", "response: "+response, nil)
-			sendResponse(service, channelID, getKeywordResponseString(strings.TrimPrefix(kr, "keyword.")))
-		}
+	if lastIndex > -1 {
+		writeLog("debug", getKeywordResponseString(lastKeyword), nil)
+		writeLog("debug", "response: "+response, nil)
+		sendResponse(service, channelID, getKeywordResponseString(strings.TrimPrefix(lastKeyword, "keyword.")))
 	}
 	return
 }
 
-func parseCommand(service string, channelID string, input string) {
+func parseCommand(service string, channelID string, author string, input string) {
 	writeLog("debug", "Parsing inbound command: \n"+input, nil)
 
 	if strings.HasPrefix(input, "ggl") == true {

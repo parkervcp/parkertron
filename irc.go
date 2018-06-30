@@ -69,7 +69,7 @@ func ircMessageHandler() {
 			} else if strings.HasPrefix(input, getIRCConfigString("prefix")) == true {
 				input := strings.TrimPrefix(input, getIRCConfigString("prefix"))
 				writeLog("debug", "sending to \""+message.Params[0], nil)
-				parseCommand("irc", message.Params[0], input)
+				parseCommand("irc", message.Params[0], message.Nick(), input)
 				return
 			}
 			return
