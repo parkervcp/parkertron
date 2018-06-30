@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/otiai10/gosseract"
+	"gopkg.in/h2non/filetype.v1"
 	"mvdan.cc/xurls"
 )
 
@@ -128,6 +129,15 @@ func parseImage(remoteURL string) string {
 
 	file.Close()
 	writeLog("debug", "Image File Pulled and saved to /tmp/"+fileName, nil)
+
+	buf, _ := ioutil.ReadFile("/tmp/" + fileName)
+
+	if filetype.IsImage(buf) {
+		writeLog("debug", "File is an image", nil)
+	} else {
+		writeLog("debug", "File is not an image", nil)
+		return ""
+	}
 
 	client := gosseract.NewClient()
 	defer client.Close()
