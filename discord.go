@@ -16,6 +16,9 @@ func channelFilter(req string) bool {
 		if strings.Contains(getDiscordChannels(), req) {
 			return true
 		}
+		if getDiscordKOMChannel(req) {
+			return true
+		}
 		return false
 
 	}
@@ -41,20 +44,37 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
+	input := m.Content
+
 	channel, err := s.State.Channel(m.ChannelID)
 	if err != nil {
 		writeLog("fatal", "", err)
 		return
-	} else if m.Author.ID == s.State.User.ID {
+	}
+
+	// Listen only channel filter (no parsing)
+	if getDiscordKOMChannel(m.ChannelID) {
+		writeLog("debug", "Message is not being parsed but listened to.", nil)
+		// Check if a group is mentioned in message
+		for _, ment := range m.MentionRoles {
+			writeLog("debug", "Group "+ment+" was Mentioned", nil)
+			if strings.Contains(getDiscordKOM(m.ChannelID+".group"), ment) {
+				writeLog("info", "Sending message to channel", nil)
+				sendDiscordMessage(m.ChannelID, "Be gone with you <@"+m.Author.ID+">")
+				writeLog("info", "Sending message to user", nil)
+				sendDiscordDirectMessage(m.Author.ID, getDiscordKOM(m.ChannelID+".reason"))
+				// kickDiscordUser(channel.GuildID, m.Author.ID, getDiscordKOM(m.ChannelID+".reason"))
+			}
+		}
 		return
 	}
 
+	// Respond on DM's
+	// TODO: Make the response customizable
 	if channel.Type == 1 {
 		writeLog("debug", "This was a DM", nil)
 		sendDiscordMessage(m.ChannelID, "Thank you for messaging me, but I only offer support in the main chat.")
 	}
-
-	input := m.Content
 
 	// Check if the bot is mentioned
 	for _, ment := range m.Mentions {
@@ -62,7 +82,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			writeLog("debug", "The bot was mentioned\n", nil)
 			if strings.Replace(input, "<@"+dg.State.User.ID+">", "", -1) == "" {
 				sendDiscordMessage(m.ChannelID, "I was mentioned. How can I help?")
-				return
 			}
 		}
 	}
@@ -93,6 +112,21 @@ func sendDiscordMessage(ChannelID string, response string) {
 
 	writeLog("debug", "ChannelID "+ChannelID+" \n Discord Message Sent: \n"+response+"\n", nil)
 	dg.ChannelMessageSend(ChannelID, response)
+}
+
+func sendDiscordDirectMessage(userID string, response string) {
+	channel, err := dg.UserChannelCreate(userID)
+	if err != nil {
+		writeLog("fatal", "error creating direct message channel,", err)
+		return
+	}
+	sendDiscordMessage(channel.ID, response)
+}
+
+func kickDiscordUser(guild string, user string, reason string) {
+	writeLog("debug", "Guild: "+guild+"\nUser: "+user+"\nreason: "+reason, nil)
+	dg.GuildMemberDeleteWithReason(guild, user, reason)
+	writeLog("info", "User has been kicked", nil)
 }
 
 func startDiscordConnection() {

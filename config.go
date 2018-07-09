@@ -128,20 +128,6 @@ func setupConfig() {
 		return
 	}
 
-	//Setting website permissions config settings
-	Perms.SetConfigName("permissions")
-	Perms.AddConfigPath("configs/")
-	Perms.WatchConfig()
-
-	Perms.OnConfigChange(func(e fsnotify.Event) {
-		writeLog("info", "Perms config changed", nil)
-	})
-
-	if err := Perms.ReadInConfig(); err != nil {
-		writeLog("fatal", "Could not load Perms configuration.", err)
-		return
-	}
-
 	writeLog("info", "Bot configs loaded", nil)
 }
 
@@ -185,6 +171,23 @@ func getDiscordChannels() string {
 
 func getDiscordGroupMembers(req string) string {
 	return strings.ToLower(strings.Join(Discord.GetStringSlice("discord.group."+req), " "))
+}
+
+func getDiscordKOMChannel(req string) bool {
+	return Discord.IsSet("discord.kick_on_mention.channel." + req)
+}
+
+func getDiscordKOM(req string) string {
+	return strings.ToLower(strings.Join(Discord.GetStringSlice("discord.kick_on_mention.channel."+req), " "))
+}
+
+//Perms Get funcs
+func getDiscordPermsGroups(service string) []string {
+	return Perms.GetStringSlice("perms." + service + ".group")
+}
+
+func getDiscordPermsGroupUsers(service string, group string) []string {
+	return Perms.GetStringSlice("perms." + service + ".group." + group)
 }
 
 //IRC get funcs
@@ -253,13 +256,4 @@ func getParsingPasteString(key string) string {
 
 func getParsingImageFiletypes() []string {
 	return Parsing.GetStringSlice("parse.image.filetype")
-}
-
-//Perms Get funcs
-func getPermsGroups(service string) []string {
-	return Perms.GetStringSlice("perms." + service + ".group")
-}
-
-func getPermsGroupUsers(service string, group string) []string {
-	return Perms.GetStringSlice("perms." + service + ".group." + group)
 }
