@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/tcnksm/go-input"
 )
 
 // configFilecheck to check if the files exist before starting up.
 func configFilecheck() bool {
+	time.Sleep(5 * time.Second)
 	if _, err := os.Stat("configs/"); err != nil {
 		// create configs folder
 		if os.IsNotExist(err) {
