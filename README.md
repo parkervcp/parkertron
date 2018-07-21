@@ -1,7 +1,7 @@
 
 # parkertron
 
-![Parkertron Logo](images/parkertron_logo.png){:height="250px" width="250px"}
+![Parkertron Logo](images/parkertron_logo.png)
 
 A simple discord chat bot with a simple configuration. Written using [discordgo](https://github.com/bwmarrin/discordgo).
 
