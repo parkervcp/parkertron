@@ -11,7 +11,6 @@ import (
 
 // configFilecheck to check if the files exist before starting up.
 func configFilecheck() bool {
-	time.Sleep(5 * time.Second)
 	if _, err := os.Stat("configs/"); err != nil {
 		// create configs folder
 		if os.IsNotExist(err) {
@@ -20,6 +19,7 @@ func configFilecheck() bool {
 	} else {
 		writeLog("info", "Config folder exists", nil)
 		if checkConfigExists("bot.yml") == false {
+			time.Sleep(5 * time.Second)
 			setupBotConfig()
 		}
 		for _, cr := range getBotServices() {

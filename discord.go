@@ -52,21 +52,25 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	// Listen only channel filter (no parsing)
-	if getDiscordKOMChannel(m.ChannelID) {
-		writeLog("debug", "Message is not being parsed but listened to.", nil)
-		// Check if a group is mentioned in message
-		for _, ment := range m.MentionRoles {
-			writeLog("debug", "Group "+ment+" was Mentioned", nil)
-			if strings.Contains(getDiscordKOM(m.ChannelID+".group"), ment) {
-				writeLog("info", "Sending message to channel", nil)
-				sendDiscordMessage(m.ChannelID, "Be gone with you <@"+m.Author.ID+">")
-				writeLog("info", "Sending message to user", nil)
-				sendDiscordDirectMessage(m.Author.ID, getDiscordKOM(m.ChannelID+".reason"))
-				// kickDiscordUser(channel.GuildID, m.Author.ID, getDiscordKOM(m.ChannelID+".reason"))
+	if strings.Contains(getDiscordGroupMembers("admin"), m.Author.ID) || strings.Contains(getDiscordGroupMembers("mods"), m.Author.ID) {
+		writeLog("debug", "User is in an admin group", nil)
+	} else {
+		// Listen only channel filter (no parsing)
+		if getDiscordKOMChannel(m.ChannelID) {
+			writeLog("debug", "Message is not being parsed but listened to.", nil)
+			// Check if a group is mentioned in message
+			for _, ment := range m.MentionRoles {
+				writeLog("debug", "Group "+ment+" was Mentioned", nil)
+				if strings.Contains(getDiscordKOMID(m.ChannelID+".group"), ment) {
+					writeLog("info", "Sending message to channel", nil)
+					sendDiscordMessage(m.ChannelID, "Be gone with you <@"+m.Author.ID+">")
+					writeLog("info", "Sending message to user", nil)
+					sendDiscordDirectMessage(m.Author.ID, getDiscordKOMID(m.ChannelID+".reason"))
+					kickDiscordUser(channel.GuildID, m.Author.ID, getDiscordKOMID(m.ChannelID+".reason"))
+				}
 			}
+			return
 		}
-		return
 	}
 
 	// Respond on DM's

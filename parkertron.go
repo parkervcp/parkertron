@@ -74,7 +74,7 @@ func main() {
 	writeLog("debug", "Commands being loaded are: "+getCommandsString(), nil)
 	writeLog("debug", "Keywords being loaded are: "+getKeywordsString(), nil)
 
-	writeLog("info", "Bot is now running.  Press CTRL-C to exit.\n", nil)
+	writeLog("info", "Bot is now running. Press CTRL-C to exit.\n", nil)
 	// Simple way to keep program running until CTRL-C is pressed.
 	<-make(chan struct{})
 	return

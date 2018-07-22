@@ -25,9 +25,6 @@ var (
 
 	//Parsing Config
 	Parsing = viper.New()
-
-	//Perms Config
-	Perms = viper.New()
 )
 
 func setupConfig() {
@@ -170,24 +167,15 @@ func getDiscordChannels() string {
 }
 
 func getDiscordGroupMembers(req string) string {
-	return strings.ToLower(strings.Join(Discord.GetStringSlice("discord.group."+req), " "))
+	return strings.ToLower(strings.Join(Discord.GetStringSlice("discord.permissions.group."+req), " "))
 }
 
 func getDiscordKOMChannel(req string) bool {
 	return Discord.IsSet("discord.kick_on_mention.channel." + req)
 }
 
-func getDiscordKOM(req string) string {
+func getDiscordKOMID(req string) string {
 	return strings.ToLower(strings.Join(Discord.GetStringSlice("discord.kick_on_mention.channel."+req), " "))
-}
-
-//Perms Get funcs
-func getDiscordPermsGroups(service string) []string {
-	return Perms.GetStringSlice("perms." + service + ".group")
-}
-
-func getDiscordPermsGroupUsers(service string, group string) []string {
-	return Perms.GetStringSlice("perms." + service + ".group." + group)
 }
 
 //IRC get funcs
