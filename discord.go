@@ -28,6 +28,8 @@ func channelFilter(req string) bool {
 // This function will be called (due to AddHandler above) every time a new
 // message is created on any channel that the autenticated bot has access to.
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
+	input := m.Content
+
 	// If the owner is making a message always parse
 	// Ignore all messages created by the bot itself, blacklisted members, channels it's not listening on, with debug messaging.
 	if m.Author.Bot == true || strings.Contains(getDiscordGroupMembers("blacklist"), m.Author.ID) == true || channelFilter(m.ChannelID) == false {
@@ -39,12 +41,27 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 		if channelFilter(m.ChannelID) == false {
 			writeLog("debug", "This channel is being filtered out and ignored.", nil)
+			for _, ment := range m.Mentions {
+				if ment.ID == dg.State.User.ID {
+					writeLog("debug", "The bot was mentioned\n", nil)
+					sendDiscordMessage(m.ChannelID, getDiscordConfigString("mention.wrong_channel"))
+				}
+			}
 		}
 		writeLog("debug", "Message has been ignored.\n", nil)
 		return
 	}
 
-	input := m.Content
+	// Check if the bot is mentioned
+	for _, ment := range m.Mentions {
+		if ment.ID == dg.State.User.ID {
+			writeLog("debug", "The bot was mentioned\n", nil)
+			sendDiscordMessage(m.ChannelID, getDiscordConfigString("mention.response"))
+			if strings.Replace(input, "<@"+dg.State.User.ID+">", "", -1) == "" {
+				sendDiscordMessage(m.ChannelID, getDiscordConfigString("mention.empty"))
+			}
+		}
+	}
 
 	channel, err := s.State.Channel(m.ChannelID)
 	if err != nil {
@@ -78,16 +95,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if channel.Type == 1 {
 		writeLog("debug", "This was a DM", nil)
 		sendDiscordMessage(m.ChannelID, "Thank you for messaging me, but I only offer support in the main chat.")
-	}
-
-	// Check if the bot is mentioned
-	for _, ment := range m.Mentions {
-		if ment.ID == dg.State.User.ID {
-			writeLog("debug", "The bot was mentioned\n", nil)
-			if strings.Replace(input, "<@"+dg.State.User.ID+">", "", -1) == "" {
-				sendDiscordMessage(m.ChannelID, "I was mentioned. How can I help?")
-			}
-		}
 	}
 
 	//
