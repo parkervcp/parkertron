@@ -23,3 +23,5 @@ parkertron
 configs/local/
 
 configs/permissions\.yml
+
+Gopkg\.lock
