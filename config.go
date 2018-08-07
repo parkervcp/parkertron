@@ -63,6 +63,8 @@ func setupConfig() {
 					writeLog("fatal", "Could not load Discord configuration.", err)
 					return
 				}
+
+				Discord.SetDefault("discord.command.remove", true)
 			}
 
 			if strings.Contains(cr, "irc") == true {
@@ -214,6 +216,15 @@ func getCommandResonse(req string) []string {
 
 func getCommandResponseString(req string) string {
 	return strings.Join(Command.GetStringSlice("command."+req), "\n")
+}
+
+func getCommandStatus(req string) bool {
+	for _, cr := range getCommands() {
+		if strings.Contains(strings.TrimPrefix(cr, "command."), req) == true {
+			return true
+		}
+	}
+	return false
 }
 
 //Keyword get funcs

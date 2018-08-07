@@ -110,9 +110,11 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		} else if strings.HasPrefix(input, getDiscordConfigString("prefix")) == true {
 			input = strings.TrimPrefix(input, getDiscordConfigString("prefix"))
 			parseCommand("discord", m.ChannelID, m.Author.ID, input)
-
-			s.ChannelMessageDelete(m.ChannelID, m.ID)
-			writeLog("debug", "Cleared command message. \n", nil)
+			// remove previous commands if
+			if getDiscordConfigBool("command.remove") && getCommandStatus(input) {
+				writeLog("debug", "Cleared command message. \n", nil)
+				deleteDiscordMessage(channel.ID, m.ID)
+			}
 		}
 		return
 	}
@@ -132,6 +134,10 @@ func sendDiscordDirectMessage(userID string, response string) {
 		return
 	}
 	sendDiscordMessage(channel.ID, response)
+}
+
+func deleteDiscordMessage(ChannelID string, MessageID string) {
+	dg.ChannelMessageDelete(ChannelID, MessageID)
 }
 
 func kickDiscordUser(guild string, user string, reason string) {

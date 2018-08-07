@@ -3,6 +3,8 @@ discord:
   ## If you want logging to go to discord follow this https://support.discordapp.com/hc/en-us/articles/228383668-Intro-to-Webhooks
   webhook: "https://discordapp.com/api/webhooks/GET-YOUR-OWN-WEBHOOK." 
   prefix: "."
+  command:
+    remove: true ## removes command messages in discord.
   mention:
     response: ":doughnut:"
     empty: "Please ask a question or supply your log into this chat"
