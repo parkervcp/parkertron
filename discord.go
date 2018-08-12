@@ -11,126 +11,138 @@ var (
 	dg *discordgo.Session
 )
 
-func channelFilter(req string) bool {
-	if getDiscordConfigBool("channels.filter") == true {
-		if strings.Contains(getDiscordChannels(), req) {
-			return true
-		}
-		if getDiscordKOMChannel(req) {
-			return true
-		}
-		return false
-
-	}
-	return true
-}
-
 // This function will be called (due to AddHandler above) every time a new
 // message is created on any channel that the autenticated bot has access to.
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-	input := m.Content
+	// Ignore all messages created by the bot itself
+	if m.Author.Bot {
+		debug("User is a bot and being ignored.")
+		return
+	}
+
+	channel, err := s.State.Channel(m.ChannelID)
+	if err != nil {
+		fatal("Channel error", err)
+		return
+	}
+
+	// Respond on DM's
+	// TODO: Make the response customizable
+	if channel.Type == 1 {
+		debug("This was a DM")
+		sendDiscordMessage(channel.ID, getDiscordConfigString("direct.response"))
+		return
+	}
+
+	guild, err := s.Guild(channel.GuildID)
+	if err != nil {
+		fatal("Guild error", err)
+		return
+	}
+
+	message := m.Content
+	messageID := m.ID
+	author := m.Author.ID
+	channelID := channel.ID
+	attachments := m.Attachments
+
+	perms, group := discordPermissioncheck(author)
+
+	if author == guild.OwnerID {
+		perms = true
+		group = "admin"
+	}
+
+	if perms {
+		debug("author has perms and is in the group: " + group)
+	}
+
+	var attached []string
+
+	for _, y := range attachments {
+		debug(y.ProxyURL)
+		attached = append(attached, y.ProxyURL)
+		discordAttachmentHandler(attached, channelID)
+	}
 
 	// If the owner is making a message always parse
-	// Ignore all messages created by the bot itself, blacklisted members, channels it's not listening on, with debug messaging.
-	if m.Author.Bot == true || strings.Contains(getDiscordGroupMembers("blacklist"), m.Author.ID) == true || channelFilter(m.ChannelID) == false {
-		if m.Author.Bot == true {
-			writeLog("debug", "User is a bot and being ignored.", nil)
+	// Ignore all messages created by blacklisted members, channels it's not listening on, with debug messaging.
+	if strings.Contains(getDiscordBlacklist(), author) || !discordChannelFilter(channelID) {
+		if strings.Contains(getDiscordBlacklist(), author) == true {
+			debug("User is blacklisted and being ignored.")
 		}
-		if strings.Contains(getDiscordGroupMembers("blacklist"), m.Author.ID) == true {
-			writeLog("debug", "User is blacklisted and being ignored.", nil)
-		}
-		if channelFilter(m.ChannelID) == false {
-			writeLog("debug", "This channel is being filtered out and ignored.", nil)
+		if discordChannelFilter(channelID) == false {
+			debug("This channel is being filtered out and ignored.")
 			for _, ment := range m.Mentions {
 				if ment.ID == dg.State.User.ID {
-					writeLog("debug", "The bot was mentioned\n", nil)
-					sendDiscordMessage(m.ChannelID, getDiscordConfigString("mention.wrong_channel"))
+					debug("The bot was mentioned\n")
+					sendDiscordMessage(channelID, getDiscordConfigString("mention.wrong_channel"))
 				}
 			}
 		}
-		writeLog("debug", "Message has been ignored.\n", nil)
+		debug("Message has been ignored.\n")
 		return
 	}
 
 	// Check if the bot is mentioned
 	for _, ment := range m.Mentions {
 		if ment.ID == dg.State.User.ID {
-			writeLog("debug", "The bot was mentioned\n", nil)
-			sendDiscordMessage(m.ChannelID, getDiscordConfigString("mention.response"))
-			if strings.Replace(input, "<@"+dg.State.User.ID+">", "", -1) == "" {
-				sendDiscordMessage(m.ChannelID, getDiscordConfigString("mention.empty"))
+			debug("The bot was mentioned\n")
+			sendDiscordMessage(channelID, getDiscordConfigString("mention.response"))
+			if strings.Replace(message, "<@"+dg.State.User.ID+">", "", -1) == "" {
+				sendDiscordMessage(channelID, getDiscordConfigString("mention.empty"))
 			}
 		}
 	}
 
-	channel, err := s.State.Channel(m.ChannelID)
-	if err != nil {
-		writeLog("fatal", "", err)
-		return
-	}
-
-	if strings.Contains(getDiscordGroupMembers("admin"), m.Author.ID) || strings.Contains(getDiscordGroupMembers("mods"), m.Author.ID) {
-		writeLog("debug", "User is in an admin group", nil)
-	} else {
-		// Listen only channel filter (no parsing)
-		if getDiscordKOMChannel(m.ChannelID) {
-			writeLog("debug", "Message is not being parsed but listened to.", nil)
+	if getDiscordKOMChannel(channelID) {
+		if author != guild.OwnerID || !perms {
+			debug("Message is not being parsed but listened to.")
 			// Check if a group is mentioned in message
 			for _, ment := range m.MentionRoles {
-				writeLog("debug", "Group "+ment+" was Mentioned", nil)
-				if strings.Contains(getDiscordKOMID(m.ChannelID+".group"), ment) {
-					writeLog("info", "Sending message to channel", nil)
-					sendDiscordMessage(m.ChannelID, "Be gone with you <@"+m.Author.ID+">")
-					writeLog("info", "Sending message to user", nil)
-					sendDiscordDirectMessage(m.Author.ID, getDiscordKOMID(m.ChannelID+".reason"))
-					kickDiscordUser(channel.GuildID, m.Author.ID, getDiscordKOMID(m.ChannelID+".reason"))
+				debug("Group " + ment + " was Mentioned")
+				if strings.Contains(getDiscordKOMID(channelID+".group"), ment) {
+					debug("Sending message to channel")
+					sendDiscordMessage(channelID, "Be gone with you <@"+author+">")
+					debug("Sending message to user")
+					sendDiscordDirectMessage(author, getDiscordKOMID(channelID+".reason"))
+					kickDiscordUser(channel.GuildID, author, getDiscordKOMID(channelID+".reason"))
 				}
 			}
-			return
 		}
-	}
-
-	// Respond on DM's
-	// TODO: Make the response customizable
-	if channel.Type == 1 {
-		writeLog("debug", "This was a DM", nil)
-		sendDiscordMessage(m.ChannelID, "Thank you for messaging me, but I only offer support in the main chat.")
+		return
 	}
 
 	//
 	// Message Handling
 	//
-	if input != "" {
-		writeLog("debug", "Message Content: "+input+"\n", nil)
-
-		// If the string doesn't have the prefix parse as text, if it does parse as a command.
-		if strings.HasPrefix(input, getDiscordConfigString("prefix")) == false {
-			parseKeyword("discord", m.ChannelID, input)
-
-		} else if strings.HasPrefix(input, getDiscordConfigString("prefix")) == true {
-			input = strings.TrimPrefix(input, getDiscordConfigString("prefix"))
-			parseCommand("discord", m.ChannelID, m.Author.ID, input)
-			// remove previous commands if
-			if getDiscordConfigBool("command.remove") && getCommandStatus(input) {
-				writeLog("debug", "Cleared command message. \n", nil)
-				deleteDiscordMessage(channel.ID, m.ID)
-			}
-		}
+	if message != "" {
+		debug("Message Content: " + message + "\n")
+		discordMessageHandler(message, channelID, messageID, author, perms, group)
 		return
+	}
+}
+
+func discordReaction(channelID string, messageID string, emojiID string, userID string, job string) {
+	if job == "add" {
+		dg.MessageReactionAdd(channelID, messageID, emojiID)
+	}
+	if job == "remove" {
+		dg.MessageReactionRemove(channelID, messageID, emojiID, userID)
 	}
 }
 
 func sendDiscordMessage(ChannelID string, response string) {
 	response = strings.Replace(response, "&prefix&", getDiscordConfigString("prefix"), -1)
 
-	writeLog("debug", "ChannelID "+ChannelID+" \n Discord Message Sent: \n"+response+"\n", nil)
+	debug("ChannelID " + ChannelID + " \n Discord Message Sent: \n" + response + "\n")
 	dg.ChannelMessageSend(ChannelID, response)
 }
 
 func sendDiscordDirectMessage(userID string, response string) {
 	channel, err := dg.UserChannelCreate(userID)
 	if err != nil {
-		writeLog("fatal", "error creating direct message channel,", err)
+		fatal("error creating direct message channel,", err)
 		return
 	}
 	sendDiscordMessage(channel.ID, response)
@@ -141,9 +153,9 @@ func deleteDiscordMessage(ChannelID string, MessageID string) {
 }
 
 func kickDiscordUser(guild string, user string, reason string) {
-	writeLog("debug", "Guild: "+guild+"\nUser: "+user+"\nreason: "+reason, nil)
+	debug("Guild: " + guild + "\nUser: " + user + "\nreason: " + reason)
 	dg.GuildMemberDeleteWithReason(guild, user, reason)
-	writeLog("info", "User has been kicked", nil)
+	debug("User has been kicked")
 }
 
 func startDiscordConnection() {
@@ -152,22 +164,22 @@ func startDiscordConnection() {
 	dg, err = discordgo.New("Bot " + getDiscordConfigString("token"))
 
 	if err != nil {
-		writeLog("fatal", "error creating Discord session,", err)
+		fatal("error creating Discord session,", err)
 		return
 	}
 
 	// Register messageCreate as a callback for the messageCreate events.
 	dg.AddHandler(messageCreate)
 
-	writeLog("info", "Discord service connected\n", nil)
+	debug("Discord service connected\n")
 
 	// Open the websocket and begin listening.
 	err = dg.Open()
 	if err != nil {
-		writeLog("fatal", "error opening connection,", err)
+		fatal("error opening connection,", err)
 		return
 	}
-	writeLog("info", "Discord service started\n", nil)
+	debug("Discord service started\n")
 
 	ServStat <- "discord_online"
 }

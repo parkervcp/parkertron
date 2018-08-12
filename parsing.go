@@ -19,7 +19,7 @@ func matchImage(input string) bool {
 
 	for _, ro := range ip {
 		if strings.Contains(input, ro) == true {
-			writeLog("debug", "Image found with a "+ro+" format", nil)
+			debug("Image found with a " + ro + " format")
 			return true
 		}
 	}
@@ -34,9 +34,9 @@ func matchPasteDomain(input string) (bool, string) {
 	for x, ro := range rm {
 		for y := range ro {
 			if y%2 == 0 && rm[x][y] != "url" {
-				writeLog("debug", rm[x][y], nil)
+				superdebug(rm[x][y])
 				if strings.Contains(input, getParsingPasteString(rm[x][y])) {
-					writeLog("debug", "Matched on: "+rm[x][y], nil)
+					debug("Matched on: " + rm[x][y])
 					return true, strings.Replace(rm[x][y], ".url", "", -1)
 				}
 			}
@@ -54,7 +54,7 @@ func formatURL(input string) string {
 		for y := range ro {
 			if y%2 == 0 && rm[x][y] != "url" {
 				if strings.Contains(input, rm[x][y]) {
-					writeLog("debug", "Matched on: "+rm[x][y], nil)
+					debug("Matched on: " + rm[x][y])
 					return rm[x][y]
 				}
 			}
@@ -64,9 +64,9 @@ func formatURL(input string) string {
 }
 
 func parseBin(domain string, filename string) string {
-	writeLog("info", "Reading from "+getParsingPasteString(domain+".url"), nil)
+	info("Reading from " + getParsingPasteString(domain+".url"))
 
-	writeLog("debug", "Filename is: "+filename, nil)
+	debug("Filename is: " + filename)
 
 	formatted := ""
 
@@ -78,7 +78,7 @@ func parseBin(domain string, filename string) string {
 	for x, ro := range rm {
 		for y := range ro {
 			if y == 1 {
-				writeLog("debug", rm[x][y], nil)
+				debug(rm[x][y])
 				formatted = formatted + getParsingPasteString(domain+"."+rm[x][y])
 			}
 		}
@@ -86,56 +86,56 @@ func parseBin(domain string, filename string) string {
 
 	rawURL := formatted + filename
 
-	writeLog("debug", "Raw text URL is "+rawURL, nil)
+	debug("Raw text URL is " + rawURL)
 
 	resp, err := http.Get(rawURL)
 	if err != nil {
-		writeLog("fatal", "", err)
+		fatal("", err)
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 
 	content := string(body)
 
-	writeLog("debug", "Contents = \n"+content, nil)
+	debug("Contents = \n" + content)
 
 	return content
 }
 
 func parseImage(remoteURL string) string {
-	writeLog("info", "Reading from "+remoteURL, nil)
+	info("Reading from " + remoteURL)
 
-	remote, e := http.Get(remoteURL)
-	if e != nil {
-		writeLog("fatal", "", e)
+	remote, err := http.Get(remoteURL)
+	if err != nil {
+		fatal("", err)
 	}
 
 	defer remote.Body.Close()
 	lastBin := strings.LastIndex(remoteURL, "/")
 	fileName := remoteURL[lastBin+1:]
 
-	writeLog("debug", "Filename is "+fileName, nil)
+	debug("Filename is " + fileName)
 
 	//open a file for writing
 	file, err := os.Create("/tmp/" + fileName)
 	if err != nil {
-		writeLog("fatal", "", err)
+		fatal("", err)
 	}
 	// Use io.Copy to just dump the response body to the file. This supports huge files
 	_, err = io.Copy(file, remote.Body)
 	if err != nil {
-		writeLog("fatal", "", err)
+		fatal("", err)
 	}
 
 	file.Close()
-	writeLog("debug", "Image File Pulled and saved to /tmp/"+fileName, nil)
+	debug("Image File Pulled and saved to /tmp/" + fileName)
 
 	buf, _ := ioutil.ReadFile("/tmp/" + fileName)
 
 	if filetype.IsImage(buf) {
-		writeLog("debug", "File is an image", nil)
+		debug("File is an image")
 	} else {
-		writeLog("debug", "File is not an image", nil)
+		debug("File is not an image")
 		return ""
 	}
 
@@ -145,45 +145,55 @@ func parseImage(remoteURL string) string {
 	client.SetImage("/tmp/" + fileName)
 	text, err := client.Text()
 	if err != nil {
-		writeLog("fatal", "", err)
+		fatal("", err)
 	}
 
 	text = text[:len(text)-1]
-	writeLog("debug", text, nil)
-	writeLog("debug", "Image Parsed", nil)
+	debug(text)
+	debug("Image Parsed")
 
 	return text
 }
 
 func parseKeyword(service string, channelID string, input string) {
 
-	writeLog("debug", "Parsing inbound chat: \n", nil)
+	debug("Parsing inbound chat: \n")
 
 	pasteMatched, pasteDomain := matchPasteDomain(input)
 
-	writeLog("debug", "Matched domain: "+strconv.FormatBool(pasteMatched), nil)
+	debug("Matched domain: " + strconv.FormatBool(pasteMatched))
 
 	//Catch domains and route to the proper controllers (image, binsite parsers)
 
 	if matchImage(input) == true {
-		writeLog("debug", "xurls matched: "+xurls.Relaxed.FindString(input), nil)
+		debug("xurls matched: " + xurls.Relaxed.FindString(input))
 		if matchImage(xurls.Relaxed.FindString(input)) == true {
 			input = parseImage(xurls.Relaxed.FindString(input))
 		}
 	} else if pasteMatched == true {
 		if xurls.Relaxed.FindString(input) != "" {
-			writeLog("debug", "Sending: "+pasteDomain, nil)
-			writeLog("debug", "xurls matched: "+xurls.Relaxed.FindString(input), nil)
-			writeLog("debug", "Guessing file name is: "+strings.Replace(xurls.Relaxed.FindString(input), getParsingPasteString(pasteDomain+".url"), "", -1), nil)
+			debug("Sending: " + pasteDomain)
+			debug("xurls matched: " + xurls.Relaxed.FindString(input))
+			debug("Guessing file name is: " + strings.Replace(xurls.Relaxed.FindString(input), getParsingPasteString(pasteDomain+".url"), "", -1))
 			input = parseBin(pasteDomain, strings.Replace(xurls.Relaxed.FindString(input), getParsingPasteString(pasteDomain+".url"), "", -1))
 		}
 	}
 
 	//exact match search
+	debug("Testing exact matches")
+	for _, kr := range getKeywords() {
+		superdebug("Testing on '" + strings.TrimPrefix(kr, "keyword.exact.") + "' and match is " + strconv.FormatBool(strings.Contains(strings.ToLower(input), strings.TrimPrefix(kr, "keyword.exact."))))
+		if strings.ToLower(input) == strings.TrimPrefix(kr, "keyword.exact.") == true {
+			debug(getKeywordResponseString(kr))
+			debug("response: " + response)
+			sendResponse(service, channelID, getKeywordResponseString(strings.TrimPrefix(kr, "keyword.")))
+		}
+	}
+
 	lastKeyword := ""
 	lastIndex := -1
 	for _, kr := range getKeywords() {
-		// writeLog("debug", "Testing on '"+strings.TrimPrefix(kr, "keyword.")+"' and match is "+strconv.FormatBool(strings.Contains(strings.ToLower(input), strings.TrimPrefix(kr, "keyword."))), nil)
+		superdebug("Testing on '" + strings.TrimPrefix(kr, "keyword.") + "' and match is " + strconv.FormatBool(strings.Contains(strings.ToLower(input), strings.TrimPrefix(kr, "keyword."))))
 		i := strings.LastIndex(strings.ToLower(input), strings.TrimPrefix(kr, "keyword."))
 		if i > lastIndex {
 			lastIndex = i
@@ -191,21 +201,35 @@ func parseKeyword(service string, channelID string, input string) {
 		}
 	}
 	if lastIndex > -1 {
-		writeLog("debug", getKeywordResponseString(lastKeyword), nil)
-		writeLog("debug", "response: "+response, nil)
+		debug(getKeywordResponseString(lastKeyword))
+		debug("response: " + response)
 		sendResponse(service, channelID, getKeywordResponseString(strings.TrimPrefix(lastKeyword, "keyword.")))
 	}
 	return
 }
 
 func parseCommand(service string, channelID string, author string, input string) {
-	writeLog("debug", "Parsing inbound command: \n"+input, nil)
+	debug("Parsing inbound command: \n" + input)
 
 	if strings.HasPrefix(input, "ggl") == true {
-		writeLog("debug", "Googling for user. \n", nil)
+		debug("Googling for user. \n")
 		sendResponse(service, channelID, "<https://lmgtfy.com/?q="+strings.Replace(strings.TrimPrefix(input, "ggl "), " ", "+", -1)+">")
 		return
-	} else if strings.HasPrefix(input, "list") {
+	}
+
+	//Search command file for command and prep response
+	for _, cr := range getCommands() {
+		if strings.Contains(strings.TrimPrefix(cr, "command."), input) == true {
+			sendResponse(service, channelID, getCommandResponseString(input))
+			return
+		}
+	}
+}
+
+func parseAdminCommand(service string, channelID string, author string, input string) {
+	debug("Parsing inbound command: \n" + input)
+	if strings.HasPrefix(input, "list") {
+		debug("Getting available commands")
 		req := strings.TrimPrefix(input, "list ")
 		response = "This is the list of current " + req + ": " + getCommandsString()
 		if req == "commands" {
@@ -217,14 +241,6 @@ func parseCommand(service string, channelID string, author string, input string)
 		} else {
 			sendResponse(service, channelID, "There was no match for "+req+" options")
 			return
-		}
-	} else {
-		//Search command file for command and prep response
-		for _, cr := range getCommands() {
-			if strings.Contains(strings.TrimPrefix(cr, "command."), input) == true {
-				sendResponse(service, channelID, getCommandResponseString(input))
-				return
-			}
 		}
 	}
 }

@@ -30,7 +30,7 @@ var (
 func setupConfig() {
 
 	if configFilecheck() == false {
-		writeLog("error", "There was an issue setting up the config", nil)
+		errmsg("There was an issue setting up the config", nil)
 	}
 
 	//Setting Bot config settings
@@ -39,11 +39,11 @@ func setupConfig() {
 	Bot.WatchConfig()
 
 	Bot.OnConfigChange(func(e fsnotify.Event) {
-		writeLog("info", "Bot config changed", nil)
+		info("Bot config changed")
 	})
 
 	if err := Bot.ReadInConfig(); err != nil {
-		writeLog("fatal", "Could not load Bot configuration.", err)
+		fatal("Could not load Bot configuration.", err)
 		return
 	}
 
@@ -56,11 +56,11 @@ func setupConfig() {
 				Discord.WatchConfig()
 
 				Discord.OnConfigChange(func(e fsnotify.Event) {
-					writeLog("info", "Discord config changed", nil)
+					info("Discord config changed")
 				})
 
 				if err := Discord.ReadInConfig(); err != nil {
-					writeLog("fatal", "Could not load Discord configuration.", err)
+					fatal("Could not load Discord configuration.", err)
 					return
 				}
 
@@ -74,11 +74,11 @@ func setupConfig() {
 				IRC.WatchConfig()
 
 				IRC.OnConfigChange(func(e fsnotify.Event) {
-					writeLog("info", "IRC config changed", nil)
+					info("IRC config changed")
 
 				})
 				if err := IRC.ReadInConfig(); err != nil {
-					writeLog("fatal", "Could not load irc configuration.", err)
+					fatal("Could not load irc configuration.", err)
 					return
 				}
 			}
@@ -91,11 +91,11 @@ func setupConfig() {
 	Command.WatchConfig()
 
 	Command.OnConfigChange(func(e fsnotify.Event) {
-		writeLog("info", "Command config changed", nil)
+		info("Command config changed")
 	})
 
 	if err := Command.ReadInConfig(); err != nil {
-		writeLog("fatal", "Could not load Command configuration.", err)
+		fatal("Could not load Command configuration.", err)
 		return
 	}
 
@@ -105,11 +105,11 @@ func setupConfig() {
 	Keyword.WatchConfig()
 
 	Keyword.OnConfigChange(func(e fsnotify.Event) {
-		writeLog("info", "Keyword config changed", nil)
+		info("Keyword config changed")
 	})
 
 	if err := Keyword.ReadInConfig(); err != nil {
-		writeLog("fatal", "Could not load Keyword configuration.", err)
+		fatal("Could not load Keyword configuration.", err)
 		return
 	}
 
@@ -119,15 +119,15 @@ func setupConfig() {
 	Parsing.WatchConfig()
 
 	Parsing.OnConfigChange(func(e fsnotify.Event) {
-		writeLog("info", "Parsing config changed", nil)
+		info("Parsing config changed")
 	})
 
 	if err := Parsing.ReadInConfig(); err != nil {
-		writeLog("fatal", "Could not load Parsing configuration.", err)
+		fatal("Could not load Parsing configuration.", err)
 		return
 	}
 
-	writeLog("info", "Bot configs loaded", nil)
+	info("Bot configs loaded")
 }
 
 //Bot Get funcs
@@ -151,6 +151,10 @@ func getBotConfigFloat(req string) float64 {
 	return Bot.GetFloat64("bot." + req)
 }
 
+func setBotConfigString(req string, value string) {
+	Bot.Set("bot."+req, value)
+}
+
 //Discord get funcs
 func getDiscordConfigString(req string) string {
 	return Discord.GetString("discord." + req)
@@ -168,8 +172,25 @@ func getDiscordChannels() string {
 	return strings.ToLower(strings.Join(Discord.GetStringSlice("discord.channels.listening"), " "))
 }
 
-func getDiscordGroupMembers(req string) string {
-	return strings.ToLower(strings.Join(Discord.GetStringSlice("discord.permissions.group."+req), " "))
+func getDiscordGroup(req string) []string {
+	var groups []string
+	for x := range Discord.GetStringMapString("discord.permissions.group") {
+		groups = append(groups, x)
+	}
+	return groups
+}
+
+func getDiscordGroupMembers(req string) []string {
+	var users []string
+	for x := range Discord.GetStringMapString("discord.permissions.group." + req) {
+		debug(x + " being added to the group")
+		users = append(users, x)
+	}
+	return users
+}
+
+func getDiscordBlacklist() string {
+	return strings.ToLower(strings.Join(Discord.GetStringSlice("discord.permissions.group.blacklist"), " "))
 }
 
 func getDiscordKOMChannel(req string) bool {

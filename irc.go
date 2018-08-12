@@ -18,15 +18,15 @@ var (
 func ircMessageHandler() {
 	message, err := c.ReadMessage()
 	if err != nil {
-		writeLog("fatal", "cannot read message: ", err)
+		fatal("cannot read message: ", err)
 		return
 	}
 
-	writeLog("debug", "irc inbound "+message.String(), nil)
+	debug("irc inbound " + message.String())
 
 	if message.Command == "PING" {
 		c.Send("PONG " + message.Trailing)
-		writeLog("debug", "PONG Sent", nil)
+		debug("PONG Sent")
 		return
 	}
 
@@ -42,11 +42,11 @@ func ircMessageHandler() {
 
 		if message.Nick() == getIRCConfigString("nick") || strings.Contains(getIRCGroupMembers("blacklist"), message.Params[0]) {
 			if message.Nick() == getIRCConfigString("nick") {
-				writeLog("debug", "User is the bot and being ignored.", nil)
+				debug("User is the bot and being ignored.")
 				return
 			}
 			if strings.Contains(getIRCGroupMembers("blacklist"), message.Params[0]) {
-				writeLog("debug", "User is blacklisted", nil)
+				debug("User is blacklisted")
 				return
 			}
 		}
@@ -60,21 +60,21 @@ func ircMessageHandler() {
 		// Message Handling
 		//
 		if input != "" {
-			writeLog("debug", "Message Content: "+input+"\n", nil)
+			debug("Message Content: " + input + "\n")
 
 			if strings.HasPrefix(input, getIRCConfigString("prefix")) == false {
-				writeLog("debug", "sending to \""+message.Params[0], nil)
+				debug("sending to \"" + message.Params[0])
 				parseKeyword("irc", message.Params[0], input)
 				return
 			} else if strings.HasPrefix(input, getIRCConfigString("prefix")) == true {
 				input := strings.TrimPrefix(input, getIRCConfigString("prefix"))
-				writeLog("debug", "sending to \""+message.Params[0], nil)
+				debug("sending to \"" + message.Params[0])
 				parseCommand("irc", message.Params[0], message.Nick(), input)
 				return
 			}
 			return
 		}
-		writeLog("debug", message.Raw, nil)
+		debug(message.Raw)
 	}
 }
 
@@ -83,10 +83,10 @@ func sendIRCMessage(ChannelID string, response string) {
 	response = strings.Replace(response, "&prefix&", getIRCConfigString("prefix"), -1)
 	multiresp := strings.Split(response, "\n")
 
-	writeLog("debug", "IRC Message Sent:", nil)
+	debug("IRC Message Sent:")
 
 	for x := range multiresp {
-		writeLog("debug", "line sent: "+multiresp[x], nil)
+		debug("line sent: " + multiresp[x])
 		c.Send("PRIVMSG " + ChannelID + " :" + multiresp[x])
 	}
 }
@@ -95,9 +95,9 @@ func startIRCConnection() {
 	// This is the address of the irc server and the port combined to make it easier to input later
 	address = getIRCConfigString("server.address") + ":" + getIRCConfigString("server.port")
 
-	writeLog("debug", "Address should be "+getIRCConfigString("server.address")+":"+getIRCConfigString("server.port"), nil)
+	debug("Address should be " + getIRCConfigString("server.address") + ":" + getIRCConfigString("server.port"))
 
-	writeLog("debug", "Connecting on "+address, nil)
+	debug("Connecting on " + address)
 
 	c, err = irc.Connect(address)
 
@@ -119,7 +119,7 @@ func startIRCConnection() {
 		c.Send("JOIN %s", name)
 	}
 
-	writeLog("info", "irc service started\n", nil)
+	debug("irc service started\n")
 
 	ServStat <- "irc_online"
 

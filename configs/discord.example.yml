@@ -2,15 +2,44 @@ discord:
   token: "This is only an example..." ## You need to create an app and get a token here - https://discordapp.com/developers/
   ## If you want logging to go to discord follow this https://support.discordapp.com/hc/en-us/articles/228383668-Intro-to-Webhooks
   webhook: "https://discordapp.com/api/webhooks/GET-YOUR-OWN-WEBHOOK." 
-  prefix: "."
+  prefix: "." ## default if not set is "."
   command:
-    remove: true ## removes command messages in discord.
+    remove: true ## removes command messages in discord. Default is true.
+  direct:
+    response: "Please message in the main server."
+  ## the response the bot gives when it is mention in various channels.
   mention:
     response: ":doughnut:"
     empty: "Please ask a question or supply your log into this chat"
+    ## response on channels the bot is not listening to.
     wrong_channel: "Please use one of the supported channels"
+  command:
+    remove: false ## remove the command after it has been parsed? true/false (default true)
   channels:
-    filter: false ## This will make the bot only filter messages from certain channels
+    filter: false ## This will make the bot only filter messages from certain channels. True sets the bot to only listen on channels listed below.
     listening: ## The list of thannels to filter
       - "317335672245452801"
       - 
+  ## only simple permissions for now. These only apply to some filtering rules and some command usage right now.
+  permissions:
+    group: ## user groups. Currently These are not implimented. The Blacklist will ignore specific users
+      admin: ## default to server owner having this permission
+        - ""
+      mod: ## no default users for this. Needs to be user ID's. Using roleID's is planned eventually.
+        - ""
+      blacklist: ## users in this group are ignored.
+        - ""
+  ## this feature was added because there was a room that a group was being mentioned in that wasn't supported.
+  ## it kickes users who mention the groups listed with a custom reason and custom kick messaging.
+  ## members of that group are safe to mention at will
+  kick_on_mention:
+    channel:
+      465500656825008138: ## channel ID
+        message: ## message to send when kicking a user.
+          - "Fire in the hole."
+          - "..."
+          - "Oh yeah I need to kick them."
+        group:
+          - "" ## group ID's
+        reason:
+          - "We don't support the <#linux-help> channel" ## DM the user with why they were kicked.
