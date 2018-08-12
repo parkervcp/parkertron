@@ -60,7 +60,7 @@ func ircMessageHandler() {
 		// Message Handling
 		//
 		if input != "" {
-			debug("Message Content: " + input + "\n")
+			debug("Message Content: " + input)
 
 			if strings.HasPrefix(input, getIRCConfigString("prefix")) == false {
 				debug("sending to \"" + message.Params[0])

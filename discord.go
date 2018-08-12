@@ -75,19 +75,19 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			debug("This channel is being filtered out and ignored.")
 			for _, ment := range m.Mentions {
 				if ment.ID == dg.State.User.ID {
-					debug("The bot was mentioned\n")
+					debug("The bot was mentioned")
 					sendDiscordMessage(channelID, getDiscordConfigString("mention.wrong_channel"))
 				}
 			}
 		}
-		debug("Message has been ignored.\n")
+		debug("Message has been ignored.")
 		return
 	}
 
 	// Check if the bot is mentioned
 	for _, ment := range m.Mentions {
 		if ment.ID == dg.State.User.ID {
-			debug("The bot was mentioned\n")
+			debug("The bot was mentioned")
 			sendDiscordMessage(channelID, getDiscordConfigString("mention.response"))
 			if strings.Replace(message, "<@"+dg.State.User.ID+">", "", -1) == "" {
 				sendDiscordMessage(channelID, getDiscordConfigString("mention.empty"))
@@ -117,7 +117,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Message Handling
 	//
 	if message != "" {
-		debug("Message Content: " + message + "\n")
+		debug("Message Content: " + message)
 		discordMessageHandler(message, channelID, messageID, author, perms, group)
 		return
 	}
@@ -135,7 +135,7 @@ func discordReaction(channelID string, messageID string, emojiID string, userID 
 func sendDiscordMessage(ChannelID string, response string) {
 	response = strings.Replace(response, "&prefix&", getDiscordConfigString("prefix"), -1)
 
-	debug("ChannelID " + ChannelID + " \n Discord Message Sent: \n" + response + "\n")
+	superdebug("ChannelID " + ChannelID + " \n Discord Message Sent: \n" + response)
 	dg.ChannelMessageSend(ChannelID, response)
 }
 

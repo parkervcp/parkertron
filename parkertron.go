@@ -25,7 +25,7 @@ func init() {
 	verbose := flag.String("v", "info", "set the console verbosity of the bot")
 	flag.Parse()
 
-	info(title + "\n")
+	info(title)
 
 	setupConfig()
 

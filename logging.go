@@ -24,10 +24,19 @@ func setupLogger() {
 	}
 
 	if _, err := os.Stat("./logs/latest.log"); err == nil {
-		err := os.Rename("./logs/latest.log", "./logs/"+time.Now().UTC().Format("2006-01-02-04-05-0700")+".log")
+		err := os.Rename("./logs/latest.log", "./logs/"+time.Now().UTC().Format("2006-01-02 15:04")+".log")
 
 		if err != nil {
 			errmsg("failed to move latest logs.", err)
+			return
+		}
+	}
+
+	if _, err := os.Stat("./logs/debug.log"); err == nil {
+		err := os.Rename("./logs/debug.log", "./logs/debug-"+time.Now().UTC().Format("2006-01-02 15:04")+".log")
+
+		if err != nil {
+			errmsg("failed to move debug logs.", err)
 			return
 		}
 	}
@@ -46,6 +55,7 @@ func setLogLevel(level string) {
 	pathMap := lfshook.PathMap{
 		log.InfoLevel:  "logs/latest.log",
 		log.ErrorLevel: "logs/latest.log",
+		log.DebugLevel: "logs/debug.log",
 	}
 	log.AddHook(lfshook.NewHook(
 		pathMap,

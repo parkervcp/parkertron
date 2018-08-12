@@ -44,7 +44,7 @@ func discordMessageHandler(message string, channel string, messageID string, aut
 	if !strings.HasPrefix(message, getDiscordConfigString("prefix")) {
 		debug("No prefix was found parsing for keywords.")
 		parseKeyword("discord", channel, message)
-	} else if strings.HasPrefix(message, getDiscordConfigString("prefix")) {
+	} else {
 		message = strings.TrimPrefix(message, getDiscordConfigString("prefix"))
 		if perms {
 			if group == "admin" {
@@ -61,11 +61,11 @@ func discordMessageHandler(message string, channel string, messageID string, aut
 		if getDiscordConfigBool("command.remove") {
 			if getCommandStatus(message) {
 				deleteDiscordMessage(channel, messageID)
-				debug("Cleared command message. \n")
+				debug("Cleared command message.")
 			}
 			if strings.HasPrefix(message, "list") || strings.HasPrefix(message, "ggl") {
 				deleteDiscordMessage(channel, messageID)
-				debug("Cleared command message. \n")
+				debug("Cleared command message.")
 			}
 		}
 	}
@@ -73,6 +73,7 @@ func discordMessageHandler(message string, channel string, messageID string, aut
 
 func discordAttachmentHandler(attachments []string, channelID string) {
 	for _, y := range attachments {
+		debug("Sending attachment links to image parser")
 		parseKeyword("discord", channelID, y)
 	}
 }
