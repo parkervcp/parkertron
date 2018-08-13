@@ -42,9 +42,12 @@ func discordPermissioncheck(authorID string) (bool, string) {
 func discordMessageHandler(message string, channel string, messageID string, authorID string, perms bool, group string) {
 	// If the string doesn't have the prefix parse as text, if it does parse as a command.
 	if !strings.HasPrefix(message, getDiscordConfigString("prefix")) {
-		debug("No prefix was found parsing for keywords.")
-		parseKeyword("discord", channel, message)
+		if discordChannelFilter(channel) {
+			debug("No prefix was found parsing for keywords.")
+			parseKeyword("discord", channel, message)
+		}
 	} else {
+		// if there is a prefix check permissions on the user and run commands per group.
 		message = strings.TrimPrefix(message, getDiscordConfigString("prefix"))
 		if perms {
 			if group == "admin" {
@@ -54,10 +57,11 @@ func discordMessageHandler(message string, channel string, messageID string, aut
 
 			}
 		}
+		// parse commands for matches
 		debug("Prefix was found parsing for commands.")
 		message = strings.TrimPrefix(message, getDiscordConfigString("prefix"))
 		parseCommand("discord", channel, authorID, message)
-		// remove previous commands if
+		// remove previous commands if discord.command.remove is true
 		if getDiscordConfigBool("command.remove") {
 			if getCommandStatus(message) {
 				deleteDiscordMessage(channel, messageID)

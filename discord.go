@@ -14,12 +14,17 @@ var (
 // This function will be called (due to AddHandler above) every time a new
 // message is created on any channel that the autenticated bot has access to.
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-	// Ignore all messages created by the bot itself
+	//variables to get used.
+	var attached []string
+	var authed bool
+
+	// Ignore all messages created by bots
 	if m.Author.Bot {
 		debug("User is a bot and being ignored.")
 		return
 	}
 
+	// get channel information
 	channel, err := s.State.Channel(m.ChannelID)
 	if err != nil {
 		fatal("Channel error", err)
@@ -34,44 +39,73 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
+	// get guild info
 	guild, err := s.Guild(channel.GuildID)
 	if err != nil {
 		fatal("Guild error", err)
 		return
 	}
 
+	// quick referrence for information
 	message := m.Content
 	messageID := m.ID
 	author := m.Author.ID
 	channelID := channel.ID
 	attachments := m.Attachments
 
+	// get group status. If perms are set and group name. These are note weighted yet.
 	perms, group := discordPermissioncheck(author)
 
+	// setting server owner default to admin perms
 	if author == guild.OwnerID {
 		perms = true
 		group = "admin"
+		authed = true
 	}
 
+	// debug messaging
 	if perms {
 		debug("author has perms and is in the group: " + group)
+		if group == "admin" || group == "mod" {
+			authed = true
+		}
 	}
 
-	var attached []string
+	// something something kicked on mentioning a group.
+	if getDiscordKOMChannel(channelID) {
+		if author != guild.OwnerID || !perms {
+			debug("Message is not being parsed but listened to.")
+			// Check if a group is mentioned in message
+			for _, ment := range m.MentionRoles {
+				debug("Group " + ment + " was Mentioned")
+				if strings.Contains(getDiscordKOMID(channelID+".group"), ment) {
+					debug("Sending message to channel")
+					sendDiscordMessage(channelID, getDiscordKOMMessage(channelID))
+					debug("Sending message to user")
+					sendDiscordDirectMessage(author, getDiscordKOMID(channelID+".reason"))
+					kickDiscordUser(guild.ID, author, getDiscordKOMID(channelID+".reason"))
+				}
+			}
+		}
+		return
+	}
 
+	// ignore blacklisted users
+	if strings.Contains(getDiscordBlacklist(), author) == true {
+		debug("User is blacklisted and being ignored.")
+	}
+
+	// making a string array for attached images on messages.
 	for _, y := range attachments {
 		debug(y.ProxyURL)
 		attached = append(attached, y.ProxyURL)
 		discordAttachmentHandler(attached, channelID)
 	}
 
-	// If the owner is making a message always parse
-	// Ignore all messages created by blacklisted members, channels it's not listening on, with debug messaging.
-	if strings.Contains(getDiscordBlacklist(), author) || !discordChannelFilter(channelID) {
-		if strings.Contains(getDiscordBlacklist(), author) == true {
-			debug("User is blacklisted and being ignored.")
-		}
-		if discordChannelFilter(channelID) == false {
+	// Always parse owner and group commands. Keyswords in matched channels.
+	if !authed {
+		// Ignore all messages created by blacklisted members, channels it's not listening on, with debug messaging.
+		if !discordChannelFilter(channelID) {
 			debug("This channel is being filtered out and ignored.")
 			for _, ment := range m.Mentions {
 				if ment.ID == dg.State.User.ID {
@@ -79,9 +113,9 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 					sendDiscordMessage(channelID, getDiscordConfigString("mention.wrong_channel"))
 				}
 			}
+			debug("Message has been ignored.")
+			return
 		}
-		debug("Message has been ignored.")
-		return
 	}
 
 	// Check if the bot is mentioned
@@ -93,24 +127,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 				sendDiscordMessage(channelID, getDiscordConfigString("mention.empty"))
 			}
 		}
-	}
-
-	if getDiscordKOMChannel(channelID) {
-		if author != guild.OwnerID || !perms {
-			debug("Message is not being parsed but listened to.")
-			// Check if a group is mentioned in message
-			for _, ment := range m.MentionRoles {
-				debug("Group " + ment + " was Mentioned")
-				if strings.Contains(getDiscordKOMID(channelID+".group"), ment) {
-					debug("Sending message to channel")
-					sendDiscordMessage(channelID, "Be gone with you <@"+author+">")
-					debug("Sending message to user")
-					sendDiscordDirectMessage(author, getDiscordKOMID(channelID+".reason"))
-					kickDiscordUser(channel.GuildID, author, getDiscordKOMID(channelID+".reason"))
-				}
-			}
-		}
-		return
 	}
 
 	//
@@ -134,6 +150,11 @@ func discordReaction(channelID string, messageID string, emojiID string, userID 
 
 func sendDiscordMessage(ChannelID string, response string) {
 	response = strings.Replace(response, "&prefix&", getDiscordConfigString("prefix"), -1)
+
+	if strings.Contains(response, "&react&") {
+		response = strings.Replace(response, "&react&", "", -1)
+		//discordReaction()
+	}
 
 	superdebug("ChannelID " + ChannelID + " \n Discord Message Sent: \n" + response)
 	dg.ChannelMessageSend(ChannelID, response)

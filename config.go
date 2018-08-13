@@ -201,6 +201,10 @@ func getDiscordKOMID(req string) string {
 	return strings.ToLower(strings.Join(Discord.GetStringSlice("discord.kick_on_mention.channel."+req), " "))
 }
 
+func getDiscordKOMMessage(req string) string {
+	return strings.ToLower(strings.Join(Discord.GetStringSlice("discord.kick_on_mention.channel."+req+".message"), "\n"))
+}
+
 //IRC get funcs
 func getIRCConfigString(req string) string {
 	return IRC.GetString("irc." + req)
