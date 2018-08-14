@@ -16,9 +16,10 @@ var (
 // This function will be called (due to AddHandler above) every time a new
 // message is created on any channel that the autenticated bot has access to.
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-	//variables to get used.
-	var attached []string
-	var authed bool
+	dpack := DataPackage{}
+	authed := false
+
+	dpack.Service = "discord"
 
 	// Ignore all messages created by bots
 	if m.Author.Bot {
@@ -37,7 +38,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// TODO: Make the response customizable
 	if channel.Type == 1 {
 		debug("This was a DM")
-		sendDiscordMessage(channel.ID, getDiscordConfigString("direct.response"))
+		sendDiscordMessage(dpack, getDiscordConfigString("direct.response"))
 		return
 	}
 
@@ -54,45 +55,45 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	// quick referrence for information
-	message := m.Content
-	messageID := m.ID
-	author := m.Author.ID
-	authorname := m.Author.Username
-	botID := bot.ID
-	channelID := channel.ID
-	attachments := m.Attachments
+	dpack.Message = m.Content
+	dpack.MessageID = m.ID
+	dpack.AuthorID = m.Author.ID
+	dpack.AuthorName = m.Author.Username
+	dpack.BotID = bot.ID
+	dpack.ChannelID = channel.ID
+	dpack.GuildID = guild.ID
 
 	// get group status. If perms are set and group name. These are note weighted yet.
-	perms, group := discordPermissioncheck(author)
+	dpack.Perms, dpack.Group = discordPermissioncheck(dpack.AuthorID)
 
 	// setting server owner default to admin perms
-	if author == guild.OwnerID {
-		perms = true
-		group = "admin"
+	if dpack.AuthorID == guild.OwnerID {
+		dpack.Perms = true
+		dpack.Group = "admin"
 		authed = true
 	}
 
 	// debug messaging
-	if perms {
-		debug("author has perms and is in the group: " + group)
-		if group == "admin" || group == "mod" {
+	if dpack.Perms {
+		debug("author has perms and is in the group: " + dpack.Group)
+		if dpack.Group == "admin" || dpack.Group == "mod" {
 			authed = true
 		}
 	}
 
-	// something something kicked on mentioning a group.
-	if getDiscordKOMChannel(channelID) {
-		if author != guild.OwnerID || !perms {
+	// kick for mentioning a group in a specific channel.
+	if getDiscordKOMChannel(dpack.ChannelID) {
+		if !dpack.Perms {
 			debug("Message is not being parsed but listened to.")
 			// Check if a group is mentioned in message
 			for _, ment := range m.MentionRoles {
 				debug("Group " + ment + " was Mentioned")
-				if strings.Contains(getDiscordKOMID(channelID+".group"), ment) {
+				if strings.Contains(getDiscordKOMID(dpack.ChannelID+".group"), ment) {
 					debug("Sending message to channel")
-					sendDiscordMessage(channelID, getDiscordKOMMessage(channelID))
+					sendDiscordMessage(dpack, getDiscordKOMMessage(dpack.ChannelID))
 					debug("Sending message to user")
-					sendDiscordDirectMessage(author, getDiscordKOMID(channelID+".reason"))
-					kickDiscordUser(guild.ID, author, authorname, getDiscordKOMID(channelID+".reason"), botID)
+					sendDiscordDirectMessage(dpack, getDiscordKOMID(dpack.ChannelID+".reason"))
+					kickDiscordUser(guild.ID, dpack.AuthorID, dpack.AuthorName, getDiscordKOMID(dpack.ChannelID+".reason"), dpack.BotID)
 				}
 			}
 		}
@@ -100,26 +101,25 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	// ignore blacklisted users
-	if strings.Contains(getDiscordBlacklist(), author) == true {
+	if strings.Contains(getDiscordBlacklist(), dpack.AuthorID) == true {
 		debug("User is blacklisted and being ignored.")
 	}
 
 	// making a string array for attached images on messages.
-	for _, y := range attachments {
+	for _, y := range m.Attachments {
 		debug(y.ProxyURL)
-		attached = append(attached, y.ProxyURL)
-		discordAttachmentHandler(attached, channelID)
+		dpack.Attached = append(dpack.Attached, y.ProxyURL)
 	}
 
 	// Always parse owner and group commands. Keyswords in matched channels.
 	if !authed {
 		// Ignore all messages created by blacklisted members, channels it's not listening on, with debug messaging.
-		if !discordChannelFilter(channelID) {
+		if !discordChannelFilter(dpack.ChannelID) {
 			debug("This channel is being filtered out and ignored.")
 			for _, ment := range m.Mentions {
 				if ment.ID == dg.State.User.ID {
 					debug("The bot was mentioned")
-					sendDiscordMessage(channelID, getDiscordConfigString("mention.wrong_channel"))
+					sendDiscordMessage(dpack, getDiscordConfigString("mention.wrong_channel"))
 				}
 			}
 			debug("Message has been ignored.")
@@ -131,9 +131,9 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	for _, ment := range m.Mentions {
 		if ment.ID == dg.State.User.ID {
 			debug("The bot was mentioned")
-			sendDiscordMessage(channelID, getDiscordConfigString("mention.response"))
+			sendDiscordMessage(dpack, getDiscordConfigString("mention.response"))
 			if strings.Replace(message, "<@"+dg.State.User.ID+">", "", -1) == "" {
-				sendDiscordMessage(channelID, getDiscordConfigString("mention.empty"))
+				sendDiscordMessage(dpack, getDiscordConfigString("mention.empty"))
 			}
 		}
 	}
@@ -143,12 +143,12 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	//
 	if message != "" {
 		debug("Message Content: " + message)
-		discordMessageHandler(message, channelID, messageID, author, perms, group)
+		discordMessageHandler(dpack)
 		return
 	}
 }
 
-func sendDiscordMessage(ChannelID string, response string) {
+func sendDiscordMessage(dpack DataPackage, response string) {
 	response = strings.Replace(response, "&prefix&", getDiscordConfigString("prefix"), -1)
 
 	if strings.Contains(response, "&react&") {
@@ -156,12 +156,17 @@ func sendDiscordMessage(ChannelID string, response string) {
 		//discordReaction()
 	}
 
-	superdebug("ChannelID " + ChannelID + " \n Discord Message Sent: \n" + response)
-	dg.ChannelMessageSend(ChannelID, response)
+	if strings.Contains(response, "&user&") {
+		response = strings.Replace(response, "&user&", "", -1)
+		//discordReaction()
+	}
+
+	superdebug("ChannelID " + dpack.ChannelID + " \n Discord Message Sent: \n" + response)
+	dg.ChannelMessageSend(dpack.ChannelID, response)
 }
 
-func deleteDiscordMessage(ChannelID string, MessageID string) {
-	dg.ChannelMessageDelete(ChannelID, MessageID)
+func deleteDiscordMessage(dpack DataPackage) {
+	dg.ChannelMessageDelete(dpack.ChannelID, dpack.MessageID)
 
 	embed := &discordgo.MessageEmbed{
 		Title: "Message was deleted",
@@ -169,7 +174,12 @@ func deleteDiscordMessage(ChannelID string, MessageID string) {
 		Fields: []*discordgo.MessageEmbedField{
 			&discordgo.MessageEmbedField{
 				Name:   "MessageID",
-				Value:  MessageID,
+				Value:  dpack.MessageID,
+				Inline: true,
+			},
+			&discordgo.MessageEmbedField{
+				Name:   "Message Content",
+				Value:  dpack.Message,
 				Inline: true,
 			},
 		},
@@ -188,13 +198,14 @@ func sendDiscordReaction(channelID string, messageID string, emojiID string, use
 	}
 }
 
-func sendDiscordDirectMessage(userID string, response string) {
-	channel, err := dg.UserChannelCreate(userID)
+func sendDiscordDirectMessage(dpack DataPackage, response string) {
+	channel, err := dg.UserChannelCreate(dpack.AuthorID)
+	dpack.ChannelID = channel.ID
 	if err != nil {
 		fatal("error creating direct message channel,", err)
 		return
 	}
-	sendDiscordMessage(channel.ID, response)
+	sendDiscordMessage(dpack, response)
 }
 
 func kickDiscordUser(guild string, user string, username string, reason string, authorname string) {

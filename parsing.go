@@ -14,6 +14,23 @@ import (
 	"mvdan.cc/xurls"
 )
 
+// DataPackage hopefully pass info among the packages a bit easier.
+type DataPackage struct {
+	Service    string   `json:"service,omitempty"`
+	Message    string   `json:"message,omitempty"`
+	MessageID  string   `json:"message_id,omitempty"`
+	AuthorID   string   `json:"author_id,omitempty"`
+	AuthorName string   `json:"author_name,omitempty"`
+	BotID      string   `json:"bot_id,omitempty"`
+	ChannelID  string   `json:"channel_id,omitempty"`
+	Attached   []string `json:"attached,omitempty"`
+	Perms      bool     `json:"perms,omitempty"`
+	Group      string   `json:"group,omitempty"`
+	GuildID    string   `json:"guild_id,omitempty"`
+	DMChannel  string   `json:"dm_channel,omitempty"`
+	DMMessage  string   `json:"dm_message,omitempty"`
+}
+
 func matchImage(input string) bool {
 	ip := getParsingImageFiletypes()
 
@@ -154,104 +171,104 @@ func parseImage(remoteURL string) string {
 	return text
 }
 
-func parseKeyword(service string, channelID string, input string) {
+func parseKeyword(dpack DataPackage) {
 
 	debug("Parsing inbound chat")
 
-	pasteMatched, pasteDomain := matchPasteDomain(input)
+	pasteMatched, pasteDomain := matchPasteDomain(dpack.Message)
 
 	debug("Matched domain: " + strconv.FormatBool(pasteMatched))
 
 	//Catch domains and route to the proper controllers (image, binsite parsers)
-	for _, url := range xurls.Relaxed.FindStringSubmatch(input) {
+	for _, url := range xurls.Relaxed.FindStringSubmatch(dpack.Message) {
 		superdebug(url)
 	}
 
-	if matchImage(input) == true {
-		if matchImage(xurls.Relaxed.FindString(input)) {
-			input = parseImage(xurls.Relaxed.FindString(input))
+	if matchImage(dpack.Message) == true {
+		if matchImage(xurls.Relaxed.FindString(dpack.Message)) {
+			dpack.Message = parseImage(xurls.Relaxed.FindString(dpack.Message))
 		}
 	} else if pasteMatched == true {
-		if xurls.Relaxed.FindString(input) != "" {
+		if xurls.Relaxed.FindString(dpack.Message) != "" {
 			debug("Sending: " + pasteDomain)
-			debug("xurls matched: " + xurls.Relaxed.FindString(input))
-			debug("Guessing file name is: " + strings.Replace(xurls.Relaxed.FindString(input), getParsingPasteString(pasteDomain+".url"), "", -1))
-			input = parseBin(pasteDomain, strings.Replace(xurls.Relaxed.FindString(input), getParsingPasteString(pasteDomain+".url"), "", -1))
+			debug("xurls matched: " + xurls.Relaxed.FindString(dpack.Message))
+			debug("Guessing file name is: " + strings.Replace(xurls.Relaxed.FindString(dpack.Message), getParsingPasteString(pasteDomain+".url"), "", -1))
+			dpack.Message = parseBin(pasteDomain, strings.Replace(xurls.Relaxed.FindString(dpack.Message), getParsingPasteString(pasteDomain+".url"), "", -1))
 		}
 	}
 
 	//exact match search
 	debug("Testing exact matches")
 	for _, kr := range getKeywords() {
-		superdebug("Testing on '" + strings.TrimPrefix(kr, "keyword.exact.") + "' and match is " + strconv.FormatBool(strings.Contains(strings.ToLower(input), strings.TrimPrefix(kr, "keyword.exact."))))
-		if strings.ToLower(input) == strings.TrimPrefix(kr, "keyword.exact.") == true {
+		superdebug("Testing on '" + strings.TrimPrefix(kr, "keyword.exact.") + "' and match is " + strconv.FormatBool(strings.Contains(strings.ToLower(dpack.Message), strings.TrimPrefix(kr, "keyword.exact."))))
+		if strings.ToLower(dpack.Message) == strings.TrimPrefix(kr, "keyword.exact.") == true {
 			debug(getKeywordResponseString(kr))
-			sendResponse(service, channelID, getKeywordResponseString(strings.TrimPrefix(kr, "keyword.")))
+			sendResponse(dpack, getKeywordResponseString(strings.TrimPrefix(kr, "keyword.")))
 		}
 	}
 
 	lastKeyword := ""
 	lastIndex := -1
 	for _, kr := range getKeywords() {
-		superdebug("Testing on '" + strings.TrimPrefix(kr, "keyword.") + "' and match is " + strconv.FormatBool(strings.Contains(strings.ToLower(input), strings.TrimPrefix(kr, "keyword."))))
-		i := strings.LastIndex(strings.ToLower(input), strings.TrimPrefix(kr, "keyword."))
+		superdebug("Testing on '" + strings.TrimPrefix(kr, "keyword.") + "' and match is " + strconv.FormatBool(strings.Contains(strings.ToLower(dpack.Message), strings.TrimPrefix(kr, "keyword."))))
+		i := strings.LastIndex(strings.ToLower(dpack.Message), strings.TrimPrefix(kr, "keyword."))
 		if i > lastIndex {
 			lastIndex = i
 			lastKeyword = kr
 		}
 	}
 	if lastIndex > -1 {
-		sendResponse(service, channelID, getKeywordResponseString(strings.TrimPrefix(lastKeyword, "keyword.")))
+		sendResponse(dpack, getKeywordResponseString(strings.TrimPrefix(lastKeyword, "keyword.")))
 	}
 	return
 }
 
-func parseAdminCommand(service string, channelID string, author string, input string) {
-	debug("Parsing inbound command: \n" + input)
-	if strings.HasPrefix(input, "list") {
+func parseAdminCommand(dpack DataPackage) {
+	debug("Parsing inbound command: \n" + dpack.Message)
+	if strings.HasPrefix(dpack.Message, "list") {
 		debug("Getting available commands")
-		req := strings.TrimPrefix(input, "list ")
+		req := strings.TrimPrefix(dpack.Message, "list ")
 		response = "This is the list of current " + req + ": " + getCommandsString()
 		if req == "commands" {
-			sendResponse(service, channelID, "This is the list of current "+req+": "+getCommandsString())
+			sendResponse(dpack, "This is the list of current "+req+": "+getCommandsString())
 			return
 		} else if req == "keywords" {
-			sendResponse(service, channelID, "This is the list of current "+req+": "+getKeywordsString())
+			sendResponse(dpack, "This is the list of current "+req+": "+getKeywordsString())
 			return
 		} else {
-			sendResponse(service, channelID, "There was no match for "+req+" options")
+			sendResponse(dpack, "There was no match for "+req+" options")
 			return
 		}
 	}
 }
 
-func parseModCommand(service string, channelID string, author string, input string) {
-	debug("Parsing inbound command: \n" + input)
+func parseModCommand(dpack DataPackage) {
+	debug("Parsing inbound command: \n" + dpack.Message)
 }
 
-func parseCommand(service string, channelID string, author string, input string) {
-	debug("Parsing inbound command: \n" + input)
+func parseCommand(dpack DataPackage) {
+	debug("Parsing inbound command: \n" + dpack.Message)
 
-	if strings.HasPrefix(input, "ggl") == true {
+	if strings.HasPrefix(dpack.Message, "ggl") == true {
 		debug("Googling for user. \n")
-		sendResponse(service, channelID, "<https://lmgtfy.com/?q="+strings.Replace(strings.TrimPrefix(input, "ggl "), " ", "+", -1)+">")
+		sendResponse(dpack, "<https://lmgtfy.com/?q="+strings.Replace(strings.TrimPrefix(dpack.Message, "ggl "), " ", "+", -1)+">")
 		return
 	}
 
 	//Search command file for command and prep response
 	for _, cr := range getCommands() {
-		if strings.Contains(strings.TrimPrefix(cr, "command."), input) == true {
-			sendResponse(service, channelID, getCommandResponseString(input))
+		if strings.Contains(strings.TrimPrefix(cr, "command."), dpack.Message) == true {
+			sendResponse(dpack, getCommandResponseString(dpack.Message))
 			return
 		}
 	}
 }
 
-func sendResponse(service string, channelID string, response string) {
-	if service == "discord" {
-		sendDiscordMessage(channelID, response)
-	} else if service == "irc" {
-		sendIRCMessage(channelID, response)
+func sendResponse(dpack DataPackage, response string) {
+	if dpack.Service == "discord" {
+		sendDiscordMessage(dpack, response)
+	} else if dpack.Service == "irc" {
+		sendIRCMessage(dpack.ChannelID, response)
 	} else {
 		return
 	}

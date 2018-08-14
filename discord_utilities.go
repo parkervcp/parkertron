@@ -39,47 +39,40 @@ func discordPermissioncheck(authorID string) (bool, string) {
 	return false, ""
 }
 
-func discordMessageHandler(message string, channel string, messageID string, authorID string, perms bool, group string) {
+func discordMessageHandler(dpack DataPackage) {
 	// If the string doesn't have the prefix parse as text, if it does parse as a command.
 	if !strings.HasPrefix(message, getDiscordConfigString("prefix")) {
-		if discordChannelFilter(channel) {
+		if discordChannelFilter(dpack.ChannelID) {
 			debug("No prefix was found parsing for keywords.")
-			parseKeyword("discord", channel, message)
+			parseKeyword(dpack)
 		}
 	} else {
 		// if there is a prefix check permissions on the user and run commands per group.
 		message = strings.TrimPrefix(message, getDiscordConfigString("prefix"))
-		if perms {
-			if group == "admin" {
-				parseAdminCommand("discord", channel, authorID, message)
-				parseModCommand("discord", channel, authorID, message)
+		if dpack.Perms {
+			if dpack.Group == "admin" {
+				parseAdminCommand(dpack)
+				parseModCommand(dpack)
 			}
-			if group == "mod" {
-				parseModCommand("discord", channel, authorID, message)
+			if dpack.Group == "mod" {
+				parseModCommand(dpack)
 			}
 		}
 		// parse commands for matches
 		debug("Prefix was found parsing for commands.")
 		message = strings.TrimPrefix(message, getDiscordConfigString("prefix"))
-		parseCommand("discord", channel, authorID, message)
+		parseCommand(dpack)
 		// remove previous commands if discord.command.remove is true
 		if getDiscordConfigBool("command.remove") {
 			if getCommandStatus(message) {
-				deleteDiscordMessage(channel, messageID)
+				deleteDiscordMessage(dpack)
 				debug("Cleared command message.")
 			}
 			if strings.HasPrefix(message, "list") || strings.HasPrefix(message, "ggl") {
-				deleteDiscordMessage(channel, messageID)
+				deleteDiscordMessage(dpack)
 				debug("Cleared command message.")
 			}
 		}
-	}
-}
-
-func discordAttachmentHandler(attachments []string, channelID string) {
-	for _, y := range attachments {
-		debug("Sending attachment links to image parser")
-		parseKeyword("discord", channelID, y)
 	}
 }
 

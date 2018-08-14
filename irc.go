@@ -38,7 +38,11 @@ func ircMessageHandler() {
 	}
 
 	if message.Command == "PRIVMSG" {
-		input := message.Trailing
+		dpack := DataPackage{}
+		dpack.Service = "irc"
+		dpack.Message = message.Trailing
+		dpack.AuthorID = message.Params[0]
+		dpack.BotID = message.Nick()
 
 		if message.Nick() == getIRCConfigString("nick") || strings.Contains(getIRCGroupMembers("blacklist"), message.Params[0]) {
 			if message.Nick() == getIRCConfigString("nick") {
@@ -51,6 +55,7 @@ func ircMessageHandler() {
 			}
 		}
 
+		// if bot is DM'd
 		if message.Params[0] == getIRCConfigString("nick") {
 			sendIRCMessage(message.Nick(), "Thank you for messaging me, but I only offer support in the main chat.")
 			return
@@ -59,18 +64,16 @@ func ircMessageHandler() {
 		//
 		// Message Handling
 		//
-		if input != "" {
-			debug("Message Content: " + input)
+		if dpack.Message != "" {
+			debug("Message Content: " + dpack.Message)
 
-			if strings.HasPrefix(input, getIRCConfigString("prefix")) == false {
+			if !strings.HasPrefix(dpack.Message, getIRCConfigString("prefix")) {
 				debug("sending to \"" + message.Params[0])
-				parseKeyword("irc", message.Params[0], input)
-				return
-			} else if strings.HasPrefix(input, getIRCConfigString("prefix")) == true {
-				input := strings.TrimPrefix(input, getIRCConfigString("prefix"))
+				parseKeyword(dpack)
+			} else {
+				dpack.Message = strings.TrimPrefix(dpack.Message, getIRCConfigString("prefix"))
 				debug("sending to \"" + message.Params[0])
-				parseCommand("irc", message.Params[0], message.Nick(), input)
-				return
+				parseCommand(dpack)
 			}
 			return
 		}
