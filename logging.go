@@ -45,7 +45,7 @@ func setupLogger() {
 	info("Bot logging online")
 	log.AddHook(discordrus.NewHook(
 		// Use environment variable for security reasons
-		getDiscordConfigString("webhook"),
+		getDiscordConfigString("webhook.log"),
 		// Set minimum level to DebugLevel to receive all log entries
 		log.DebugLevel,
 		&discordrus.Opts{
@@ -66,7 +66,7 @@ func setupLogger() {
 			DisableInlineFields: false, // If set to true, fields will not appear in columns ("inline")
 		},
 	))
-	info("Discord logging online")
+	info("Discord webhook logging online")
 }
 
 func setLogLevel(level string) {
@@ -120,4 +120,12 @@ func fatal(message string, err error) {
 
 func panic(message string) {
 	log.Panic(message)
+}
+
+func auditKick() {
+
+}
+
+func auditBan() {
+
 }

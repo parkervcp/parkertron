@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -46,10 +48,17 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
+	bot, err := dg.User("@me")
+	if err != nil {
+		fmt.Println("error obtaining account details,", err)
+	}
+
 	// quick referrence for information
 	message := m.Content
 	messageID := m.ID
 	author := m.Author.ID
+	authorname := m.Author.Username
+	botID := bot.ID
 	channelID := channel.ID
 	attachments := m.Attachments
 
@@ -83,7 +92,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 					sendDiscordMessage(channelID, getDiscordKOMMessage(channelID))
 					debug("Sending message to user")
 					sendDiscordDirectMessage(author, getDiscordKOMID(channelID+".reason"))
-					kickDiscordUser(guild.ID, author, getDiscordKOMID(channelID+".reason"))
+					kickDiscordUser(guild.ID, author, authorname, getDiscordKOMID(channelID+".reason"), botID)
 				}
 			}
 		}
@@ -139,15 +148,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 }
 
-func discordReaction(channelID string, messageID string, emojiID string, userID string, job string) {
-	if job == "add" {
-		dg.MessageReactionAdd(channelID, messageID, emojiID)
-	}
-	if job == "remove" {
-		dg.MessageReactionRemove(channelID, messageID, emojiID, userID)
-	}
-}
-
 func sendDiscordMessage(ChannelID string, response string) {
 	response = strings.Replace(response, "&prefix&", getDiscordConfigString("prefix"), -1)
 
@@ -160,6 +160,34 @@ func sendDiscordMessage(ChannelID string, response string) {
 	dg.ChannelMessageSend(ChannelID, response)
 }
 
+func deleteDiscordMessage(ChannelID string, MessageID string) {
+	dg.ChannelMessageDelete(ChannelID, MessageID)
+
+	embed := &discordgo.MessageEmbed{
+		Title: "Message was deleted",
+		Color: 0xf39c12,
+		Fields: []*discordgo.MessageEmbedField{
+			&discordgo.MessageEmbedField{
+				Name:   "MessageID",
+				Value:  MessageID,
+				Inline: true,
+			},
+		},
+	}
+
+	sendDiscordEmbed(getDiscordConfigString("embed.audit"), embed)
+	superdebug("message was deleted.")
+}
+
+func sendDiscordReaction(channelID string, messageID string, emojiID string, userID string, job string) {
+	if job == "add" {
+		dg.MessageReactionAdd(channelID, messageID, emojiID)
+	}
+	if job == "remove" {
+		dg.MessageReactionRemove(channelID, messageID, emojiID, userID)
+	}
+}
+
 func sendDiscordDirectMessage(userID string, response string) {
 	channel, err := dg.UserChannelCreate(userID)
 	if err != nil {
@@ -169,14 +197,70 @@ func sendDiscordDirectMessage(userID string, response string) {
 	sendDiscordMessage(channel.ID, response)
 }
 
-func deleteDiscordMessage(ChannelID string, MessageID string) {
-	dg.ChannelMessageDelete(ChannelID, MessageID)
+func kickDiscordUser(guild string, user string, username string, reason string, authorname string) {
+	dg.GuildMemberDeleteWithReason(guild, user, reason)
+
+	embed := &discordgo.MessageEmbed{
+		Title: "User has been kicked",
+		Color: 0xf39c12,
+		Fields: []*discordgo.MessageEmbedField{
+			&discordgo.MessageEmbedField{
+				Name:   "User",
+				Value:  username,
+				Inline: true,
+			},
+			&discordgo.MessageEmbedField{
+				Name:   "By",
+				Value:  authorname,
+				Inline: true,
+			},
+			&discordgo.MessageEmbedField{
+				Name:   "Reason",
+				Value:  reason,
+				Inline: true,
+			},
+		},
+	}
+
+	sendDiscordEmbed(getDiscordConfigString("embed.audit"), embed)
+	info("User " + authorname + " has been kicked from " + guild + " for " + reason)
 }
 
-func kickDiscordUser(guild string, user string, reason string) {
-	debug("Guild: " + guild + "\nUser: " + user + "\nreason: " + reason)
-	dg.GuildMemberDeleteWithReason(guild, user, reason)
-	debug("User has been kicked")
+func banDiscordUser(guild string, user string, username string, reason string, days int, authorname string) {
+	dg.GuildBanCreateWithReason(guild, user, reason, days)
+
+	embed := &discordgo.MessageEmbed{
+		Title: "User has been banned for " + strconv.Itoa(days) + " days",
+		Color: 0xc0392b,
+		Fields: []*discordgo.MessageEmbedField{
+			&discordgo.MessageEmbedField{
+				Name:   "User",
+				Value:  username,
+				Inline: true,
+			},
+			&discordgo.MessageEmbedField{
+				Name:   "By",
+				Value:  authorname,
+				Inline: true,
+			},
+			&discordgo.MessageEmbedField{
+				Name:   "Reason",
+				Value:  reason,
+				Inline: true,
+			},
+		},
+	}
+
+	sendDiscordEmbed(getDiscordConfigString("embed.audit"), embed)
+	info("User " + authorname + " has been kicked from " + guild + " for " + reason)
+}
+
+func sendDiscordEmbed(channelID string, embed *discordgo.MessageEmbed) {
+	_, err := dg.ChannelMessageSendEmbed(channelID, embed)
+	if err != nil {
+		fatal("Embed send error", err)
+		return
+	}
 }
 
 func startDiscordConnection() {

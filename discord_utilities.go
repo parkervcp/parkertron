@@ -52,9 +52,10 @@ func discordMessageHandler(message string, channel string, messageID string, aut
 		if perms {
 			if group == "admin" {
 				parseAdminCommand("discord", channel, authorID, message)
+				parseModCommand("discord", channel, authorID, message)
 			}
 			if group == "mod" {
-
+				parseModCommand("discord", channel, authorID, message)
 			}
 		}
 		// parse commands for matches

@@ -227,21 +227,6 @@ func parseAdminCommand(service string, channelID string, author string, input st
 
 func parseModCommand(service string, channelID string, author string, input string) {
 	debug("Parsing inbound command: \n" + input)
-	if strings.HasPrefix(input, "list") {
-		debug("Getting available commands")
-		req := strings.TrimPrefix(input, "list ")
-		response = "This is the list of current " + req + ": " + getCommandsString()
-		if req == "commands" {
-			sendResponse(service, channelID, "This is the list of current "+req+": "+getCommandsString())
-			return
-		} else if req == "keywords" {
-			sendResponse(service, channelID, "This is the list of current "+req+": "+getKeywordsString())
-			return
-		} else {
-			sendResponse(service, channelID, "There was no match for "+req+" options")
-			return
-		}
-	}
 }
 
 func parseCommand(service string, channelID string, author string, input string) {
