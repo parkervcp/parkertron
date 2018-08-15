@@ -38,7 +38,8 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// TODO: Make the response customizable
 	if channel.Type == 1 {
 		debug("This was a DM")
-		sendDiscordMessage(dpack, getDiscordConfigString("direct.response"))
+		dpack.Response = getDiscordConfigString("direct.response")
+		sendDiscordMessage(dpack)
 		return
 	}
 
@@ -84,32 +85,40 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// kick for mentioning a group in a specific channel.
 	if getDiscordKOMChannel(dpack.ChannelID) {
 		if !dpack.Perms {
-			debug("Message is not being parsed but listened to.")
+			debug("Checking for Kick on Mention group")
 			// Check if a group is mentioned in message
 			for _, ment := range m.MentionRoles {
 				debug("Group " + ment + " was Mentioned")
 				if strings.Contains(getDiscordKOMID(dpack.ChannelID+".group"), ment) {
+					dpack.Mention = dpack.AuthorID
 					debug("Sending message to channel")
-					sendDiscordMessage(dpack, getDiscordKOMMessage(dpack.ChannelID))
+					dpack.Response = getDiscordKOMMessage(dpack.ChannelID)
+					sendDiscordMessage(dpack)
 					debug("Sending message to user")
-					sendDiscordDirectMessage(dpack, getDiscordKOMID(dpack.ChannelID+".reason"))
+					dpack.Response = getDiscordKOMID(dpack.ChannelID + ".reason")
+					sendDiscordDirectMessage(dpack)
 					kickDiscordUser(guild.ID, dpack.AuthorID, dpack.AuthorName, getDiscordKOMID(dpack.ChannelID+".reason"), dpack.BotID)
 				}
 			}
 		}
-		return
 	}
+
+	superdebug("Past KOM")
 
 	// ignore blacklisted users
 	if strings.Contains(getDiscordBlacklist(), dpack.AuthorID) == true {
 		debug("User is blacklisted and being ignored.")
 	}
 
+	superdebug("Past Blacklist")
+
 	// making a string array for attached images on messages.
 	for _, y := range m.Attachments {
 		debug(y.ProxyURL)
 		dpack.Attached = append(dpack.Attached, y.ProxyURL)
 	}
+
+	superdebug("Attachments grabbed")
 
 	// Always parse owner and group commands. Keyswords in matched channels.
 	if !authed {
@@ -119,7 +128,8 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			for _, ment := range m.Mentions {
 				if ment.ID == dg.State.User.ID {
 					debug("The bot was mentioned")
-					sendDiscordMessage(dpack, getDiscordConfigString("mention.wrong_channel"))
+					dpack.Response = getDiscordConfigString("mention.wrong_channel")
+					sendDiscordMessage(dpack)
 				}
 			}
 			debug("Message has been ignored.")
@@ -127,42 +137,63 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}
 
+	superdebug("Past channel filter")
+
 	// Check if the bot is mentioned
 	for _, ment := range m.Mentions {
 		if ment.ID == dg.State.User.ID {
 			debug("The bot was mentioned")
-			sendDiscordMessage(dpack, getDiscordConfigString("mention.response"))
+			dpack.Response = getDiscordConfigString("mention.response")
+			sendDiscordMessage(dpack)
 			if strings.Replace(message, "<@"+dg.State.User.ID+">", "", -1) == "" {
-				sendDiscordMessage(dpack, getDiscordConfigString("mention.empty"))
+				dpack.Response = getDiscordConfigString("mention.empty")
+				sendDiscordMessage(dpack)
 			}
 		}
 	}
 
+	superdebug("Past bot mentions")
+
 	//
 	// Message Handling
 	//
-	if message != "" {
-		debug("Message Content: " + message)
+	if dpack.Message != "" || dpack.Attached != nil {
+		superdebug("Message Content: " + dpack.Message)
 		discordMessageHandler(dpack)
 		return
 	}
+	superdebug("Really...")
 }
 
-func sendDiscordMessage(dpack DataPackage, response string) {
-	response = strings.Replace(response, "&prefix&", getDiscordConfigString("prefix"), -1)
+func sendDiscordMessage(dpack DataPackage) {
+	dpack.Response = strings.Replace(dpack.Response, "&prefix&", getDiscordConfigString("prefix"), -1)
 
-	if strings.Contains(response, "&react&") {
-		response = strings.Replace(response, "&react&", "", -1)
-		//discordReaction()
+	if strings.Contains(dpack.Response, "&react&") {
+		dpack.Response = strings.Replace(dpack.Response, "&react&", "", -1)
+		if dpack.MsgTye == "keyword" {
+			dpack.Reaction = getKeywordResponseString(dpack.Matched + ".reaction")
+		} else if dpack.MsgTye == "command" {
+			dpack.Reaction = getCommandResponseString(dpack.Matched + ".reaction")
+		}
+		dpack.ReactAdd = true
+		//sendDiscordReaction()
 	}
 
-	if strings.Contains(response, "&user&") {
-		response = strings.Replace(response, "&user&", "", -1)
-		//discordReaction()
+	if strings.Contains(dpack.Response, "&user&") {
+		dpack.Response = strings.Replace(dpack.Response, "&user&", dpack.Mention, -1)
+		//sendDiscordReaction()
 	}
 
-	superdebug("ChannelID " + dpack.ChannelID + " \n Discord Message Sent: \n" + response)
-	dg.ChannelMessageSend(dpack.ChannelID, response)
+	superdebug("ChannelID " + dpack.ChannelID + " \n Discord Message Sent: \n" + dpack.Response)
+	sent, err := dg.ChannelMessageSend(dpack.ChannelID, dpack.Response)
+	if err != nil {
+		fatal("error sending message", err)
+		return
+	}
+
+	if dpack.ReactAdd {
+		sendDiscordReaction(sent.ChannelID, sent.ID, dpack)
+	}
 }
 
 func deleteDiscordMessage(dpack DataPackage) {
@@ -189,23 +220,18 @@ func deleteDiscordMessage(dpack DataPackage) {
 	superdebug("message was deleted.")
 }
 
-func sendDiscordReaction(channelID string, messageID string, emojiID string, userID string, job string) {
-	if job == "add" {
-		dg.MessageReactionAdd(channelID, messageID, emojiID)
-	}
-	if job == "remove" {
-		dg.MessageReactionRemove(channelID, messageID, emojiID, userID)
-	}
+func sendDiscordReaction(channelID string, messageID string, dpack DataPackage) {
+	dg.MessageReactionAdd(channelID, messageID, dpack.Reaction)
 }
 
-func sendDiscordDirectMessage(dpack DataPackage, response string) {
+func sendDiscordDirectMessage(dpack DataPackage) {
 	channel, err := dg.UserChannelCreate(dpack.AuthorID)
 	dpack.ChannelID = channel.ID
 	if err != nil {
-		fatal("error creating direct message channel,", err)
+		fatal("error creating direct message channel.", err)
 		return
 	}
-	sendDiscordMessage(dpack, response)
+	sendDiscordMessage(dpack)
 }
 
 func kickDiscordUser(guild string, user string, username string, reason string, authorname string) {

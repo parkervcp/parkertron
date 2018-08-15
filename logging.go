@@ -6,8 +6,6 @@ import (
 
 	"github.com/rifflock/lfshook"
 	log "github.com/sirupsen/logrus"
-
-	"github.com/kz/discordrus"
 )
 
 //Log is a here for the NewLogger
@@ -43,30 +41,6 @@ func setupLogger() {
 		}
 	}
 	info("Bot logging online")
-	log.AddHook(discordrus.NewHook(
-		// Use environment variable for security reasons
-		getDiscordConfigString("webhook.log"),
-		// Set minimum level to DebugLevel to receive all log entries
-		log.DebugLevel,
-		&discordrus.Opts{
-			Username:           "Test Username",
-			Author:             "",                         // Setting this to a non-empty string adds the author text to the message header
-			DisableTimestamp:   false,                      // Setting this to true will disable timestamps from appearing in the footer
-			TimestampFormat:    "Jan 2 15:04:05.00000 MST", // The timestamp takes this format; if it is unset, it will take logrus' default format
-			TimestampLocale:    nil,                        // The timestamp uses this locale; if it is unset, it will use time.Local
-			EnableCustomColors: true,                       // If set to true, the below CustomLevelColors will apply
-			CustomLevelColors: &discordrus.LevelColors{
-				Debug: 10170623,
-				Info:  3581519,
-				Warn:  14327864,
-				Error: 13631488,
-				Panic: 13631488,
-				Fatal: 13631488,
-			},
-			DisableInlineFields: false, // If set to true, fields will not appear in columns ("inline")
-		},
-	))
-	info("Discord webhook logging online")
 }
 
 func setLogLevel(level string) {
