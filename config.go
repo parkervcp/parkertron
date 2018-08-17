@@ -223,7 +223,11 @@ func getIRCChannels() []string {
 }
 
 func getIRCGroupMembers(req string) string {
-	return strings.ToLower(strings.Join(IRC.GetStringSlice("irc.group."+req), " "))
+	return strings.ToLower(strings.Join(IRC.GetStringSlice("irc.permissions.group."+req), " "))
+}
+
+func getIRCBlacklist() string {
+	return strings.ToLower(strings.Join(IRC.GetStringSlice("discord.permissions.group.blacklist"), " "))
 }
 
 //Command get funcs

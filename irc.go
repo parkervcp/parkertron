@@ -24,12 +24,14 @@ func ircMessageHandler() {
 
 	debug("irc inbound " + message.String())
 
+	// keep alive messaging
 	if message.Command == "PING" {
 		c.Send("PONG " + message.Trailing)
 		debug("PONG Sent")
 		return
 	}
 
+	// for authentication
 	if message.Command == "NOTICE" {
 		if strings.Contains(strings.ToLower(message.Trailing), "this nickname is registered") {
 			c.Send("%s IDENTIFY %s %s", message.Nick(), getIRCConfigString("nick"), getIRCConfigString("password"))
@@ -37,19 +39,26 @@ func ircMessageHandler() {
 		return
 	}
 
+	// message handling
 	if message.Command == "PRIVMSG" {
 		dpack := DataPackage{}
 		dpack.Service = "irc"
 		dpack.Message = message.Trailing
-		dpack.AuthorID = message.Params[0]
-		dpack.BotID = message.Nick()
+		dpack.ChannelID = message.Params[0]
+		dpack.AuthorID = message.Nick()
+		dpack.BotID = getIRCConfigString("nick")
 
-		if message.Nick() == getIRCConfigString("nick") || strings.Contains(getIRCGroupMembers("blacklist"), message.Params[0]) {
-			if message.Nick() == getIRCConfigString("nick") {
+		superdebug("message.Params[0]: " + message.Params[0])
+		superdebug("message.Nick(): " + message.Nick())
+		superdebug("message.Trailing: " + message.Trailing)
+
+		// if the user nickname matches bot or blacklisted.
+		if message.Nick() == dpack.BotID || strings.Contains(getIRCBlacklist(), dpack.AuthorID) {
+			if message.Nick() == dpack.BotID {
 				debug("User is the bot and being ignored.")
 				return
 			}
-			if strings.Contains(getIRCGroupMembers("blacklist"), message.Params[0]) {
+			if strings.Contains(getIRCBlacklist(), dpack.AuthorID) {
 				debug("User is blacklisted")
 				return
 			}
@@ -57,7 +66,9 @@ func ircMessageHandler() {
 
 		// if bot is DM'd
 		if message.Params[0] == getIRCConfigString("nick") {
-			sendIRCMessage(message.Nick(), "Thank you for messaging me, but I only offer support in the main chat.")
+			debug("This was a DM")
+			dpack.Response = getDiscordConfigString("direct.response")
+			sendIRCMessage(message.Nick(), getIRCConfigString("direct.response"))
 			return
 		}
 
