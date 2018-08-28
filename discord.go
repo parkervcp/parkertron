@@ -50,6 +50,13 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
+	authorGuildInfo, err := dg.GuildMember(guild.ID, m.Author.ID)
+	if err != nil {
+		fatal("Author Guild Info error", err)
+		return
+	}
+
+	//ignore messages from the bot
 	bot, err := dg.User("@me")
 	if err != nil {
 		fmt.Println("error obtaining account details,", err)
@@ -60,12 +67,14 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	dpack.MessageID = m.ID
 	dpack.AuthorID = m.Author.ID
 	dpack.AuthorName = m.Author.Username
+	dpack.AuthorRoles = authorGuildInfo.Roles
 	dpack.BotID = bot.ID
 	dpack.ChannelID = channel.ID
 	dpack.GuildID = guild.ID
 
 	// get group status. If perms are set and group name. These are note weighted yet.
-	dpack.Perms, dpack.Group = discordPermissioncheck(dpack.AuthorID)
+	debug("User is " + dpack.AuthorName)
+	dpack.Perms, dpack.Group = discordAuthorRolePermissionCheck(dpack.AuthorRoles)
 
 	// setting server owner default to admin perms
 	if dpack.AuthorID == guild.OwnerID {
@@ -76,10 +85,12 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// debug messaging
 	if dpack.Perms {
-		debug("author has perms and is in the group: " + dpack.Group)
+		debug("User has perms and is in the group: " + dpack.Group)
 		if dpack.Group == "admin" || dpack.Group == "mod" {
 			authed = true
 		}
+	} else {
+		debug("User has no perms")
 	}
 
 	// kick for mentioning a group in a specific channel.
@@ -106,7 +117,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	superdebug("Past KOM")
 
 	// ignore blacklisted users
-	if strings.Contains(getDiscordBlacklist(), dpack.AuthorID) == true {
+	if strings.Contains(getDiscordBlacklist(), dpack.AuthorID) {
 		debug("User is blacklisted and being ignored.")
 	}
 
@@ -158,7 +169,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// Message Handling
 	//
 	if dpack.Message != "" || dpack.Attached != nil {
-		superdebug("Message Content: " + dpack.Message)
+		superdebug("Message ID: " + dpack.MessageID + "\nMessage Content: " + dpack.Message)
 		discordMessageHandler(dpack)
 		return
 	}
@@ -166,32 +177,44 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 }
 
 func sendDiscordMessage(dpack DataPackage) {
+	if dpack.Response == "" {
+		return
+	}
+
+	// parse for prefix in the response
 	dpack.Response = strings.Replace(dpack.Response, "&prefix&", getDiscordConfigString("prefix"), -1)
 
+	// parse for reactions in the response
 	if strings.Contains(dpack.Response, "&react&") {
 		dpack.Response = strings.Replace(dpack.Response, "&react&", "", -1)
 		if dpack.MsgTye == "keyword" {
-			dpack.Reaction = getKeywordResponseString(dpack.Matched + ".reaction")
+			dpack.Reaction = getKeywordReaction(dpack.Keyword)
 		} else if dpack.MsgTye == "command" {
-			dpack.Reaction = getCommandResponseString(dpack.Matched + ".reaction")
+			dpack.Reaction = getCommandReaction(dpack.Command)
 		}
 		dpack.ReactAdd = true
-		//sendDiscordReaction()
 	}
 
+	//parse for user mentions in the response
 	if strings.Contains(dpack.Response, "&user&") {
+		if dpack.Mention == "" {
+			dpack.Mention = dpack.AuthorID
+		}
 		dpack.Response = strings.Replace(dpack.Response, "&user&", dpack.Mention, -1)
-		//sendDiscordReaction()
 	}
 
 	superdebug("ChannelID " + dpack.ChannelID + " \n Discord Message Sent: \n" + dpack.Response)
+
+	//Send response to channel
 	sent, err := dg.ChannelMessageSend(dpack.ChannelID, dpack.Response)
 	if err != nil {
 		fatal("error sending message", err)
 		return
 	}
 
+	//send reaction to channel
 	if dpack.ReactAdd {
+		debug("Adding Reactions")
 		sendDiscordReaction(sent.ChannelID, sent.ID, dpack)
 	}
 }
@@ -221,7 +244,10 @@ func deleteDiscordMessage(dpack DataPackage) {
 }
 
 func sendDiscordReaction(channelID string, messageID string, dpack DataPackage) {
-	dg.MessageReactionAdd(channelID, messageID, dpack.Reaction)
+	for _, reaction := range dpack.Reaction {
+		superdebug("Adding reation \"" + reaction + "\" to message " + dpack.MessageID)
+		dg.MessageReactionAdd(dpack.ChannelID, dpack.MessageID, reaction)
+	}
 }
 
 func sendDiscordDirectMessage(dpack DataPackage) {

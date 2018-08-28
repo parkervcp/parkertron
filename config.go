@@ -48,8 +48,8 @@ func setupConfig() {
 	}
 
 	for _, cr := range getBotServices() {
-		if strings.Contains(strings.TrimPrefix(cr, "bot.services."), cr) == true {
-			if strings.Contains(cr, "discord") == true {
+		if strings.Contains(strings.TrimPrefix(cr, "bot.services."), cr) {
+			if strings.Contains(cr, "discord") {
 				//Setting Discord config settings
 				Discord.SetConfigName("discord")
 				Discord.AddConfigPath("configs/")
@@ -67,7 +67,7 @@ func setupConfig() {
 				Discord.SetDefault("discord.command.remove", true)
 			}
 
-			if strings.Contains(cr, "irc") == true {
+			if strings.Contains(cr, "irc") {
 				//Setting IRC config settings
 				IRC.SetConfigName("irc")
 				IRC.AddConfigPath("configs/")
@@ -180,13 +180,9 @@ func getDiscordGroup(req string) []string {
 	return groups
 }
 
-func getDiscordGroupMembers(req string) []string {
-	var users []string
-	for x := range Discord.GetStringMapString("discord.permissions.group." + req) {
-		debug(x + " being added to the group")
-		users = append(users, x)
-	}
-	return users
+func getDiscordGroupRoles(req string) []string {
+	roles := Discord.GetStringSlice("discord.permissions.group." + req + ".roles")
+	return roles
 }
 
 func getDiscordBlacklist() string {
@@ -236,20 +232,24 @@ func getCommands() []string {
 }
 
 func getCommandsString() string {
-	return strings.ToLower(strings.Replace(strings.Join(Command.AllKeys(), ", "), "command.", "", -1))
+	return strings.ToLower(strings.Replace(strings.Replace(strings.Join(Command.AllKeys(), ", "), "command.", "", -1), ".response", "", -1))
 }
 
 func getCommandResonse(req string) []string {
-	return Command.GetStringSlice("command." + req)
+	return Command.GetStringSlice("command." + req + ".response")
 }
 
 func getCommandResponseString(req string) string {
-	return strings.Join(Command.GetStringSlice("command."+req), "\n")
+	return strings.Join(Command.GetStringSlice("command."+req+".response"), "\n")
+}
+
+func getCommandReaction(req string) []string {
+	return Command.GetStringSlice("command." + req + ".reaction")
 }
 
 func getCommandStatus(req string) bool {
 	for _, cr := range getCommands() {
-		if strings.Contains(strings.TrimPrefix(cr, "command."), req) == true {
+		if strings.Contains(strings.TrimPrefix(cr, "command."), req) {
 			return true
 		}
 	}
@@ -262,15 +262,19 @@ func getKeywords() []string {
 }
 
 func getKeywordsString() string {
-	return strings.ToLower(strings.Replace(strings.Join(Keyword.AllKeys(), ", "), "keyword.", "", -1))
+	return strings.ToLower(strings.Replace(strings.Replace(strings.Join(Keyword.AllKeys(), ", "), "keyword.", "", -1), ".response", "", -1))
 }
 
 func getKeywordResponse(req string) []string {
-	return Keyword.GetStringSlice("keyword." + req)
+	return Keyword.GetStringSlice("keyword." + req + ".response")
 }
 
 func getKeywordResponseString(req string) string {
-	return strings.Join(Keyword.GetStringSlice("keyword."+req), "\n")
+	return strings.Join(Keyword.GetStringSlice("keyword."+req+".response"), "\n")
+}
+
+func getKeywordReaction(req string) []string {
+	return Keyword.GetStringSlice("keyword." + req + ".reaction")
 }
 
 //Parsing get funcs

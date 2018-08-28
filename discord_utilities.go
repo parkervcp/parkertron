@@ -10,7 +10,7 @@ const charset = "abcdefghijklmnopqrstuvwxyz" + "ABCDEFGHIJKLMNOPQRSTUVWXYZ012345
 var seededRand *rand.Rand
 
 func discordChannelFilter(req string) bool {
-	if getDiscordConfigBool("channels.filter") == true {
+	if getDiscordConfigBool("channels.filter") {
 		if strings.Contains(getDiscordChannels(), req) {
 			return true
 		}
@@ -22,20 +22,14 @@ func discordChannelFilter(req string) bool {
 	return true
 }
 
-func discordPermissioncheck(authorID string) (bool, string) {
-	for _, y := range getDiscordGroupMembers("admin") {
-		if authorID == y {
-			debug("User " + authorID + "is an admin")
-			return true, "admin"
+func discordAuthorRolePermissionCheck(roles []string) (bool, string) {
+	for _, x := range roles {
+		for _, y := range getDiscordGroupRoles("admin") {
+			if x == y {
+				return true, "admin"
+			}
 		}
 	}
-	for _, y := range getDiscordGroupMembers("mod") {
-		if authorID == y {
-			debug("User " + authorID + "is a mod")
-			return true, "mod"
-		}
-	}
-	debug("User " + authorID + " is not in a perms group")
 	return false, ""
 }
 

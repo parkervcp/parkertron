@@ -23,13 +23,13 @@ func configFilecheck() bool {
 			setupBotConfig()
 		}
 		for _, cr := range getBotServices() {
-			if strings.Contains(strings.TrimPrefix(cr, "bot.services."), cr) == true {
-				if strings.Contains(cr, "discord") == true {
+			if strings.Contains(strings.TrimPrefix(cr, "bot.services."), cr) {
+				if strings.Contains(cr, "discord") {
 					if checkConfigExists("discord.yml") == false {
 						setupDiscordConfig()
 					}
 				}
-				if strings.Contains(cr, "irc") == true {
+				if strings.Contains(cr, "irc") {
 					if checkConfigExists("irc.yml") == false {
 						setupIRCConfig()
 					}
@@ -107,12 +107,12 @@ func askStringQuestion(question string) string {
 func setupBotConfig() {
 	var services []string
 
-	if askBoolQuestion("Do you plan on supporting discord? [Y/n]") == true {
+	if askBoolQuestion("Do you plan on supporting discord? [Y/n]") {
 		services = append(services, "discord")
 		info("Discord enabled")
 		setupDiscordConfig()
 	}
-	if askBoolQuestion("Do you plan on supporting irc? [Y/n]") == true {
+	if askBoolQuestion("Do you plan on supporting irc? [Y/n]") {
 		services = append(services, "irc")
 		info("IRC enabled")
 		setupIRCConfig()
@@ -154,7 +154,7 @@ func setupDiscordConfig() {
 	}
 
 	// set bot owner
-	if askBoolQuestion("Would you like to set a owner? (defaults to server owner) [Y/n]") == true {
+	if askBoolQuestion("Would you like to set a owner? (defaults to server owner) [Y/n]") {
 		Discord.Set("discord.owner", askStringQuestion("What is the server owners discord ID?"))
 	} else {
 		info("defaulting to server owner")
@@ -163,8 +163,8 @@ func setupDiscordConfig() {
 	var listening []string
 
 	// set channel filter up
-	if askBoolQuestion("Do you want the bot to listen on specific channels? [Y/n]") == true {
-		if askBoolQuestion("A channel to listen on it required. Would you like to set one now? [Y/n]") == true {
+	if askBoolQuestion("Do you want the bot to listen on specific channels? [Y/n]") {
+		if askBoolQuestion("A channel to listen on it required. Would you like to set one now? [Y/n]") {
 			listening = append(listening, askStringQuestion("What is the ID of the channel you want to listen on?"))
 			Discord.Set("bot.channels.filter", true)
 			Discord.Set("bot.channels.listening", listening)
@@ -209,9 +209,9 @@ func setupIRCConfig() {
 
 	var listening []string
 
-	if askBoolQuestion("Do you want to add channels to join now? (you can pm the bot) [Y/n]") == true {
+	if askBoolQuestion("Do you want to add channels to join now? (you can pm the bot) [Y/n]") {
 		listening = append(listening, askStringQuestion("What channel is the bot supposed to join? (Without the # in the name)"))
-		for askBoolQuestion("Do you want to add more channels to join now? [Y/n]") == true {
+		for askBoolQuestion("Do you want to add more channels to join now? [Y/n]") {
 			listening = append(listening, askStringQuestion("What channel is the bot supposed to join? (Without the # in the name)"))
 		}
 	}
@@ -283,9 +283,9 @@ func setupGroup() {
 
 			var group []string
 
-			if askBoolQuestion("Do you want to add users to admin group now?? [Y/n]") == true {
+			if askBoolQuestion("Do you want to add users to admin group now?? [Y/n]")  {
 				admin = append(admin, askStringQuestion(""))
-				for askBoolQuestion("Do you want to add more groups to join now? [Y/n]") == true {
+				for askBoolQuestion("Do you want to add more groups to join now? [Y/n]")  {
 					admin = append(admin, askStringQuestion(""))
 				}
 			}

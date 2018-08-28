@@ -17,32 +17,35 @@ import (
 
 // DataPackage hopefully pass info among the packages a bit easier.
 type DataPackage struct {
-	Service    string   `json:"service,omitempty"`
-	Message    string   `json:"message,omitempty"`
-	MessageID  string   `json:"message_id,omitempty"`
-	AuthorID   string   `json:"author_id,omitempty"`
-	AuthorName string   `json:"author_name,omitempty"`
-	BotID      string   `json:"bot_id,omitempty"`
-	ChannelID  string   `json:"channel_id,omitempty"`
-	Attached   []string `json:"attached,omitempty"`
-	Perms      bool     `json:"perms,omitempty"`
-	Group      string   `json:"group,omitempty"`
-	GuildID    string   `json:"guild_id,omitempty"`
-	DMChannel  string   `json:"dm_channel,omitempty"`
-	DMMessage  string   `json:"dm_message,omitempty"`
-	MsgTye     string   `json:"msg_type,omitempty"`
-	Matched    string   `json:"matched,omitempty"`
-	Response   string   `json:"response,omitempty"`
-	Mention    string   `json:"mention,omitempty"`
-	Reaction   string   `json:"reaction,omitempty"`
-	ReactAdd   bool     `json:"react_job,omitempty"`
+	Service     string   `json:"service,omitempty"`
+	Message     string   `json:"message,omitempty"`
+	MessageID   string   `json:"message_id,omitempty"`
+	AuthorID    string   `json:"author_id,omitempty"`
+	AuthorName  string   `json:"author_name,omitempty"`
+	AuthorRoles []string `json:"author_roles,omitempty"`
+	BotID       string   `json:"bot_id,omitempty"`
+	ChannelID   string   `json:"channel_id,omitempty"`
+	Attached    []string `json:"attached,omitempty"`
+	Perms       bool     `json:"perms,omitempty"`
+	Group       string   `json:"group,omitempty"`
+	GuildID     string   `json:"guild_id,omitempty"`
+	DMChannel   string   `json:"dm_channel,omitempty"`
+	DMMessage   string   `json:"dm_message,omitempty"`
+	MsgTye      string   `json:"msg_type,omitempty"`
+	Matched     string   `json:"matched,omitempty"`
+	Response    string   `json:"response,omitempty"`
+	Mention     string   `json:"mention,omitempty"`
+	Reaction    []string `json:"reaction,omitempty"`
+	ReactAdd    bool     `json:"react_job,omitempty"`
+	Keyword     string   `json:"keyword,omitempty"`
+	Command     string   `json:"command,omitempty"`
 }
 
 func matchImage(input string) bool {
 	ip := getParsingImageFiletypes()
 
 	for _, ro := range ip {
-		if strings.Contains(input, ro) == true {
+		if strings.Contains(input, ro) {
 			debug("Image found with a " + ro + " format")
 			return true
 		}
@@ -235,34 +238,41 @@ func parseKeyword(dpack DataPackage) {
 	//exact match search
 	debug("Testing exact matches")
 	for _, kr := range getKeywords() {
-		superdebug("Testing on '" + strings.TrimPrefix(kr, "keyword.exact.") + "' and match is " + strconv.FormatBool(strings.Contains(strings.ToLower(dpack.Message), strings.TrimPrefix(kr, "keyword.exact."))))
-		if strings.ToLower(dpack.Message) == strings.TrimPrefix(kr, "keyword.exact.") == true {
-			debug(getKeywordResponseString(kr))
-			dpack.Response = getKeywordResponseString(strings.TrimPrefix(kr, "keyword."))
+		if strings.Contains(strings.ToLower(dpack.Message), strings.TrimSuffix(strings.TrimPrefix(kr, "keyword.exact."), ".response")) {
+			superdebug(strings.TrimSuffix(strings.TrimPrefix(kr, "keyword.exact."), ".response") + " match is " + strconv.FormatBool(strings.Contains(strings.ToLower(dpack.Message), strings.TrimSuffix(strings.TrimPrefix(kr, "keyword.exact."), ".response"))))
+		}
+		if strings.ToLower(dpack.Message) == strings.TrimSuffix(strings.TrimPrefix(kr, "keyword.exact."), ".response") {
+			dpack.Response = getKeywordResponseString(strings.TrimSuffix(strings.TrimPrefix(kr, "keyword."), ".response"))
+			dpack.Keyword = strings.TrimSuffix(strings.TrimPrefix(kr, "keyword."), ".response")
+			superdebug("Response is " + dpack.Response)
 			sendResponse(dpack)
 		}
 	}
 
 	lastKeyword := ""
 	lastIndex := -1
+	//Match on errors
+	debug("Testing error matches")
 	for _, kr := range getKeywords() {
-		superdebug("Testing on '" + strings.TrimPrefix(kr, "keyword.") + "' and match is " + strconv.FormatBool(strings.Contains(strings.ToLower(dpack.Message), strings.TrimPrefix(kr, "keyword."))))
-		if strings.Contains(strings.ToLower(dpack.Message), strings.TrimPrefix(kr, "keyword.")) {
-			dpack.Matched = strings.TrimPrefix(kr, "keyword.")
+		if strings.Contains(strings.ToLower(dpack.Message), strings.TrimSuffix(strings.TrimPrefix(kr, "keyword."), ".response")) {
+			superdebug(strings.TrimSuffix(strings.TrimPrefix(kr, "keyword."), ".response") + " match is " + strconv.FormatBool(strings.Contains(strings.ToLower(dpack.Message), strings.TrimSuffix(strings.TrimPrefix(kr, "keyword."), ".response"))))
 		}
-		i := strings.LastIndex(strings.ToLower(dpack.Message), strings.TrimPrefix(kr, "keyword."))
+		i := strings.LastIndex(strings.ToLower(dpack.Message), strings.TrimSuffix(strings.TrimPrefix(kr, "keyword."), ".response"))
 		if i > lastIndex {
 			lastIndex = i
 			lastKeyword = kr
+			dpack.Keyword = strings.TrimSuffix(strings.TrimPrefix(lastKeyword, "keyword."), ".response")
 		}
 	}
+
 	if lastIndex > -1 {
-		dpack.Response = getKeywordResponseString(strings.TrimPrefix(lastKeyword, "keyword."))
+		dpack.Response = getKeywordResponseString(strings.TrimSuffix(strings.TrimPrefix(lastKeyword, "keyword."), ".response"))
 		sendResponse(dpack)
 	}
 	return
 }
 
+// admin commands are hard coded for now
 func parseAdminCommand(dpack DataPackage) {
 	debug("Parsing inbound admin command: " + dpack.Message)
 	if strings.HasPrefix(dpack.Message, "list") {
@@ -285,6 +295,7 @@ func parseAdminCommand(dpack DataPackage) {
 	}
 }
 
+// mod commands are hard coded for now
 func parseModCommand(dpack DataPackage) {
 	debug("Parsing inbound mod command: " + dpack.Message)
 }
@@ -292,6 +303,7 @@ func parseModCommand(dpack DataPackage) {
 func parseCommand(dpack DataPackage) {
 	debug("Parsing inbound command: " + dpack.Message)
 
+	//Let Me Google That For You parsing
 	if strings.HasPrefix(dpack.Message, "ggl") {
 		debug("Googling for user. \n")
 		dpack.Response = "<https://lmgtfy.com/?q=" + strings.Replace(strings.TrimPrefix(dpack.Message, "ggl "), " ", "+", -1) + ">"

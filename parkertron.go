@@ -47,7 +47,7 @@ func init() {
 	services := ""
 
 	for _, cr := range getBotServices() {
-		if strings.Contains(strings.TrimPrefix(cr, "bot.services."), cr) == true {
+		if strings.Contains(strings.TrimPrefix(cr, "bot.services."), cr) {
 			services = services + cr
 		}
 	}
@@ -57,13 +57,13 @@ func init() {
 
 func main() {
 	for _, cr := range getBotServices() {
-		if strings.Contains(strings.TrimPrefix(cr, "bot.services."), cr) == true {
-			if strings.Contains(cr, "discord") == true {
+		if strings.Contains(strings.TrimPrefix(cr, "bot.services."), cr) {
+			if strings.Contains(cr, "discord") {
 				info("Starting Discord connector\n")
 				go startDiscordConnection()
 			}
 
-			if strings.Contains(cr, "irc") == true {
+			if strings.Contains(cr, "irc") {
 				info("Starting IRC connector\n")
 				go startIRCConnection()
 			}
