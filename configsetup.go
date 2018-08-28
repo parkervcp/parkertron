@@ -240,7 +240,7 @@ func setupCommandsConfig() {
 			if command == "" {
 				exit = true
 			} else {
-				commandmap[command] = setupStringMap()
+				commandmap[command+".response"] = setupStringMap()
 			}
 		}
 	}
@@ -263,7 +263,7 @@ func setupKeywordsConfig() {
 			if keyword == "" {
 				exit = true
 			} else {
-				keywordmap[keyword] = setupStringMap()
+				keywordmap[keyword+".response"] = setupStringMap()
 			}
 		}
 	}

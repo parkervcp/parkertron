@@ -203,7 +203,7 @@ func sendDiscordMessage(dpack DataPackage) {
 		if dpack.Mention == "" {
 			dpack.Mention = dpack.AuthorID
 		}
-		dpack.Response = strings.Replace(dpack.Response, "&user&", dpack.Mention, -1)
+		dpack.Response = strings.Replace(dpack.Response, "&user&", "<@"+dpack.Mention+">", -1)
 	}
 
 	superdebug("ChannelID " + dpack.ChannelID + " \n Discord Message Sent: \n" + dpack.Response)
@@ -351,6 +351,13 @@ func startDiscordConnection() {
 		return
 	}
 	debug("Discord service started\n")
+
+	bot, err := dg.User("@me")
+	if err != nil {
+		fmt.Println("error obtaining account details,", err)
+	}
+
+	debug("Invite the bot to your server with https://discordapp.com/oauth2/authorize?client_id=" + bot.ID + "&scope=bot")
 
 	ServStat <- "discord_online"
 }

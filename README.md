@@ -5,8 +5,37 @@
 
 A simple discord chat bot with a simple configuration. Written using [discordgo](https://github.com/bwmarrin/discordgo).
 
-Requirements:
 
+# Large changes to the keyword/command configs
+
+This most recent update will break your current keyword and command configs by moving the response one level deeper. This is to allow for reactions to be added on keywords. The bot can also mention a user for matched using the &user& string in the keyword response.
+
+Reactions need to be copied in as a unicode emoji character.
+
+### Old:
+```
+keyword:
+  help:
+    - "Please check the github page at <https://github.com/parkervcp/parkertron>"
+    - "The default config is a good example of how to set commands up. Try `.help command`"
+    - "My base chat parsing function is also available. Try `.help keyword` for more info"
+```
+
+### New:
+```
+keyword:
+  help:
+    reaction:
+      - "💪"
+    response:
+      - "&user& Please check the github page at <https://github.com/parkervcp/parkertron>"
+      - "The default config is a good example of how to set commands up. Try `.help command`"
+      - "My base chat parsing function is also available. Try `.help keyword` for more info"
+```
+
+
+### Requirements:
+tesseract-ocr w/ english trainign files (May support other languages but has not been tested.)
 
 Working on adding other services and additions.
 
@@ -31,7 +60,7 @@ The checklist so far
 #### General support
 - [x] Get inbound messages
   - [x] Listen to specific channels
-  - [ ] Listen for mentions
+  - [x] Listen for mentions
 
 - [x] Respond to inbound messages
   - [x] respond to commands with prefix
@@ -43,25 +72,25 @@ The checklist so far
   - [x] image from url support
     - [x] png support
     - [x] jpg support
-  - [ ] direct embedded images
+  - [x] direct embedded images
 
 - [x] Respond with correct output from configs
 
 - [x] Respond with multi-line output in a single message
 
-- [ ] Impliment blacklist/whitelist mode
+- [x] Impliment blacklist/whitelist mode (Blacklist by User ID only)
 
 - [ ] Mitigate spam with cooldown per user/channel/global
   - [ ] global cooldown
   - [ ] channel cooldown
   - [ ] user cooldown
 
-- [ ] Permissions
+- [x] Permissions
   - [ ] Permissions management
 
 - [ ] Logging
   - [ ] Log user join/leave 
-  - [ ] Log chats
+  - [x] Log chats (only logs channels it is watching to cut on logging)
   - [ ] Log edits (show original and edited)
   - [ ] Log chats/edits to separate files/folders
   
