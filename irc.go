@@ -18,18 +18,20 @@ var (
 func ircMessageHandler() {
 	message, err := c.ReadMessage()
 	if err != nil {
-		writeLog("fatal", "cannot read message: ", err)
+		fatal("cannot read message: ", err)
 		return
 	}
 
-	writeLog("debug", "irc inbound "+message.String(), nil)
+	debug("irc inbound " + message.String())
 
+	// keep alive messaging
 	if message.Command == "PING" {
 		c.Send("PONG " + message.Trailing)
-		writeLog("debug", "PONG Sent", nil)
+		debug("PONG Sent")
 		return
 	}
 
+	// for authentication
 	if message.Command == "NOTICE" {
 		if strings.Contains(strings.ToLower(message.Trailing), "this nickname is registered") {
 			c.Send("%s IDENTIFY %s %s", message.Nick(), getIRCConfigString("nick"), getIRCConfigString("password"))
@@ -37,44 +39,56 @@ func ircMessageHandler() {
 		return
 	}
 
+	// message handling
 	if message.Command == "PRIVMSG" {
-		input := message.Trailing
+		dpack := DataPackage{}
+		dpack.Service = "irc"
+		dpack.Message = message.Trailing
+		dpack.ChannelID = message.Params[0]
+		dpack.AuthorID = message.Nick()
+		dpack.BotID = getIRCConfigString("nick")
 
-		if message.Nick() == getIRCConfigString("nick") || strings.Contains(getIRCGroupMembers("blacklist"), message.Params[0]) {
-			if message.Nick() == getIRCConfigString("nick") {
-				writeLog("debug", "User is the bot and being ignored.", nil)
+		superdebug("message.Params[0]: " + message.Params[0])
+		superdebug("message.Nick(): " + message.Nick())
+		superdebug("message.Trailing: " + message.Trailing)
+
+		// if the user nickname matches bot or blacklisted.
+		if message.Nick() == dpack.BotID || strings.Contains(getIRCBlacklist(), dpack.AuthorID) {
+			if message.Nick() == dpack.BotID {
+				debug("User is the bot and being ignored.")
 				return
 			}
-			if strings.Contains(getIRCGroupMembers("blacklist"), message.Params[0]) {
-				writeLog("debug", "User is blacklisted", nil)
+			if strings.Contains(getIRCBlacklist(), dpack.AuthorID) {
+				debug("User is blacklisted")
 				return
 			}
 		}
 
+		// if bot is DM'd
 		if message.Params[0] == getIRCConfigString("nick") {
-			sendIRCMessage(message.Nick(), "Thank you for messaging me, but I only offer support in the main chat.")
+			debug("This was a DM")
+			dpack.Response = getDiscordConfigString("direct.response")
+			sendIRCMessage(message.Nick(), getIRCConfigString("direct.response"))
 			return
 		}
 
 		//
 		// Message Handling
 		//
-		if input != "" {
-			writeLog("debug", "Message Content: "+input+"\n", nil)
+		if dpack.Message != "" {
+			debug("Message Content: " + dpack.Message)
 
-			if strings.HasPrefix(input, getIRCConfigString("prefix")) == false {
-				writeLog("debug", "sending to \""+message.Params[0], nil)
-				parseKeyword("irc", message.Params[0], input)
-				return
-			} else if strings.HasPrefix(input, getIRCConfigString("prefix")) == true {
-				input := strings.TrimPrefix(input, getIRCConfigString("prefix"))
-				writeLog("debug", "sending to \""+message.Params[0], nil)
-				parseCommand("irc", message.Params[0], message.Nick(), input)
-				return
+			if !strings.HasPrefix(dpack.Message, getIRCConfigString("prefix")) {
+				debug("sending to \"" + message.Params[0])
+				parseKeyword(dpack)
+			} else {
+				dpack.Message = strings.TrimPrefix(dpack.Message, getIRCConfigString("prefix"))
+				debug("sending to \"" + message.Params[0])
+				parseCommand(dpack)
 			}
 			return
 		}
-		writeLog("debug", message.Raw, nil)
+		debug(message.Raw)
 	}
 }
 
@@ -83,10 +97,10 @@ func sendIRCMessage(ChannelID string, response string) {
 	response = strings.Replace(response, "&prefix&", getIRCConfigString("prefix"), -1)
 	multiresp := strings.Split(response, "\n")
 
-	writeLog("debug", "IRC Message Sent:", nil)
+	debug("IRC Message Sent:")
 
 	for x := range multiresp {
-		writeLog("debug", "line sent: "+multiresp[x], nil)
+		debug("line sent: " + multiresp[x])
 		c.Send("PRIVMSG " + ChannelID + " :" + multiresp[x])
 	}
 }
@@ -95,9 +109,9 @@ func startIRCConnection() {
 	// This is the address of the irc server and the port combined to make it easier to input later
 	address = getIRCConfigString("server.address") + ":" + getIRCConfigString("server.port")
 
-	writeLog("debug", "Address should be "+getIRCConfigString("server.address")+":"+getIRCConfigString("server.port"), nil)
+	debug("Address should be " + getIRCConfigString("server.address") + ":" + getIRCConfigString("server.port"))
 
-	writeLog("debug", "Connecting on "+address, nil)
+	debug("Connecting on " + address)
 
 	c, err = irc.Connect(address)
 
@@ -119,7 +133,7 @@ func startIRCConnection() {
 		c.Send("JOIN %s", name)
 	}
 
-	writeLog("info", "irc service started\n", nil)
+	debug("irc service started\n")
 
 	ServStat <- "irc_online"
 

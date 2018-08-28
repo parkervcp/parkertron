@@ -4,13 +4,24 @@ irc:
   password: "" ## "changemenow" to not use a password. Note The account can be registered and you can lose it.
   nick: "parkertron" ## The nickanme the bot will display
   real: "Parkertron McBot" ## The Real Name displayed on the server
-  prefix: "."
-  channels:
-    listening: # Channels the bot will join and listen on
-      - "pbtg"
   ssl:
     enabled: true
     servername: "irc.freenode.net"
   server: 
     address: "irc.freenode.net"
     port: "6667"
+  prefix: "."
+  channels:
+    listening: # Channels the bot will join and listen on
+      - "pbtg"
+  direct:
+    response: "Please message in the main server."
+  ## only simple permissions for now. These only apply to some filtering rules and some command usage right now.
+  permissions:
+    group: ## user groups. Currently These are not implimented. The Blacklist will ignore specific users
+      admin: ## default to server owner having this permission
+        - ""
+      mod: ## no default users for this. Needs to be user ID's. Using roleID's is planned eventually.
+        - ""
+      blacklist: ## users in this group are ignored.
+        - ""

@@ -24,8 +24,8 @@ The checklist so far
 
 #### Discord specific support
   - [x] Support @mentions for the bot
-  - [ ] Use @mentions for other users
-  - [ ] Watch for @mentions on groups
+  - [x] Use @mentions for other users
+  - [x] Watch for @mentions on groups
 
 
 #### General support

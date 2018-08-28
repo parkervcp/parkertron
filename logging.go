@@ -24,28 +24,38 @@ func setupLogger() {
 	}
 
 	if _, err := os.Stat("./logs/latest.log"); err == nil {
-		err := os.Rename("./logs/latest.log", "./logs/"+time.Now().UTC().Format("2006-01-02-04-05-0700")+".log")
+		err := os.Rename("./logs/latest.log", "./logs/"+time.Now().UTC().Format("2006-01-02 15:04")+".log")
 
 		if err != nil {
-			writeLog("error", "failed to move latest logs.", err)
+			errmsg("failed to move latest logs.", err)
 			return
 		}
 	}
-	writeLog("info", "Bot logging online", nil)
+
+	if _, err := os.Stat("./logs/debug.log"); err == nil {
+		err := os.Rename("./logs/debug.log", "./logs/debug-"+time.Now().UTC().Format("2006-01-02 15:04")+".log")
+
+		if err != nil {
+			errmsg("failed to move debug logs.", err)
+			return
+		}
+	}
+	info("Bot logging online")
 }
 
 func setLogLevel(level string) {
 	if level == "debug" {
 		log.SetLevel(log.DebugLevel)
-		writeLog("debug", "log level set to debug", nil)
+		debug("log level set to debug")
 	} else if level == "info" {
 		log.SetLevel(log.InfoLevel)
-		writeLog("debug", "log level set to info", nil)
+		debug("log level set to info")
 	}
 
 	pathMap := lfshook.PathMap{
 		log.InfoLevel:  "logs/latest.log",
 		log.ErrorLevel: "logs/latest.log",
+		log.DebugLevel: "logs/debug.log",
 	}
 	log.AddHook(lfshook.NewHook(
 		pathMap,
@@ -54,24 +64,42 @@ func setLogLevel(level string) {
 
 }
 
-func writeLog(level string, message string, err error) {
-	switch {
-	case level == "debug":
-		log.Debug(message)
-	case level == "info":
-		log.Info(message)
-	case level == "warn":
-		log.Warn(message)
-	case level == "error":
-		log.Error(message)
-	case level == "fatal":
-		log.Fatal(message)
-	case level == "panic":
-		log.Panic(message)
-	}
+func info(message string) {
+	log.Info(message)
+}
 
-	if err != nil {
-		log.Fatal(err)
+func debug(message string) {
+	log.Debug(message)
+}
+
+func superdebug(message string) {
+	if getBotConfigString("log.level") == "superdebug" {
+		log.Debug(message)
 	}
+}
+
+func errmsg(message string, err error) {
+	log.Error(message)
+	log.Error(err)
+}
+
+func warn(message string) {
+	log.Warn(message)
+}
+
+func fatal(message string, err error) {
+	log.Fatal(message)
+	log.Fatal(err)
+}
+
+func panic(message string) {
+	log.Panic(message)
+}
+
+func auditKick() {
+
+}
+
+func auditBan() {
 
 }

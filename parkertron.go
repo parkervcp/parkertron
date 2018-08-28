@@ -25,12 +25,15 @@ func init() {
 	verbose := flag.String("v", "info", "set the console verbosity of the bot")
 	flag.Parse()
 
-	writeLog("info", title+"\n", nil)
+	info(title)
 
 	setupConfig()
 
 	if *verbose == "debug" {
 		setLogLevel("debug")
+	} else if *verbose == "superdebug" {
+		setLogLevel("debug")
+		setBotConfigString("log.level", "superdebug")
 	} else {
 		if getBotConfigString("log.level") == "" {
 			setLogLevel("info")
@@ -44,24 +47,24 @@ func init() {
 	services := ""
 
 	for _, cr := range getBotServices() {
-		if strings.Contains(strings.TrimPrefix(cr, "bot.services."), cr) == true {
+		if strings.Contains(strings.TrimPrefix(cr, "bot.services."), cr) {
 			services = services + cr
 		}
 	}
 
-	writeLog("debug", "services loaded are "+services, nil)
+	debug("services loaded are " + services)
 }
 
 func main() {
 	for _, cr := range getBotServices() {
-		if strings.Contains(strings.TrimPrefix(cr, "bot.services."), cr) == true {
-			if strings.Contains(cr, "discord") == true {
-				writeLog("info", "Starting Discord connector\n", nil)
+		if strings.Contains(strings.TrimPrefix(cr, "bot.services."), cr) {
+			if strings.Contains(cr, "discord") {
+				info("Starting Discord connector\n")
 				go startDiscordConnection()
 			}
 
-			if strings.Contains(cr, "irc") == true {
-				writeLog("info", "Starting IRC connector\n", nil)
+			if strings.Contains(cr, "irc") {
+				info("Starting IRC connector\n")
 				go startIRCConnection()
 			}
 		}
@@ -71,10 +74,10 @@ func main() {
 		<-ServStat
 	}
 
-	writeLog("debug", "Commands being loaded are: "+getCommandsString(), nil)
-	writeLog("debug", "Keywords being loaded are: "+getKeywordsString(), nil)
+	superdebug("Commands being loaded are: " + getCommandsString())
+	superdebug("Keywords being loaded are: " + getKeywordsString())
 
-	writeLog("info", "Bot is now running. Press CTRL-C to exit.\n", nil)
+	info("Bot is now running. Press CTRL-C to exit.\n")
 	// Simple way to keep program running until CTRL-C is pressed.
 	<-make(chan struct{})
 	return

@@ -30,7 +30,7 @@ var (
 func setupConfig() {
 
 	if configFilecheck() == false {
-		writeLog("error", "There was an issue setting up the config", nil)
+		errmsg("There was an issue setting up the config", nil)
 	}
 
 	//Setting Bot config settings
@@ -39,46 +39,46 @@ func setupConfig() {
 	Bot.WatchConfig()
 
 	Bot.OnConfigChange(func(e fsnotify.Event) {
-		writeLog("info", "Bot config changed", nil)
+		info("Bot config changed")
 	})
 
 	if err := Bot.ReadInConfig(); err != nil {
-		writeLog("fatal", "Could not load Bot configuration.", err)
+		fatal("Could not load Bot configuration.", err)
 		return
 	}
 
 	for _, cr := range getBotServices() {
-		if strings.Contains(strings.TrimPrefix(cr, "bot.services."), cr) == true {
-			if strings.Contains(cr, "discord") == true {
+		if strings.Contains(strings.TrimPrefix(cr, "bot.services."), cr) {
+			if strings.Contains(cr, "discord") {
 				//Setting Discord config settings
 				Discord.SetConfigName("discord")
 				Discord.AddConfigPath("configs/")
 				Discord.WatchConfig()
 
 				Discord.OnConfigChange(func(e fsnotify.Event) {
-					writeLog("info", "Discord config changed", nil)
+					info("Discord config changed")
 				})
 
 				if err := Discord.ReadInConfig(); err != nil {
-					writeLog("fatal", "Could not load Discord configuration.", err)
+					fatal("Could not load Discord configuration.", err)
 					return
 				}
 
 				Discord.SetDefault("discord.command.remove", true)
 			}
 
-			if strings.Contains(cr, "irc") == true {
+			if strings.Contains(cr, "irc") {
 				//Setting IRC config settings
 				IRC.SetConfigName("irc")
 				IRC.AddConfigPath("configs/")
 				IRC.WatchConfig()
 
 				IRC.OnConfigChange(func(e fsnotify.Event) {
-					writeLog("info", "IRC config changed", nil)
+					info("IRC config changed")
 
 				})
 				if err := IRC.ReadInConfig(); err != nil {
-					writeLog("fatal", "Could not load irc configuration.", err)
+					fatal("Could not load irc configuration.", err)
 					return
 				}
 			}
@@ -91,11 +91,11 @@ func setupConfig() {
 	Command.WatchConfig()
 
 	Command.OnConfigChange(func(e fsnotify.Event) {
-		writeLog("info", "Command config changed", nil)
+		info("Command config changed")
 	})
 
 	if err := Command.ReadInConfig(); err != nil {
-		writeLog("fatal", "Could not load Command configuration.", err)
+		fatal("Could not load Command configuration.", err)
 		return
 	}
 
@@ -105,11 +105,11 @@ func setupConfig() {
 	Keyword.WatchConfig()
 
 	Keyword.OnConfigChange(func(e fsnotify.Event) {
-		writeLog("info", "Keyword config changed", nil)
+		info("Keyword config changed")
 	})
 
 	if err := Keyword.ReadInConfig(); err != nil {
-		writeLog("fatal", "Could not load Keyword configuration.", err)
+		fatal("Could not load Keyword configuration.", err)
 		return
 	}
 
@@ -119,15 +119,15 @@ func setupConfig() {
 	Parsing.WatchConfig()
 
 	Parsing.OnConfigChange(func(e fsnotify.Event) {
-		writeLog("info", "Parsing config changed", nil)
+		info("Parsing config changed")
 	})
 
 	if err := Parsing.ReadInConfig(); err != nil {
-		writeLog("fatal", "Could not load Parsing configuration.", err)
+		fatal("Could not load Parsing configuration.", err)
 		return
 	}
 
-	writeLog("info", "Bot configs loaded", nil)
+	info("Bot configs loaded")
 }
 
 //Bot Get funcs
@@ -151,6 +151,10 @@ func getBotConfigFloat(req string) float64 {
 	return Bot.GetFloat64("bot." + req)
 }
 
+func setBotConfigString(req string, value string) {
+	Bot.Set("bot."+req, value)
+}
+
 //Discord get funcs
 func getDiscordConfigString(req string) string {
 	return Discord.GetString("discord." + req)
@@ -168,8 +172,26 @@ func getDiscordChannels() string {
 	return strings.ToLower(strings.Join(Discord.GetStringSlice("discord.channels.listening"), " "))
 }
 
-func getDiscordGroupMembers(req string) string {
-	return strings.ToLower(strings.Join(Discord.GetStringSlice("discord.permissions.group."+req), " "))
+func getDiscordGroup(req string) []string {
+	var groups []string
+	for x := range Discord.GetStringMapString("discord.permissions.group") {
+		groups = append(groups, x)
+	}
+	return groups
+}
+
+func getDiscordGroupRoles(req string) []string {
+	roles := Discord.GetStringSlice("discord.permissions.group." + req + ".roles")
+	return roles
+}
+
+func getDiscordGroupUsers(req string) []string {
+	users := Discord.GetStringSlice("discord.permissions.group." + req + ".users")
+	return users
+}
+
+func getDiscordBlacklist() string {
+	return strings.ToLower(strings.Join(Discord.GetStringSlice("discord.permissions.group.blacklist"), " "))
 }
 
 func getDiscordKOMChannel(req string) bool {
@@ -178,6 +200,10 @@ func getDiscordKOMChannel(req string) bool {
 
 func getDiscordKOMID(req string) string {
 	return strings.ToLower(strings.Join(Discord.GetStringSlice("discord.kick_on_mention.channel."+req), " "))
+}
+
+func getDiscordKOMMessage(req string) string {
+	return strings.ToLower(strings.Join(Discord.GetStringSlice("discord.kick_on_mention.channel."+req+".message"), "\n"))
 }
 
 //IRC get funcs
@@ -198,7 +224,11 @@ func getIRCChannels() []string {
 }
 
 func getIRCGroupMembers(req string) string {
-	return strings.ToLower(strings.Join(IRC.GetStringSlice("irc.group."+req), " "))
+	return strings.ToLower(strings.Join(IRC.GetStringSlice("irc.permissions.group."+req), " "))
+}
+
+func getIRCBlacklist() string {
+	return strings.ToLower(strings.Join(IRC.GetStringSlice("discord.permissions.group.blacklist"), " "))
 }
 
 //Command get funcs
@@ -207,20 +237,24 @@ func getCommands() []string {
 }
 
 func getCommandsString() string {
-	return strings.ToLower(strings.Replace(strings.Join(Command.AllKeys(), ", "), "command.", "", -1))
+	return strings.ToLower(strings.Replace(strings.Replace(strings.Join(Command.AllKeys(), ", "), "command.", "", -1), ".response", "", -1))
 }
 
 func getCommandResonse(req string) []string {
-	return Command.GetStringSlice("command." + req)
+	return Command.GetStringSlice("command." + req + ".response")
 }
 
 func getCommandResponseString(req string) string {
-	return strings.Join(Command.GetStringSlice("command."+req), "\n")
+	return strings.Join(Command.GetStringSlice("command."+req+".response"), "\n")
+}
+
+func getCommandReaction(req string) []string {
+	return Command.GetStringSlice("command." + req + ".reaction")
 }
 
 func getCommandStatus(req string) bool {
 	for _, cr := range getCommands() {
-		if strings.Contains(strings.TrimPrefix(cr, "command."), req) == true {
+		if strings.Contains(strings.TrimPrefix(cr, "command."), req) {
 			return true
 		}
 	}
@@ -233,15 +267,19 @@ func getKeywords() []string {
 }
 
 func getKeywordsString() string {
-	return strings.ToLower(strings.Replace(strings.Join(Keyword.AllKeys(), ", "), "keyword.", "", -1))
+	return strings.ToLower(strings.Replace(strings.Replace(strings.Join(Keyword.AllKeys(), ", "), "keyword.", "", -1), ".response", "", -1))
 }
 
 func getKeywordResponse(req string) []string {
-	return Keyword.GetStringSlice("keyword." + req)
+	return Keyword.GetStringSlice("keyword." + req + ".response")
 }
 
 func getKeywordResponseString(req string) string {
-	return strings.Join(Keyword.GetStringSlice("keyword."+req), "\n")
+	return strings.Join(Keyword.GetStringSlice("keyword."+req+".response"), "\n")
+}
+
+func getKeywordReaction(req string) []string {
+	return Keyword.GetStringSlice("keyword." + req + ".reaction")
 }
 
 //Parsing get funcs
