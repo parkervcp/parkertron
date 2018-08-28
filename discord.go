@@ -73,8 +73,10 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	dpack.GuildID = guild.ID
 
 	// get group status. If perms are set and group name. These are note weighted yet.
-	debug("User is " + dpack.AuthorName)
 	dpack.Perms, dpack.Group = discordAuthorRolePermissionCheck(dpack.AuthorRoles)
+	if !dpack.Perms {
+		dpack.Perms, dpack.Group = discordAuthorUserPermissionCheck(dpack.AuthorID)
+	}
 
 	// setting server owner default to admin perms
 	if dpack.AuthorID == guild.OwnerID {
@@ -114,14 +116,14 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}
 
-	superdebug("Past KOM")
+	superdebug("Passed KOM")
 
 	// ignore blacklisted users
 	if strings.Contains(getDiscordBlacklist(), dpack.AuthorID) {
 		debug("User is blacklisted and being ignored.")
 	}
 
-	superdebug("Past Blacklist")
+	superdebug("Passed Blacklist")
 
 	// making a string array for attached images on messages.
 	for _, y := range m.Attachments {
@@ -133,7 +135,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Always parse owner and group commands. Keyswords in matched channels.
 	if !authed {
-		// Ignore all messages created by blacklisted members, channels it's not listening on, with debug messaging.
+		// Ignore all channels it's not listening on, with debug messaging.
 		if !discordChannelFilter(dpack.ChannelID) {
 			debug("This channel is being filtered out and ignored.")
 			for _, ment := range m.Mentions {
@@ -148,7 +150,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}
 
-	superdebug("Past channel filter")
+	superdebug("Passed channel filter")
 
 	// Check if the bot is mentioned
 	for _, ment := range m.Mentions {
@@ -163,7 +165,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	}
 
-	superdebug("Past bot mentions")
+	superdebug("Passed bot mentions")
 
 	//
 	// Message Handling
@@ -173,6 +175,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		discordMessageHandler(dpack)
 		return
 	}
+	// exists solely because it got here somehow...
 	superdebug("Really...")
 }
 

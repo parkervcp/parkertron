@@ -185,6 +185,11 @@ func getDiscordGroupRoles(req string) []string {
 	return roles
 }
 
+func getDiscordGroupUsers(req string) []string {
+	users := Discord.GetStringSlice("discord.permissions.group." + req + ".users")
+	return users
+}
+
 func getDiscordBlacklist() string {
 	return strings.ToLower(strings.Join(Discord.GetStringSlice("discord.permissions.group.blacklist"), " "))
 }

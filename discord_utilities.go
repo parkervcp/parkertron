@@ -22,11 +22,33 @@ func discordChannelFilter(req string) bool {
 	return true
 }
 
+func discordAuthorUserPermissionCheck(authorID string) (bool, string) {
+	for _, groupUser := range getDiscordGroupUsers("admin") {
+		if groupUser == authorID {
+			return true, "admin"
+		}
+	}
+	for _, groupUser := range getDiscordGroupUsers("mod") {
+		if authorID == groupUser {
+			return true, "mod"
+		}
+	}
+	return false, ""
+}
+
 func discordAuthorRolePermissionCheck(roles []string) (bool, string) {
-	for _, x := range roles {
-		for _, y := range getDiscordGroupRoles("admin") {
-			if x == y {
+	// checks for all roles the user has
+	for _, userRole := range roles {
+		// checks for all roles the admin group has
+		for _, groupRole := range getDiscordGroupRoles("admin") {
+			if userRole == groupRole {
 				return true, "admin"
+			}
+		}
+		// checks for all roles the admin group has
+		for _, groupRole := range getDiscordGroupRoles("mod") {
+			if userRole == groupRole {
+				return true, "mod"
 			}
 		}
 	}
