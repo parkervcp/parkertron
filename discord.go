@@ -290,7 +290,9 @@ func kickDiscordUser(guild string, user string, username string, reason string, 
 		},
 	}
 
-	sendDiscordEmbed(getDiscordConfigString("embed.audit"), embed)
+	if getDiscordConfigString("embed.audit") != "" {
+		sendDiscordEmbed(getDiscordConfigString("embed.audit"), embed)
+	}
 	info("User " + authorname + " has been kicked from " + guild + " for " + reason)
 }
 
@@ -319,7 +321,9 @@ func banDiscordUser(guild string, user string, username string, reason string, d
 		},
 	}
 
-	sendDiscordEmbed(getDiscordConfigString("embed.audit"), embed)
+	if getDiscordConfigString("embed.audit") != "" {
+		sendDiscordEmbed(getDiscordConfigString("embed.audit"), embed)
+	}
 	info("User " + authorname + " has been kicked from " + guild + " for " + reason)
 }
 
