@@ -36,6 +36,7 @@ keyword:
 
 ### Requirements:
 tesseract-ocr w/ english trainign files (May support other languages but has not been tested.)
+libleptonica (for tesseract)
 
 Working on adding other services and additions.
 

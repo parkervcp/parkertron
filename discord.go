@@ -242,7 +242,9 @@ func deleteDiscordMessage(dpack DataPackage) {
 		},
 	}
 
-	sendDiscordEmbed(getDiscordConfigString("embed.audit"), embed)
+	if getDiscordConfigString("embed.audit") != "" {
+		sendDiscordEmbed(getDiscordConfigString("embed.audit"), embed)
+	}
 	superdebug("message was deleted.")
 }
 
