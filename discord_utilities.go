@@ -66,10 +66,10 @@ func discordMessageHandler(dpack DataPackage) {
 			parseKeyword(dpack)
 		}
 	} else {
-		superdebug("Checking keywords")
-		dpack.MsgTye = "command"
-		// if there is a prefix check permissions on the user and run commands per group.
 		dpack.Message = strings.TrimPrefix(dpack.Message, getDiscordConfigString("prefix"))
+		dpack.MsgTye = "command"
+		superdebug("Checking commands")
+		// if there is a prefix check permissions on the user and run commands per group.
 		if dpack.Perms {
 			if dpack.Group == "admin" {
 				parseAdminCommand(dpack)
@@ -81,19 +81,7 @@ func discordMessageHandler(dpack DataPackage) {
 		}
 		// parse commands for matches
 		debug("Prefix was found parsing for commands.")
-		dpack.Message = strings.TrimPrefix(dpack.Message, getDiscordConfigString("prefix"))
 		parseCommand(dpack)
-		// remove previous commands if discord.command.remove is true
-		if getDiscordConfigBool("command.remove") {
-			if getCommandStatus(dpack.Message) {
-				deleteDiscordMessage(dpack)
-				debug("Cleared command message.")
-			}
-			if strings.HasPrefix(dpack.Message, "list") || strings.HasPrefix(dpack.Message, "ggl") {
-				deleteDiscordMessage(dpack)
-				debug("Cleared command message.")
-			}
-		}
 	}
 }
 

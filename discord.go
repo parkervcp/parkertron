@@ -220,11 +220,23 @@ func sendDiscordMessage(dpack DataPackage) {
 		debug("Adding Reactions")
 		sendDiscordReaction(sent.ChannelID, sent.ID, dpack)
 	}
+
+	// remove previous commands if discord.command.remove is true
+	if getDiscordConfigBool("command.remove") {
+		if getCommandStatus(dpack.Message) {
+			deleteDiscordMessage(dpack)
+			debug("Cleared command message.")
+		}
+		if strings.HasPrefix(dpack.Message, "list") || strings.HasPrefix(dpack.Message, "ggl") {
+			deleteDiscordMessage(dpack)
+			debug("Cleared command message.")
+		}
+	}
 }
 
 func deleteDiscordMessage(dpack DataPackage) {
+	debug("Removing message: " + dpack.Message)
 	dg.ChannelMessageDelete(dpack.ChannelID, dpack.MessageID)
-
 	embed := &discordgo.MessageEmbed{
 		Title: "Message was deleted",
 		Color: 0xf39c12,

@@ -324,6 +324,7 @@ func parseCommand(dpack DataPackage) {
 }
 
 func sendResponse(dpack DataPackage) {
+	debug("Sending response to messenger: " + dpack.Response)
 	if dpack.Service == "discord" {
 		sendDiscordMessage(dpack)
 	} else if dpack.Service == "irc" {
