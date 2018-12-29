@@ -2,15 +2,14 @@
 # Pterodactyl Panel Dockerfile
 # ----------------------------------
 
-FROM golang:1.10-alpine
+FROM golang:1.11-alpine
 
-COPY . ./src/parkertron
+COPY . /parkertron
 
-WORKDIR /go/src/parkertron
+WORKDIR /parkertron
 
-RUN apk add --no-cache --update go git curl lua-stdlib lua musl-dev g++ libc-dev tesseract-ocr tesseract-ocr-dev \
- && curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh \
- && dep ensure \
+RUN apk add --no-cache --update git curl lua-stdlib lua musl-dev g++ libc-dev tesseract-ocr tesseract-ocr-dev \
+ && go mod tidy \
  && go build
 
 CMD ["/go/src/parkertron/parkertron"]
