@@ -95,22 +95,11 @@ func parseBin(domain string, filename string) string {
 
 	debug("Filename is: " + filename)
 
-	formatted := ""
+	urlformat := getParsingPasteString(domain + ".format")
 
-	getParsingPasteString(domain + ".format")
+	debug("format is " + urlformat)
 
-	re := regexp.MustCompile("&([a-z]*)&")
-	rm := re.FindAllStringSubmatch(getParsingPasteString(domain+".format"), -1)
-
-	for x, ro := range rm {
-		for y := range ro {
-			if y == 1 {
-				formatted = formatted + getParsingPasteString(domain+"."+rm[x][y])
-			}
-		}
-	}
-
-	rawURL := formatted + filename
+	rawURL := strings.Replace(strings.Replace(strings.Replace(urlformat,"&url&", getParsingPasteString(domain+".URL"), 1),"&filename&", filename, 1),"&append&", getParsingPasteString(domain + ".append"), 1)
 
 	debug("Raw text URL is " + rawURL)
 
