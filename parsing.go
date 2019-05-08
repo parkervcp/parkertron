@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/h2non/filetype"
 	"github.com/otiai10/gosseract"
-	"gopkg.in/h2non/filetype.v1"
 	"mvdan.cc/xurls"
 )
 
@@ -99,7 +99,7 @@ func parseBin(domain string, filename string) string {
 
 	debug("format is " + urlformat)
 
-	rawURL := strings.Replace(strings.Replace(strings.Replace(urlformat,"&url&", getParsingPasteString(domain+".URL"), 1),"&filename&", filename, 1),"&append&", getParsingPasteString(domain + ".append"), 1)
+	rawURL := strings.Replace(strings.Replace(strings.Replace(urlformat, "&url&", getParsingPasteString(domain+".URL"), 1), "&filename&", filename, 1), "&append&", getParsingPasteString(domain+".append"), 1)
 
 	debug("Raw text URL is " + rawURL)
 
