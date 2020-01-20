@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	Log "github.com/sirupsen/logrus"
 	"github.com/tcnksm/go-input"
 )
 
@@ -17,7 +18,7 @@ func configFilecheck() bool {
 			os.Mkdir("configs/", 0755)
 		}
 	} else {
-		info("Config folder exists")
+		Log.Info("Config folder exists")
 		if checkConfigExists("bot.yml") == false {
 			time.Sleep(5 * time.Second)
 			setupBotConfig()
@@ -53,7 +54,7 @@ func checkConfigExists(file string) bool {
 	if _, err := os.Stat("configs/" + file); err == nil {
 		return true
 	}
-	info("Need to generate the " + file + ". Doing that now.")
+	Log.Info("Need to generate the " + file + ". Doing that now.")
 	return false
 }
 
@@ -81,7 +82,7 @@ func askBoolQuestion(question string) bool {
 		},
 	})
 	if err != nil {
-		fatal("", err)
+		Log.Fatal("", err)
 	}
 
 	return answer
@@ -98,7 +99,7 @@ func askStringQuestion(question string) string {
 		Loop: true,
 	})
 	if err != nil {
-		fatal("", err)
+		Log.Fatal("", err)
 	}
 
 	return answer
@@ -109,12 +110,12 @@ func setupBotConfig() {
 
 	if askBoolQuestion("Do you plan on supporting discord? [Y/n]") {
 		services = append(services, "discord")
-		info("Discord enabled")
+		Log.Info("Discord enabled")
 		setupDiscordConfig()
 	}
 	if askBoolQuestion("Do you plan on supporting irc? [Y/n]") {
 		services = append(services, "irc")
-		info("IRC enabled")
+		Log.Info("IRC enabled")
 		setupIRCConfig()
 	}
 
@@ -131,7 +132,7 @@ func setupBotConfig() {
 		if level == "info" || level == "debug" {
 			Bot.Set("bot.log.level", level)
 		} else {
-			info("Invalid log level set with " + level + ". Defaulting to info")
+			Log.Info("Invalid log level set with " + level + ". Defaulting to info")
 			Bot.Set("bot.log.level", "info")
 		}
 
@@ -157,7 +158,7 @@ func setupDiscordConfig() {
 	if askBoolQuestion("Would you like to set a owner? (defaults to server owner) [Y/n]") {
 		Discord.Set("discord.owner", askStringQuestion("What is the server owners discord ID?"))
 	} else {
-		info("defaulting to server owner")
+		Log.Info("defaulting to server owner")
 	}
 
 	var listening []string
@@ -168,7 +169,7 @@ func setupDiscordConfig() {
 			listening = append(listening, askStringQuestion("What is the ID of the channel you want to listen on?"))
 			Discord.Set("bot.channels.filter", true)
 			Discord.Set("bot.channels.listening", listening)
-			info("The channel is not verified will only work if correct.")
+			Log.Info("The channel is not verified will only work if correct.")
 		} else {
 			Discord.Set("bot.channels.filter", false)
 			Discord.Set("bot.channels.listening", listening)
@@ -233,7 +234,7 @@ func setupCommandsConfig() {
 	exit := false
 
 	if askBoolQuestion("Do you want to set up custom commands now? [Y/n]: ") == false {
-		info("Writing default commands config to file")
+		Log.Info("Writing default commands config to file")
 	} else {
 		for exit == false {
 			command = askStringQuestion("What is the command you want to add? (It can have spaces in it ex: 'help command') (leave blank to stop adding commands): ")
@@ -256,7 +257,7 @@ func setupKeywordsConfig() {
 	exit := false
 
 	if askBoolQuestion("Do you want to set up custom keywords now? [Y/n]: ") == false {
-		info("Writing default keywords config to file")
+		Log.Info("Writing default keywords config to file")
 	} else {
 		for exit == false {
 			keyword = askStringQuestion("What is the keyword you want to add? (It can have spaces in it ex: 'i need help') (leave blank to stop adding commands): ")
