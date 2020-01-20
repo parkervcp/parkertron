@@ -1,0 +1,4 @@
+slack:
+  token: ""
+  direct:
+    response: "Please message in the main server."

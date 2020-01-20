@@ -1,19 +1,5 @@
 debug
 
-configs/bot\.yml
-
-configs/discord\.yml
-
-configs/commands\.yml
-
-configs/command\.yml
-
-configs/keywords\.yml
-
-configs/parsing\.yml
-
-configs/irc\.yml
-
 logs/
 
 vendor/
@@ -26,4 +12,6 @@ configs/permissions\.yml
 
 Gopkg\.lock
 
-.vscode
+.vscode/
+
+.idea/

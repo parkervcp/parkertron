@@ -1,0 +1,65 @@
+server_name:
+  ident: "parkertron" ## The username the bot will use to log in
+  email: "" ## The email address the username was registered with. The bot will attempt to register if it's not already
+  password: "" ## "changemenow" to not use a password. Note The account can be registered and you can lose it.
+  nick: "parkertron" ## The nickanme the bot will display
+  real: "Parkertron McBot" ## The Real Name displayed on the server
+
+  ssl:
+    enabled: true
+    servername: "irc.freenode.net"
+
+  server:
+    address: "irc.freenode.net"
+    port: "6667"
+
+  command:
+    prefix: "." ## default if not set is "."
+
+  ## channel configs
+  channels: ## each channel is in a group. one to many channels can be in a single group.
+    - channel: ## example channel
+        channel_ids:
+          - "#pbtg"
+
+        commands:
+          example:
+            response:
+              - "Hello, I am a support bot created by `parkervcp` designed to help solve simple problems."
+            reaction:
+              - ""
+
+        keywords:
+          example:
+            response:
+              - "This what a keyword match for the word \"example\""
+            reaction:
+              - ""
+
+        kick_on_mention:
+          roles:
+            - "" ## group ID's
+          users:
+            - "" ## group ID's
+          message: ## message to send when kicking a user.
+            - "Fire in the hole."
+          reason:
+            - "We don't support the <#linux-help> channel" ## DM the user with why they were kicked.
+
+  ## only simple permissions for now. These only apply to some filtering rules and some command usage..
+  permissions:
+    group: ## user groups. Currently These are not implimented. The Blacklist will ignore specific users
+      admin: ## default to server owner having this permission
+        roles:
+          - ""
+        users:
+          - ""
+
+      mod: ## no default users for this. Needs to be user ID's. Using roleID's is planned eventually.
+        roles:
+          - ""
+        users:
+          - ""
+
+      blacklist: ## users in this group are ignored.
+        - ""
