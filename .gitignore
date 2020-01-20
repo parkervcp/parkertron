@@ -27,3 +27,6 @@ configs/permissions\.yml
 Gopkg\.lock
 
 .vscode
+configs/discord/122900397965705216/
+
+.idea/

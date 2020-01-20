@@ -10,6 +10,7 @@ require (
 	github.com/h2non/filetype v1.0.8
 	github.com/husio/irc v0.0.0-20150308150232-bcf322335678
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
+	github.com/nlopes/slack v0.6.0
 	github.com/otiai10/gosseract v2.2.1+incompatible
 	github.com/pelletier/go-toml v1.4.0 // indirect
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
