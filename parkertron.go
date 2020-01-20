@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"strings"
+
+	Log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -25,7 +27,7 @@ func init() {
 	verbose := flag.String("v", "info", "set the console verbosity of the bot")
 	flag.Parse()
 
-	info(title)
+	Log.Info(title)
 
 	setupConfig()
 
@@ -52,19 +54,19 @@ func init() {
 		}
 	}
 
-	debug("services loaded are " + services)
+	Log.Debug("services loaded are " + services)
 }
 
 func main() {
 	for _, cr := range getBotServices() {
 		if strings.Contains(strings.TrimPrefix(cr, "bot.services."), cr) {
 			if strings.Contains(cr, "discord") {
-				info("Starting Discord connector\n")
+				Log.Info("Starting Discord connector\n")
 				go startDiscordConnection()
 			}
 
 			if strings.Contains(cr, "irc") {
-				info("Starting IRC connector\n")
+				Log.Info("Starting IRC connector\n")
 				go startIRCConnection()
 			}
 		}
@@ -74,10 +76,10 @@ func main() {
 		<-ServStat
 	}
 
-	superdebug("Commands being loaded are: " + getCommandsString())
-	superdebug("Keywords being loaded are: " + getKeywordsString())
+	Log.Debug("Commands being loaded are: " + getCommandsString())
+	Log.Debug("Keywords being loaded are: " + getKeywordsString())
 
-	info("Bot is now running. Press CTRL-C to exit.\n")
+	Log.Info("Bot is now running. Press CTRL-C to exit.\n")
 	// Simple way to keep program running until CTRL-C is pressed.
 	<-make(chan struct{})
 	return

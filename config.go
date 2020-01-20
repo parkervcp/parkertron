@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/fsnotify/fsnotify"
+	Log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -30,7 +31,7 @@ var (
 func setupConfig() {
 
 	if configFilecheck() == false {
-		errmsg("There was an issue setting up the config", nil)
+		Log.Error("There was an issue setting up the config", nil)
 	}
 
 	//Setting Bot config settings
@@ -39,11 +40,11 @@ func setupConfig() {
 	Bot.WatchConfig()
 
 	Bot.OnConfigChange(func(e fsnotify.Event) {
-		info("Bot config changed")
+		Log.Info("Bot config changed")
 	})
 
 	if err := Bot.ReadInConfig(); err != nil {
-		fatal("Could not load Bot configuration.", err)
+		Log.Fatal("Could not load Bot configuration.", err)
 		return
 	}
 
@@ -56,11 +57,11 @@ func setupConfig() {
 				Discord.WatchConfig()
 
 				Discord.OnConfigChange(func(e fsnotify.Event) {
-					info("Discord config changed")
+					Log.Info("Discord config changed")
 				})
 
 				if err := Discord.ReadInConfig(); err != nil {
-					fatal("Could not load Discord configuration.", err)
+					Log.Fatal("Could not load Discord configuration.", err)
 					return
 				}
 
@@ -74,11 +75,11 @@ func setupConfig() {
 				IRC.WatchConfig()
 
 				IRC.OnConfigChange(func(e fsnotify.Event) {
-					info("IRC config changed")
+					Log.Info("IRC config changed")
 
 				})
 				if err := IRC.ReadInConfig(); err != nil {
-					fatal("Could not load irc configuration.", err)
+					Log.Fatal("Could not load irc configuration.", err)
 					return
 				}
 			}
@@ -91,11 +92,11 @@ func setupConfig() {
 	Command.WatchConfig()
 
 	Command.OnConfigChange(func(e fsnotify.Event) {
-		info("Command config changed")
+		Log.Info("Command config changed")
 	})
 
 	if err := Command.ReadInConfig(); err != nil {
-		fatal("Could not load Command configuration.", err)
+		Log.Fatal("Could not load Command configuration.", err)
 		return
 	}
 
@@ -105,11 +106,11 @@ func setupConfig() {
 	Keyword.WatchConfig()
 
 	Keyword.OnConfigChange(func(e fsnotify.Event) {
-		info("Keyword config changed")
+		Log.Info("Keyword config changed")
 	})
 
 	if err := Keyword.ReadInConfig(); err != nil {
-		fatal("Could not load Keyword configuration.", err)
+		Log.Fatal("Could not load Keyword configuration.", err)
 		return
 	}
 
@@ -119,15 +120,15 @@ func setupConfig() {
 	Parsing.WatchConfig()
 
 	Parsing.OnConfigChange(func(e fsnotify.Event) {
-		info("Parsing config changed")
+		Log.Info("Parsing config changed")
 	})
 
 	if err := Parsing.ReadInConfig(); err != nil {
-		fatal("Could not load Parsing configuration.", err)
+		Log.Fatal("Could not load Parsing configuration.", err)
 		return
 	}
 
-	info("Bot configs loaded")
+	Log.Info("Bot configs loaded")
 }
 
 //Bot Get funcs

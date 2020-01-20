@@ -3,6 +3,8 @@ package main
 import (
 	"math/rand"
 	"strings"
+
+	Log "github.com/sirupsen/logrus"
 )
 
 const charset = "abcdefghijklmnopqrstuvwxyz" + "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
@@ -56,19 +58,19 @@ func discordAuthorRolePermissionCheck(roles []string) (bool, string) {
 }
 
 func discordMessageHandler(dpack DataPackage) {
-	superdebug("In discord message handler")
+	Log.Debug("In discord message handler")
 	// If the string doesn't have the prefix parse as text, if it does parse as a command.
 	if !strings.HasPrefix(dpack.Message, getDiscordConfigString("prefix")) {
-		superdebug("checking keywords")
+		Log.Debug("checking keywords")
 		dpack.MsgTye = "keyword"
 		if discordChannelFilter(dpack.ChannelID) {
-			debug("No prefix was found parsing for keywords.")
+			Log.Debug("No prefix was found parsing for keywords.")
 			parseKeyword(dpack)
 		}
 	} else {
 		dpack.Message = strings.TrimPrefix(dpack.Message, getDiscordConfigString("prefix"))
 		dpack.MsgTye = "command"
-		superdebug("Checking commands")
+		Log.Debug("Checking commands")
 		// if there is a prefix check permissions on the user and run commands per group.
 		if dpack.Perms {
 			if dpack.Group == "admin" {
@@ -80,7 +82,7 @@ func discordMessageHandler(dpack DataPackage) {
 			}
 		}
 		// parse commands for matches
-		debug("Prefix was found parsing for commands.")
+		Log.Debug("Prefix was found parsing for commands.")
 		parseCommand(dpack)
 	}
 }

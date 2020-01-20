@@ -12,6 +12,7 @@ import (
 
 	"github.com/h2non/filetype"
 	"github.com/otiai10/gosseract"
+	Log "github.com/sirupsen/logrus"
 	"mvdan.cc/xurls"
 )
 
@@ -46,7 +47,7 @@ func matchImage(input string) bool {
 
 	for _, ro := range ip {
 		if strings.Contains(input, ro) {
-			debug("Image found with a " + ro + " format")
+			Log.Debug("Image found with a " + ro + " format")
 			return true
 		}
 	}
@@ -61,9 +62,9 @@ func matchPasteDomain(input string) (bool, string) {
 	for x, ro := range rm {
 		for y := range ro {
 			if y%2 == 0 && rm[x][y] != "url" {
-				superdebug(rm[x][y])
+				Log.Debug(rm[x][y])
 				if strings.Contains(input, getParsingPasteString(rm[x][y])) {
-					debug("Matched on: " + rm[x][y])
+					Log.Debug("Matched on: " + rm[x][y])
 					return true, strings.Replace(rm[x][y], ".url", "", -1)
 				}
 			}
@@ -81,7 +82,7 @@ func formatURL(input string) string {
 		for y := range ro {
 			if y%2 == 0 && rm[x][y] != "url" {
 				if strings.Contains(input, rm[x][y]) {
-					debug("Matched on: " + rm[x][y])
+					Log.Debug("Matched on: " + rm[x][y])
 					return rm[x][y]
 				}
 			}
@@ -91,66 +92,66 @@ func formatURL(input string) string {
 }
 
 func parseBin(domain string, filename string) string {
-	info("Reading from " + getParsingPasteString(domain+".url"))
+	Log.Info("Reading from " + getParsingPasteString(domain+".url"))
 
-	debug("Filename is: " + filename)
+	Log.Debug("Filename is: " + filename)
 
 	urlformat := getParsingPasteString(domain + ".format")
 
-	debug("format is " + urlformat)
+	Log.Debug("format is " + urlformat)
 
 	rawURL := strings.Replace(strings.Replace(strings.Replace(urlformat, "&url&", getParsingPasteString(domain+".URL"), 1), "&filename&", filename, 1), "&append&", getParsingPasteString(domain+".append"), 1)
 
-	debug("Raw text URL is " + rawURL)
+	Log.Debug("Raw text URL is " + rawURL)
 
 	resp, err := http.Get(rawURL)
 	if err != nil {
-		fatal("", err)
+		Log.Fatal("", err)
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 
 	content := string(body)
 
-	superdebug("Contents = \n" + content)
+	Log.Debug("Contents = \n" + content)
 
 	return content
 }
 
 func parseImage(remoteURL string) string {
-	info("Reading from " + remoteURL)
+	Log.Info("Reading from " + remoteURL)
 
 	remote, err := http.Get(remoteURL)
 	if err != nil {
-		fatal("", err)
+		Log.Fatal("", err)
 	}
 
 	defer remote.Body.Close()
 	lastBin := strings.LastIndex(remoteURL, "/")
 	fileName := remoteURL[lastBin+1:]
 
-	debug("Filename is " + fileName)
+	Log.Debug("Filename is " + fileName)
 
 	//open a file for writing
 	file, err := os.Create("/tmp/" + fileName)
 	if err != nil {
-		fatal("", err)
+		Log.Fatal("", err)
 	}
 	// Use io.Copy to just dump the response body to the file. This supports huge files
 	_, err = io.Copy(file, remote.Body)
 	if err != nil {
-		fatal("", err)
+		Log.Fatal("", err)
 	}
 
 	file.Close()
-	debug("Image File Pulled and saved to /tmp/" + fileName)
+	Log.Debug("Image File Pulled and saved to /tmp/" + fileName)
 
 	buf, _ := ioutil.ReadFile("/tmp/" + fileName)
 
 	if filetype.IsImage(buf) {
-		debug("File is an image")
+		Log.Debug("File is an image")
 	} else {
-		debug("File is not an image")
+		Log.Debug("File is not an image")
 		return ""
 	}
 
@@ -159,16 +160,16 @@ func parseImage(remoteURL string) string {
 
 	client.SetImage("/tmp/" + fileName)
 	w, h := getImageDimension("/tmp/" + fileName)
-	debug("Image width is " + strconv.Itoa(h))
-	debug("Image height is " + strconv.Itoa(w))
+	Log.Debug("Image width is " + strconv.Itoa(h))
+	Log.Debug("Image height is " + strconv.Itoa(w))
 	text, err := client.Text()
 	if err != nil {
-		fatal("", err)
+		Log.Fatal("", err)
 	}
 
 	text = text[:len(text)-1]
-	debug(text)
-	debug("Image Parsed")
+	Log.Debug(text)
+	Log.Debug("Image Parsed")
 
 	return text
 }
@@ -176,32 +177,32 @@ func parseImage(remoteURL string) string {
 func getImageDimension(imagePath string) (int, int) {
 	file, err := os.Open(imagePath)
 	if err != nil {
-		fatal("error sending message", err)
+		Log.Fatal("error sending message", err)
 	}
 
 	image, _, err := image.DecodeConfig(file)
 	if err != nil {
-		fatal("error sending message", err)
+		Log.Fatal("error sending message", err)
 	}
 	return image.Width, image.Height
 }
 
 func parseKeyword(dpack DataPackage) {
 
-	debug("Parsing inbound chat")
+	Log.Debug("Parsing inbound chat")
 
 	pasteMatched, pasteDomain := matchPasteDomain(dpack.Message)
 
-	debug("Matched domain: " + strconv.FormatBool(pasteMatched))
+	Log.Debug("Matched domain: " + strconv.FormatBool(pasteMatched))
 
 	//Catch domains and route to the proper controllers (image, binsite parsers)
-	superdebug("Matching on links in text")
+	Log.Debug("Matching on links in text")
 	for _, url := range xurls.Relaxed.FindStringSubmatch(dpack.Message) {
-		superdebug(url)
+		Log.Debug(url)
 	}
 
 	if dpack.Attached != nil {
-		superdebug("Matching on Attached links")
+		Log.Debug("Matching on Attached links")
 		for x := range dpack.Attached {
 			if matchImage(dpack.Attached[x]) {
 				if matchImage(xurls.Relaxed.FindString(dpack.Attached[x])) {
@@ -217,23 +218,23 @@ func parseKeyword(dpack DataPackage) {
 		}
 	} else if pasteMatched {
 		if xurls.Relaxed.FindString(dpack.Message) != "" {
-			debug("Sending: " + pasteDomain)
-			debug("xurls matched: " + xurls.Relaxed.FindString(dpack.Message))
-			debug("Guessing file name is: " + strings.Replace(xurls.Relaxed.FindString(dpack.Message), getParsingPasteString(pasteDomain+".url"), "", -1))
+			Log.Debug("Sending: " + pasteDomain)
+			Log.Debug("xurls matched: " + xurls.Relaxed.FindString(dpack.Message))
+			Log.Debug("Guessing file name is: " + strings.Replace(xurls.Relaxed.FindString(dpack.Message), getParsingPasteString(pasteDomain+".url"), "", -1))
 			dpack.Message = parseBin(pasteDomain, strings.Replace(xurls.Relaxed.FindString(dpack.Message), getParsingPasteString(pasteDomain+".url"), "", -1))
 		}
 	}
 
 	//exact match search
-	debug("Testing exact matches")
+	Log.Debug("Testing exact matches")
 	for _, kr := range getKeywords() {
 		if strings.Contains(strings.ToLower(dpack.Message), strings.TrimSuffix(strings.TrimPrefix(kr, "keyword.exact."), ".response")) {
-			superdebug(strings.TrimSuffix(strings.TrimPrefix(kr, "keyword.exact."), ".response") + " match is " + strconv.FormatBool(strings.Contains(strings.ToLower(dpack.Message), strings.TrimSuffix(strings.TrimPrefix(kr, "keyword.exact."), ".response"))))
+			Log.Debug(strings.TrimSuffix(strings.TrimPrefix(kr, "keyword.exact."), ".response") + " match is " + strconv.FormatBool(strings.Contains(strings.ToLower(dpack.Message), strings.TrimSuffix(strings.TrimPrefix(kr, "keyword.exact."), ".response"))))
 		}
 		if strings.ToLower(dpack.Message) == strings.TrimSuffix(strings.TrimPrefix(kr, "keyword.exact."), ".response") {
 			dpack.Response = getKeywordResponseString(strings.TrimSuffix(strings.TrimPrefix(kr, "keyword."), ".response"))
 			dpack.Keyword = strings.TrimSuffix(strings.TrimPrefix(kr, "keyword."), ".response")
-			superdebug("Response is " + dpack.Response)
+			Log.Debug("Response is " + dpack.Response)
 			sendResponse(dpack)
 		}
 	}
@@ -241,10 +242,10 @@ func parseKeyword(dpack DataPackage) {
 	lastKeyword := ""
 	lastIndex := -1
 	//Match on errors
-	debug("Testing error matches")
+	Log.Debug("Testing error matches")
 	for _, kr := range getKeywords() {
 		if strings.Contains(strings.ToLower(dpack.Message), strings.TrimSuffix(strings.TrimPrefix(kr, "keyword."), ".response")) {
-			superdebug(strings.TrimSuffix(strings.TrimPrefix(kr, "keyword."), ".response") + " match is " + strconv.FormatBool(strings.Contains(strings.ToLower(dpack.Message), strings.TrimSuffix(strings.TrimPrefix(kr, "keyword."), ".response"))))
+			Log.Debug(strings.TrimSuffix(strings.TrimPrefix(kr, "keyword."), ".response") + " match is " + strconv.FormatBool(strings.Contains(strings.ToLower(dpack.Message), strings.TrimSuffix(strings.TrimPrefix(kr, "keyword."), ".response"))))
 		}
 		i := strings.LastIndex(strings.ToLower(dpack.Message), strings.TrimSuffix(strings.TrimPrefix(kr, "keyword."), ".response"))
 		if i > lastIndex {
@@ -263,9 +264,9 @@ func parseKeyword(dpack DataPackage) {
 
 // admin commands are hard coded for now
 func parseAdminCommand(dpack DataPackage) {
-	debug("Parsing inbound admin command: " + dpack.Message)
+	Log.Debug("Parsing inbound admin command: " + dpack.Message)
 	if strings.HasPrefix(dpack.Message, "list") {
-		debug("Getting available commands")
+		Log.Debug("Getting available commands")
 		req := strings.TrimPrefix(dpack.Message, "list ")
 		response = "This is the list of current " + req + ": " + getCommandsString()
 		if req == "commands" {
@@ -286,15 +287,15 @@ func parseAdminCommand(dpack DataPackage) {
 
 // mod commands are hard coded for now
 func parseModCommand(dpack DataPackage) {
-	debug("Parsing inbound mod command: " + dpack.Message)
+	Log.Debug("Parsing inbound mod command: " + dpack.Message)
 }
 
 func parseCommand(dpack DataPackage) {
-	debug("Parsing inbound command: " + dpack.Message)
+	Log.Debug("Parsing inbound command: " + dpack.Message)
 
 	//Let Me Google That For You parsing
 	if strings.HasPrefix(dpack.Message, "ggl") {
-		debug("Googling for user. \n")
+		Log.Debug("Googling for user. \n")
 		dpack.Response = "<https://lmgtfy.com/?q=" + strings.Replace(strings.TrimPrefix(dpack.Message, "ggl "), " ", "+", -1) + ">"
 		sendResponse(dpack)
 		return
@@ -302,9 +303,9 @@ func parseCommand(dpack DataPackage) {
 
 	//Search command file for command and prep response
 	for _, cr := range getCommands() {
-		superdebug("Testing for " + cr)
+		Log.Debug("Testing for " + cr)
 		if strings.Contains(strings.TrimPrefix(cr, "command."), dpack.Message) {
-			debug("match on " + cr)
+			Log.Debug("match on " + cr)
 			dpack.Response = getCommandResponseString(dpack.Message)
 			sendResponse(dpack)
 			return
@@ -313,7 +314,7 @@ func parseCommand(dpack DataPackage) {
 }
 
 func sendResponse(dpack DataPackage) {
-	debug("Sending response to messenger: " + dpack.Response)
+	Log.Debug("Sending response to messenger: " + dpack.Response)
 	if dpack.Service == "discord" {
 		sendDiscordMessage(dpack)
 	} else if dpack.Service == "irc" {
