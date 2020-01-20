@@ -1,0 +1,56 @@
+server_id: ## example server
+  ## If you want logging to go to discord follow this https://support.discordapp.com/hc/en-us/articles/228383668-Intro-to-Webhooks
+  webhook: "https://discordapp.com/api/webhooks/GET-YOUR-OWN-WEBHOOK"
+  command:
+    prefix: "." ## default if not set is "."
+    remove: true
+  ## the response the bot gives when it is mention in various channels.
+  mention:
+    ## bot responds with the following.
+    response: ":doughnut:"
+    ## bot was mentioned with no message
+    empty: "Please ask a question or supply your log into this chat"
+    ## response on channels the bot is not listening to.
+    wrong_channel: "Please use one of the supported channels"
+  ## channel configs
+  channels: ## each channel is in a group. one to many channels can be in a single group.
+    - channel: ## example channel
+        channel_ids:
+          - ""
+        commands:
+          example:
+            response:
+              - "Hello, I am a support bot created by `parkervcp` designed to help solve simple problems."
+            reaction:
+              - ""
+        keywords:
+          example:
+            response:
+              - ""
+            reaction:
+              - ""
+        kick_on_mention:
+          roles:
+            - "" ## group ID's
+          users:
+            - "" ## group ID's
+          message: ## message to send when kicking a user.
+            - "Fire in the hole."
+          reason:
+            - "We don't support the <#linux-help> channel" ## DM the user with why they were kicked.
+
+  ## only simple permissions for now. These only apply to some filtering rules and some command usage..
+  permissions:
+    group: ## user groups. Currently These are not implimented. The Blacklist will ignore specific users
+      admin: ## default to server owner having this permission
+        roles:
+          - ""
+        users:
+          - ""
+      mod: ## no default users for this. Needs to be user ID's. Using roleID's is planned eventually.
+        roles:
+          - ""
+        users:
+          - ""
+      blacklist: ## users in this group are ignored.
+        - ""
