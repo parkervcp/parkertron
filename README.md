@@ -1,7 +1,7 @@
 
 # parkertron
 
-![Parkertron Logo](images/parkertron_logo.png)
+![Parkertron logo](images/parkertron_logo.png)
 
 A simple discord chat bot with a simple configuration. Written using [discordgo](https://github.com/bwmarrin/discordgo).
 
@@ -89,11 +89,11 @@ The checklist so far
 - [x] Permissions
   - [ ] Permissions management
 
-- [ ] Logging
-  - [ ] Log user join/leave 
-  - [x] Log chats (only logs channels it is watching to cut on logging)
-  - [ ] Log edits (show original and edited)
-  - [ ] Log chats/edits to separate files/folders
+- [ ] logging
+  - [ ] log user join/leave 
+  - [x] log chats (only logs channels it is watching to cut on logging)
+  - [ ] log edits (show original and edited)
+  - [ ] log chats/edits to separate files/folders
   
 - [ ] Join voice channels
   - [ ] Play audio from links
