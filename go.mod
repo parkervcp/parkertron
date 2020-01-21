@@ -7,6 +7,7 @@ require (
 	github.com/coreos/etcd v3.3.13+incompatible // indirect
 	github.com/coreos/go-semver v0.3.0 // indirect
 	github.com/fsnotify/fsnotify v1.4.7
+	github.com/goccy/go-yaml v1.2.0
 	github.com/h2non/filetype v1.0.8
 	github.com/husio/irc v0.0.0-20150308150232-bcf322335678
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
@@ -17,14 +18,11 @@ require (
 	github.com/sirupsen/logrus v1.4.1
 	github.com/spf13/afero v1.2.2 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
+	github.com/spf13/pflag v1.0.3
 	github.com/spf13/viper v1.3.2
 	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/tcnksm/go-input v0.0.0-20180404061846-548a7d7a8ee8
-	golang.org/x/crypto v0.0.0-20190506204251-e1dfcc566284 // indirect
 	golang.org/x/net v0.0.0-20190503192946-f4e77d36d62c // indirect
-	golang.org/x/sys v0.0.0-20190508220229-2d0786266e9c // indirect
-	golang.org/x/text v0.3.2 // indirect
-	golang.org/x/tools v0.0.0-20190508150211-cf84161cff3f // indirect
-	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
+	honnef.co/go/tools v0.0.1-2019.2.3
 	mvdan.cc/xurls v1.1.0
 )

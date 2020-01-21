@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/nlopes/slack"
-	Log "github.com/sirupsen/logrus"
 )
 
 var (

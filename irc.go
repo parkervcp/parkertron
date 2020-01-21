@@ -1,19 +1,96 @@
 package main
 
 import (
-	"log"
 	"strings"
 	"time"
 
-	"github.com/husio/irc"
-	Log "github.com/sirupsen/logrus"
+	hirc "github.com/husio/irc"
 )
 
 var (
-	address = getIRCConfigString("server.address") + ":" + getIRCConfigString("server.port")
+	stopIRC = make(chan string)
 
-	c, err = irc.Connect(address)
+	ircConfig irc
+
+	address = ircConfig.Server + ":" + getIRCConfigString("server.port")
+
+	c, err = hirc.Connect(address)
 )
+
+func checkIRCMessage(conn hirc.Conn, msgContent string, botNick string, channelName string, userNick string, channelConf ircChannelConfig) bool {
+	Log.Debugf("prefix is %s", channelConf.Settings.Prefix)
+	// Channel specific matching
+	if msgContent == "@"+botNick {
+		sendIRCMessage(conn, channelName, userNick, channelConf.Settings.Prefix, channelConf.Mentions.Ping)
+		return true
+	}
+
+	if strings.Contains(msgContent, "@"+botNick) {
+		sendIRCMessage(conn, channelName, userNick, channelConf.Settings.Prefix, channelConf.Mentions.Mention)
+		return true
+	}
+
+	//
+	// Message Handling
+	//
+	if msgContent != "" {
+		Log.Debugf("Message Content: " + msgContent)
+		// determine if the mesage is a command or a keywordsparse
+		if strings.HasPrefix(msgContent, channelConf.Settings.Prefix) {
+			Log.Debugf("command recieved %s", strings.TrimPrefix(msgContent, channelConf.Settings.Prefix))
+			response := parseCommand(channelConf.Commands, strings.TrimPrefix(msgContent, channelConf.Settings.Prefix))
+			sendIRCMessage(conn, channelName, userNick, channelConf.Settings.Prefix, response)
+			return true
+		}
+		Log.Debugf("keyword recieved %s", msgContent)
+		response, _ := parseKeyword(channelConf.Keywords, channelConf.Parsing, msgContent)
+		sendIRCMessage(conn, channelName, userNick, channelConf.Settings.Prefix, response)
+		return true
+	}
+	return false
+}
+
+// loops through and starts the connections and listeners for each server.
+func handleIRC(serverName string) {
+	var serverConf ircServer
+	// This is the address of the irc server and the port combined to make it easier to input later
+	for _, server := range ircC.Server {
+		if server.Name == serverName {
+			serverConf = server
+		}
+	}
+
+	host := serverConf.Config.Connection.Address + ":" + serverConf.Config.Connection.Port
+	Log.Debugf("Connecting on %s\n", host)
+
+	// Connect to the server
+	conn, err := hirc.Connect(host)
+	if err != nil {
+		Log.Errorf("cannot connect to %s: %s\n", host, err)
+	}
+
+	Log.Debugf("Connected to %s\n", host)
+
+	// send user info
+	conn.Send("USER %s %s * :"+serverConf.Config.User.Real, serverConf.Config.User.Identitiy, host)
+	conn.Send("NICK %s", serverConf.Config.User.Nick)
+
+	time.Sleep(time.Millisecond * 100)
+
+	for {
+		handleIRCMessages(*conn, serverConf)
+		select {
+		case x, ok := <-stopIRC:
+			Log.Debugf("Disconnecting from %s", x)
+			if ok && x == serverName {
+				conn.Close()
+				stopIRC <- ""
+				return
+			}
+		default:
+		}
+	}
+}
 
 //ircMessageHandler the IRC listener that manages inbound messaging
 func ircMessageHandler() {
@@ -42,13 +119,6 @@ func ircMessageHandler() {
 
 	// message handling
 	if message.Command == "PRIVMSG" {
-		dpack := DataPackage{}
-		dpack.Service = "irc"
-		dpack.Message = message.Trailing
-		dpack.ChannelID = message.Params[0]
-		dpack.AuthorID = message.Nick()
-		dpack.BotID = getIRCConfigString("nick")
-
 		Log.Debug("message.Params[0]: " + message.Params[0])
 		Log.Debug("message.Nick(): " + message.Nick())
 		Log.Debug("message.Trailing: " + message.Trailing)
@@ -94,51 +164,50 @@ func ircMessageHandler() {
 }
 
 //sendIRCMessage function to send messages separate of the listener
-func sendIRCMessage(ChannelID string, response string) {
-	response = strings.Replace(response, "&prefix&", getIRCConfigString("prefix"), -1)
-	multiresp := strings.Split(response, "\n")
-
-	Log.Debug("IRC Message Sent:")
-
-	for x := range multiresp {
-		Log.Debug("line sent: " + multiresp[x])
-		c.Send("PRIVMSG " + ChannelID + " :" + multiresp[x])
+func sendIRCMessage(conn hirc.Conn, channelName string, user string, prefix string, responseArray []string) {
+	if len(responseArray) == 0 {
+		return
 	}
+
+	for _, response = range responseArray {
+		Log.Debugf("line sent: " + response)
+		response = strings.Replace(response, "&user&", user, -1)
+		response = strings.Replace(response, "&prefix&", prefix, -1)
+		conn.Send("PRIVMSG " + "#" + channelName + " :" + response)
+	}
+	Log.Debugf("IRC Message Sent: %s", responseArray)
 }
 
+// service handling
+// start connections to irc
 func startIRCConnection() {
-	// This is the address of the irc server and the port combined to make it easier to input later
-	address = getIRCConfigString("server.address") + ":" + getIRCConfigString("server.port")
-
-	Log.Debug("Address should be " + getIRCConfigString("server.address") + ":" + getIRCConfigString("server.port"))
-
-	Log.Debug("Connecting on " + address)
-
-	c, err = irc.Connect(address)
-
-	// Connect to the server
-	if err != nil {
-		log.Fatalf("cannot connect to %q: %s", address, err)
+	Log.Infof("Starting IRC server connections\n")
+	for _, server := range ircC.Server {
+		Log.Infof("Connecting to %s\n", server.Name)
+		go handleIRC(server.Name)
 	}
 
-	// send user info
-	c.Send("USER %s %s * :"+getIRCConfigString("real"), getIRCConfigString("ident"), address)
-	c.Send("NICK %s", getIRCConfigString("nick"))
+	Log.Debugf("irc service started\n")
 
-	time.Sleep(time.Millisecond * 50)
+	servStat <- "irc_online"
+}
 
-	for _, name := range getIRCChannels() {
-		if !strings.HasPrefix(name, "#") {
-			name = "#" + name
-		}
-		c.Send("JOIN %s", name)
+// stop connections to irc
+func stopIRCConnection() {
+	for _, server := range ircC.Server {
+		Log.Infof("stopping irc connection on %s", server.Name)
+		stopIRC <- server.Name
+		<-stopIRC
+		Log.Infof("irc connection on %s stopped", server.Name)
 	}
+	shutdown <- ""
+}
 
-	Log.Debug("irc service started\n")
+//registration services
+func registerIRCUserFreenode(conn hirc.Conn, channelName string) {
 
-	ServStat <- "irc_online"
+}
 
-	for {
-		ircMessageHandler()
-	}
+func registerIRCUserQuakenet(conn hirc.Conn, channelName string) {
+
 }

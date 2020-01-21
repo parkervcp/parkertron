@@ -1,86 +1,147 @@
 package main
 
 import (
-	"flag"
+	"bufio"
+	"os"
+	"reflect"
+	"runtime"
 	"strings"
+	"time"
 
-	Log "github.com/sirupsen/logrus"
+	"github.com/rifflock/lfshook"
+	"github.com/sirupsen/logrus"
+	flag "github.com/spf13/pflag"
 )
 
 var (
-	//response is the bot response on the channel
-	response string
+	startTime = time.Now
+
+	// Log is a logrus logger
+	Log *logrus.Logger
 
 	//ServStat is the Service Status channel
-	ServStat = make(chan string)
+	servStat = make(chan string)
 
-	title = `
-	                    __                  __                        
-	___________ _______|  | __ ____________/  |________  ____   ____  
-	\____ \__  \\_  __ \  |/ // __ \_  __ \   __\_  __ \/  _ \ /    \ 
-	|  |_> > __ \|  | \/    <\  ___/|  | \/|  |  |  | \(  <_> )   |  \
-	|   __(_____/|__|  |__|_ \\____)|__|   |__|  |__|   \____/|___|__/
-	|__| v.0.1.0`
+	shutdown = make(chan string)
+
+	botConfig parkertron
+
+	serviceStart = map[string]func(){
+		"discord": startDiscordConnection,
+		"irc":     startIRCConnection,
+	}
+
+	serviceStop = map[string]func(){}
+
+	// startup flag values
+	verbose string
+	logDir  string
+	confDir string
+
+	asciiArt = `
+                      __             __
+    ____  ____ ______/ /_____  _____/ /__________  ____
+   / __ \/ __ '/ ___/ //_/ _ \/ ___/ __/ ___/ __ \/ __ \
+  / /_/ / /_/ / /  / ,< /  __/ /  / /_/ /  / /_/ / / / /
+ / .___/\__,_/_/  /_/|_|\___/_/   \__/_/   \____/_/ /_/
+/_/ v.0.2.2`
 )
 
+type parkertron struct {
+	Services []string       `json:"services"`
+	Log      logConf        `json:"log"`
+	Database databaseConfig `json:"database"`
+}
+
+type logConf struct {
+	Level    string `json:"level"`
+	Location string `json:"location"`
+}
+
+type databaseConfig struct {
+	Host     string `json:"host"`
+	Port     int    `json:"port"`
+	User     string `json:"user"`
+	Pass     string `json:"pass"`
+	Database string `json:"database"`
+}
+
 func init() {
-	verbose := flag.String("v", "info", "set the console verbosity of the bot")
+	flag.StringVarP(&verbose, "verbosity", "v", "info", "set the verbosity level for the bot {info,debug} (default is info)")
+	flag.StringVarP(&logDir, "logdir", "l", "logs/", "set the log directory of the bot. (default is ./logs/)")
+	flag.StringVarP(&confDir, "confdir", "c", "configs/", "set the config directory of the bot. (default is ./configs/)")
 	flag.Parse()
 
-	Log.Info(title)
-
-	setupConfig()
-
-	if *verbose == "debug" {
-		setLogLevel("debug")
-	} else if *verbose == "superdebug" {
-		setLogLevel("debug")
-		setBotConfigString("log.level", "superdebug")
-	} else {
-		if getBotConfigString("log.level") == "" {
-			setLogLevel("info")
-		} else {
-			setLogLevel(getBotConfigString("log.level"))
-		}
+	if loadFile(confDir+"bot.yml", botConfig) != nil {
+		Log.Fatalf("there was an error loading the config")
 	}
 
-	setupLogger()
+	go loadConfigs(confDir)
 
-	services := ""
-
-	for _, cr := range getBotServices() {
-		if strings.Contains(strings.TrimPrefix(cr, "bot.services."), cr) {
-			services = services + cr
-		}
-	}
-
-	Log.Debug("services loaded are " + services)
+	Log = newLogger(logDir)
+	Log.Infof("logging online\n")
+	Log.Infof("%s\n\n", asciiArt)
 }
 
 func main() {
-	for _, cr := range getBotServices() {
-		if strings.Contains(strings.TrimPrefix(cr, "bot.services."), cr) {
-			if strings.Contains(cr, "discord") {
-				Log.Info("Starting Discord connector\n")
-				go startDiscordConnection()
-			}
-
-			if strings.Contains(cr, "irc") {
-				Log.Info("Starting IRC connector\n")
-				go startIRCConnection()
-			}
+	for _, cr := range botConfig.Services {
+		if service, ok := serviceStart[cr]; ok {
+			Log.Infof("running %s", runtime.FuncForPC(reflect.ValueOf(service).Pointer()).Name())
+			go service()
+		} else {
+			Log.Panicf("unexpected array value: %q", cr)
 		}
 	}
 
-	for range getBotServices() {
-		<-ServStat
+	for range botConfig.Services {
+		Log.Infof("checking for servStat")
+		<-servStat
 	}
 
-	Log.Debug("Commands being loaded are: " + getCommandsString())
-	Log.Debug("Keywords being loaded are: " + getKeywordsString())
+	Log.Infof("Bot is now running. Send 'shutdown' or 'ctrl + c' to stop the bot .\n")
 
-	Log.Info("Bot is now running. Press CTRL-C to exit.\n")
-	// Simple way to keep program running until CTRL-C is pressed.
-	<-make(chan struct{})
-	return
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			Log.Fatalf("cannot read from stdin: %s", err)
+		}
+		line = strings.TrimSpace(line)
+		if len(line) == 0 {
+			continue
+		}
+		if line == "shutdown" {
+			Log.Infof("shutting down the bot.\n")
+			for _, cr := range botConfig.Services {
+				Log.Debugf("stopping connections on %s", cr)
+				if service, ok := serviceStop[cr]; ok {
+					Log.Infof("running %s", runtime.FuncForPC(reflect.ValueOf(service).Pointer()).Name())
+					go service()
+				} else {
+					Log.Panicf("unexpected array value: %q", cr)
+				}
+				<-shutdown
+			}
+			Log.Infof("All services stopped")
+			return
+		}
+	}
+}
+
+func newLogger(logDir string) *logrus.Logger {
+	if Log != nil {
+		return Log
+	}
+
+	pathMap := lfshook.PathMap{
+		logrus.InfoLevel:  logDir + "info.log",
+		logrus.ErrorLevel: logDir + "error.log",
+	}
+
+	Log = logrus.New()
+	Log.Hooks.Add(lfshook.NewHook(
+		pathMap,
+		&logrus.JSONFormatter{},
+	))
+	return Log
 }

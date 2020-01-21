@@ -12,112 +12,10 @@ import (
 
 	"github.com/h2non/filetype"
 	"github.com/otiai10/gosseract"
-	Log "github.com/sirupsen/logrus"
 	"mvdan.cc/xurls"
 )
 
-// DataPackage hopefully pass info among the packages a bit easier.
-type DataPackage struct {
-	Service     string   `json:"service,omitempty"`
-	Message     string   `json:"message,omitempty"`
-	MessageID   string   `json:"message_id,omitempty"`
-	AuthorID    string   `json:"author_id,omitempty"`
-	AuthorName  string   `json:"author_name,omitempty"`
-	AuthorRoles []string `json:"author_roles,omitempty"`
-	BotID       string   `json:"bot_id,omitempty"`
-	ChannelID   string   `json:"channel_id,omitempty"`
-	Attached    []string `json:"attached,omitempty"`
-	Perms       bool     `json:"perms,omitempty"`
-	Group       string   `json:"group,omitempty"`
-	GuildID     string   `json:"guild_id,omitempty"`
-	DMChannel   string   `json:"dm_channel,omitempty"`
-	DMMessage   string   `json:"dm_message,omitempty"`
-	MsgTye      string   `json:"msg_type,omitempty"`
-	Matched     string   `json:"matched,omitempty"`
-	Response    string   `json:"response,omitempty"`
-	Mention     string   `json:"mention,omitempty"`
-	Reaction    []string `json:"reaction,omitempty"`
-	ReactAdd    bool     `json:"react_job,omitempty"`
-	Keyword     string   `json:"keyword,omitempty"`
-	Command     string   `json:"command,omitempty"`
-}
-
-func matchImage(input string) bool {
-	ip := getParsingImageFiletypes()
-
-	for _, ro := range ip {
-		if strings.Contains(input, ro) {
-			Log.Debug("Image found with a " + ro + " format")
-			return true
-		}
-	}
-	return false
-}
-
-func matchPasteDomain(input string) (bool, string) {
-	// Watched for matched domains
-	re := regexp.MustCompile("([a-z]*.(url))")
-	rm := re.FindAllStringSubmatch(getParsingPasteKeys(), -1)
-
-	for x, ro := range rm {
-		for y := range ro {
-			if y%2 == 0 && rm[x][y] != "url" {
-				Log.Debug(rm[x][y])
-				if strings.Contains(input, getParsingPasteString(rm[x][y])) {
-					Log.Debug("Matched on: " + rm[x][y])
-					return true, strings.Replace(rm[x][y], ".url", "", -1)
-				}
-			}
-		}
-	}
-	return false, ""
-}
-
-func formatURL(input string) string {
-	// Watched for matched domains
-	re := regexp.MustCompile("&([a-z]*)&")
-	rm := re.FindAllStringSubmatch(getParsingPasteKeys(), -1)
-
-	for x, ro := range rm {
-		for y := range ro {
-			if y%2 == 0 && rm[x][y] != "url" {
-				if strings.Contains(input, rm[x][y]) {
-					Log.Debug("Matched on: " + rm[x][y])
-					return rm[x][y]
-				}
-			}
-		}
-	}
-	return ""
-}
-
-func parseBin(domain string, filename string) string {
-	Log.Info("Reading from " + getParsingPasteString(domain+".url"))
-
-	Log.Debug("Filename is: " + filename)
-
-	urlformat := getParsingPasteString(domain + ".format")
-
-	Log.Debug("format is " + urlformat)
-
-	rawURL := strings.Replace(strings.Replace(strings.Replace(urlformat, "&url&", getParsingPasteString(domain+".URL"), 1), "&filename&", filename, 1), "&append&", getParsingPasteString(domain+".append"), 1)
-
-	Log.Debug("Raw text URL is " + rawURL)
-
-	resp, err := http.Get(rawURL)
-	if err != nil {
-		Log.Fatal("", err)
-	}
-
-	body, err := ioutil.ReadAll(resp.Body)
-
-	content := string(body)
-
-	Log.Debug("Contents = \n" + content)
-
-	return content
-}
-
+// image handling
 func parseImage(remoteURL string) string {
 	Log.Info("Reading from " + remoteURL)
 
@@ -174,6 +72,18 @@ func parseImage(remoteURL string) string {
 	return text
 }
 
+func matchImage(input string) bool {
+	imageTpyes := getParsingImageFiletypes()
+
+	for _, ro := range imageTpyes {
+		if strings.Contains(input, ro) {
+			Log.Debug("Image found with a " + ro + " format")
+			return true
+		}
+	}
+	return false
+}
+
 func getImageDimension(imagePath string) (int, int) {
 	file, err := os.Open(imagePath)
 	if err != nil {
@@ -186,6 +96,77 @@ func getImageDimension(imagePath string) (int, int) {
 	}
 	return image.Width, image.Height
 }
+
+// paste site handling
+func parseBin(domain string, filename string) string {
+	Log.Info("Reading from " + getParsingPasteString(domain+".url"))
+
+	Log.Debug("Filename is: " + filename)
+
+	urlformat := getParsingPasteString(domain + ".format")
+
+	Log.Debug("format is " + urlformat)
+
+	rawURL := strings.Replace(strings.Replace(strings.Replace(urlformat, "&url&", getParsingPasteString(domain+".URL"), 1), "&filename&", filename, 1), "&append&", getParsingPasteString(domain+".append"), 1)
+
+	Log.Debug("Raw text URL is " + rawURL)
+
+	resp, err := http.Get(rawURL)
+	if err != nil {
+		Log.Fatal("", err)
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+
+	content := string(body)
+
+	Log.Debug("Contents = \n" + content)
+
+	return content
+}
+
+func matchPasteDomain(input string) (bool, string) {
+	// Watched for matched domains
+	re := regexp.MustCompile("([a-z]*.(url))")
+	rm := re.FindAllStringSubmatch(getParsingPasteKeys(), -1)
+
+	for x, ro := range rm {
+		for y := range ro {
+			if y%2 == 0 && rm[x][y] != "url" {
+				Log.Debug(rm[x][y])
+				if strings.Contains(input, getParsingPasteString(rm[x][y])) {
+					Log.Debug("Matched on: " + rm[x][y])
+					return true, strings.Replace(rm[x][y], ".url", "", -1)
+				}
+			}
+		}
+	}
+	return false, ""
+}
+
+func formatURL(input string) string {
+	// Watched for matched domains
+	re := regexp.MustCompile("&([a-z]*)&")
+	rm := re.FindAllStringSubmatch(getParsingPasteKeys(), -1)
+
+	for x, ro := range rm {
+		for y := range ro {
+			if y%2 == 0 && rm[x][y] != "url" {
+				if strings.Contains(input, rm[x][y]) {
+					Log.Debug("Matched on: " + rm[x][y])
+					return rm[x][y]
+				}
+			}
+		}
+	}
+	return ""
+}
+
+//     __                               __
+//    / /_____ __ ___    _____  _______/ /
+//   /  '_/ -_) // / |/|/ / _ \/ __/ _  /
+//  /_/\_\\__/\_, /|__,__/\___/_/  \_,_/
+//  	     /___/
 
 func parseKeyword(dpack DataPackage) {
 
@@ -262,64 +243,64 @@ func parseKeyword(dpack DataPackage) {
 	return
 }
 
-// admin commands are hard coded for now
-func parseAdminCommand(dpack DataPackage) {
-	Log.Debug("Parsing inbound admin command: " + dpack.Message)
-	if strings.HasPrefix(dpack.Message, "list") {
-		Log.Debug("Getting available commands")
-		req := strings.TrimPrefix(dpack.Message, "list ")
-		response = "This is the list of current " + req + ": " + getCommandsString()
+//                                     __
+//  _______  __ _  __ _  ___ ____  ___/ /
+// / __/ _ \/  ' \/  ' \/ _ `/ _ \/ _  /
+// \__/\___/_/_/_/_/_/_/\_,_/_//_/\_,_/
+//
+
+// AdminCommand commands are hard coded for now
+func adminCommand(servCommands []match, servKeywords []match, message string) (response []string) {
+	message = strings.ToLower(message)
+	Log.Debugf("parsing inbound admin command: %s\n", message)
+	if strings.HasPrefix(message, "list") {
+		Log.Debugf("getting available %s\n", strings.TrimPrefix(message, "list "))
+		req := strings.TrimPrefix(message, "list ")
 		if req == "commands" {
-			dpack.Response = "This is the list of current " + req + ": " + getCommandsString()
-			sendResponse(dpack)
-			return
+			allCommands := []string{"All commands are as follows"}
+			for _, command := range servCommands {
+				allCommands = append(allCommands, command.Command)
+			}
+			return allCommands
 		} else if req == "keywords" {
-			dpack.Response = "This is the list of current " + req + ": " + getKeywordsString()
-			sendResponse(dpack)
-			return
+			allKeywords := []string{"All keywords are as follows"}
+			for _, keyword := range servKeywords {
+				for _, keywords := range keyword.Keywords {
+					allKeywords = append(allKeywords, keywords)
+				}
+			}
+			return allKeywords
+		} else if req == "" {
+			return []string{"I can only look up keywords and commands right now."}
 		} else {
-			dpack.Response = "There was no match for " + req + " options"
-			sendResponse(dpack)
-			return
+			return []string{"There was no match for " + req + " options "}
 		}
 	}
+	return []string{}
 }
 
-// mod commands are hard coded for now
-func parseModCommand(dpack DataPackage) {
-	Log.Debug("Parsing inbound mod command: " + dpack.Message)
+// ModCommand commands are hard coded for now
+func modCommand(servCommands []match, message string) (response []string) {
+	message = strings.ToLower(message)
+	Log.Debugf("parsing inbound mod command: %s", message)
+	return []string{}
 }
 
-func parseCommand(dpack DataPackage) {
-	Log.Debug("Parsing inbound command: " + dpack.Message)
+// Command parses commands
+func parseCommand(servCommands match, message string) (response []string) {
+	message = strings.ToLower(message)
+	Log.Debugf("parsing inbound command: %s", message)
 
-	//Let Me Google That For You parsing
-	if strings.HasPrefix(dpack.Message, "ggl") {
-		Log.Debug("Googling for user. \n")
-		dpack.Response = "<https://lmgtfy.com/?q=" + strings.Replace(strings.TrimPrefix(dpack.Message, "ggl "), " ", "+", -1) + ">"
-		sendResponse(dpack)
-		return
+	if strings.HasPrefix(message, "ggl") {
+		Log.Debugf("googling for user.\n")
+		return []string{"<https://lmgtfy.com/?q=" + strings.Replace(strings.TrimPrefix(message, "ggl "), " ", "+", -1) + ">"}
 	}
 
-	//Search command file for command and prep response
-	for _, cr := range getCommands() {
-		Log.Debug("Testing for " + cr)
-		if strings.Contains(strings.TrimPrefix(cr, "command."), dpack.Message) {
-			Log.Debug("match on " + cr)
-			dpack.Response = getCommandResponseString(dpack.Message)
-			sendResponse(dpack)
-			return
+	for _, command := range servCommands.Match {
+		if command == message {
+			return command.Response
 		}
 	}
-}
 
-func sendResponse(dpack DataPackage) {
-	Log.Debug("Sending response to messenger: " + dpack.Response)
-	if dpack.Service == "discord" {
-		sendDiscordMessage(dpack)
-	} else if dpack.Service == "irc" {
-		sendIRCMessage(dpack.ChannelID, dpack.Response)
-	} else {
-		return
-	}
+	return []string{}
 }
