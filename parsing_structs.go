@@ -1,18 +1,17 @@
 package main
 
-type match struct {
-	Match    []string `json:"match,omitempty"`
-	Reaction []string `json:"reaction,omitempty"`
-	Response []string `json:"response,omitempty"`
-	Exact    bool     `json:"exact,omitempty"`
+// generic structs
+type permission struct {
+	Group       string   `json:"group,omitempty"`
+	Users       []string `json:"users,omitempty"`
+	Roles       []string `json:"roles,omitempty"`
+	Commands    []string `json:"commands,omitempty"`
+	Blacklisted bool     `json:"blacklisted,omitempty"`
 }
 
-type permGroups struct {
-	Group     string   `json:"group,omitempty"`
-	User      []string `json:"user,omitempty"`
-	Role      []string `json:"role,omitempty"`
-	Commands  []string `json:"commands,omitempty"`
-	Blacklist bool     `json:"blacklisted,omitempty"`
+type response struct {
+	Reaction []string `json:"reaction,omitempty"`
+	Response []string `json:"response,omitempty"`
 }
 
 type command struct {
@@ -22,15 +21,15 @@ type command struct {
 }
 
 type keyword struct {
-	Keywords []string `json:"keywords,omitempty"`
+	Keyword  string   `json:"keyword,omitempty"`
 	Reaction []string `json:"reaction,omitempty"`
 	Response []string `json:"response,omitempty"`
 	Exact    bool     `json:"exact,omitempty"`
 }
 
 type mentions struct {
-	Ping    []string `json:"ping,omitempty"`
-	Mention []string `json:"mention,omitempty"`
+	Ping    response `json:"ping,omitempty"`
+	Mention response `json:"mention,omitempty"`
 }
 
 type parsing struct {

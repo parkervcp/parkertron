@@ -2,156 +2,173 @@ package main
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
 )
 
 var (
-	//BotSession is the DiscordSession
-	dg *discordgo.Session
+	stopDiscord = make(map[string]chan string)
 
-	stopDiscord = make(chan string)
+	discordGlobal discord
 
-	discordConfig discord
+	discordLoad = make(chan string)
 )
 
-// This function will be called (due to AddHandler above) every time a new
-// message is created on any channel that the autenticated bot has access to.
-func discordMessageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
-
-	// exists solely because it got here somehow...
-	Log.Debug("Really...")
-}
-
-func kickDiscordUser(guild, user, username, reason, authorname string) {
-	dg.GuildMemberDeleteWithReason(guild, user, reason)
-
-	embed := &discordgo.MessageEmbed{
-		Title: "User has been kicked",
-		Color: 0xf39c12,
-		Fields: []*discordgo.MessageEmbedField{
-			&discordgo.MessageEmbedField{
-				Name:   "User",
-				Value:  username,
-				Inline: true,
-			},
-			&discordgo.MessageEmbedField{
-				Name:   "By",
-				Value:  authorname,
-				Inline: true,
-			},
-			&discordgo.MessageEmbedField{
-				Name:   "Reason",
-				Value:  reason,
-				Inline: true,
-			},
-		},
+// This function will be called (due to AddHandler) when the bot receives
+// the "ready" event from Discord.
+func readyDiscord(dg *discordgo.Session, event *discordgo.Ready, game string) {
+	// if there is an error setting the game log and return
+	if err := dg.UpdateStatus(0, game); err != nil {
+		Log.Fatalf("error setting game: %s", err)
+		return
 	}
 
-	fmt.Sprint(embed)
+	Log.Debugf("set game to: %s", game)
+}
+
+// This function will be called (due to AddHandler) every time a new
+// message is created on any channel that the autenticated bot has access to.
+func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, serverConfig discordServer) {
+
+}
+
+// kick a user and log it to a channel if configured
+func kickDiscordUser(dg *discordgo.Session, guild, user, username, reason, authorname string) (err error) {
+	if err = dg.GuildMemberDeleteWithReason(guild, user, reason); err != nil {
+		return
+	}
+
+	// embed := &discordgo.MessageEmbed{
+	// 	Title: "User has been kicked",
+	// 	Color: 0xf39c12,
+	// 	Fields: []*discordgo.MessageEmbedField{
+	// 		&discordgo.MessageEmbedField{
+	// 			Name:   "User",
+	// 			Value:  username,
+	// 			Inline: true,
+	// 		},
+	// 		&discordgo.MessageEmbedField{
+	// 			Name:   "By",
+	// 			Value:  authorname,
+	// 			Inline: true,
+	// 		},
+	// 		&discordgo.MessageEmbedField{
+	// 			Name:   "Reason",
+	// 			Value:  reason,
+	// 			Inline: true,
+	// 		},
+	// 	},
+	// }
 
 	// TODO: Need to use new config for this
 	// sendDiscordEmbed(getDiscordConfigString("embed.audit"), embed)
 
 	Log.Info("User " + authorname + " has been kicked from " + guild + " for " + reason)
+
+	return
 }
 
-func banDiscordUser(guild, user, username, reason, authorname string, days int) {
-	dg.GuildBanCreateWithReason(guild, user, reason, days)
-
-	embed := &discordgo.MessageEmbed{
-		Title: "User has been banned for " + strconv.Itoa(days) + " days",
-		Color: 0xc0392b,
-		Fields: []*discordgo.MessageEmbedField{
-			&discordgo.MessageEmbedField{
-				Name:   "User",
-				Value:  username,
-				Inline: true,
-			},
-			&discordgo.MessageEmbedField{
-				Name:   "By",
-				Value:  authorname,
-				Inline: true,
-			},
-			&discordgo.MessageEmbedField{
-				Name:   "Reason",
-				Value:  reason,
-				Inline: true,
-			},
-		},
+// ban a user and log it to a channel if configured
+func banDiscordUser(dg *discordgo.Session, guild, user, username, reason, authorname string, days int) (err error) {
+	if err = dg.GuildBanCreateWithReason(guild, user, reason, days); err != nil {
+		return
 	}
 
-	fmt.Sprint(embed)
+	// embed := &discordgo.MessageEmbed{
+	// 	Title: "User has been banned for " + strconv.Itoa(days) + " days",
+	// 	Color: 0xc0392b,
+	// 	Fields: []*discordgo.MessageEmbedField{
+	// 		&discordgo.MessageEmbedField{
+	// 			Name:   "User",
+	// 			Value:  username,
+	// 			Inline: true,
+	// 		},
+	// 		&discordgo.MessageEmbedField{
+	// 			Name:   "By",
+	// 			Value:  authorname,
+	// 			Inline: true,
+	// 		},
+	// 		&discordgo.MessageEmbedField{
+	// 			Name:   "Reason",
+	// 			Value:  reason,
+	// 			Inline: true,
+	// 		},
+	// 	},
+	// }
 
 	// TODO: Need to use new config for embed audit to log to a webhook
 	//	sendDiscordEmbed(getDiscordConfigString("embed.audit"), embed)
 
 	Log.Info("User " + authorname + " has been kicked from " + guild + " for " + reason)
+
+	return
 }
 
-// arbitrary message handling
-func deleteDiscordMessage(channelID, messageID, message string) error {
-	//Log.Debug("Removing message: " + dpack.Message)
+// clean up messages if configured to
+func deleteDiscordMessage(dg *discordgo.Session, channelID, messageID, message string) (err error) {
+	Log.Debugf("Removing message \n'%s'\n from %s", message, channelID)
 
-	dg.ChannelMessageDelete(channelID, messageID)
-
-	embed := &discordgo.MessageEmbed{
-		Title: "Message was deleted",
-		Color: 0xf39c12,
-		Fields: []*discordgo.MessageEmbedField{
-			&discordgo.MessageEmbedField{
-				Name:   "MessageID",
-				Value:  messageID,
-				Inline: true,
-			},
-			&discordgo.MessageEmbedField{
-				Name:   "Message Content",
-				Value:  message,
-				Inline: true,
-			},
-		},
+	if err = dg.ChannelMessageDelete(channelID, messageID); err != nil {
+		return
 	}
 
-	fmt.Sprint(embed)
+	// embed := &discordgo.MessageEmbed{
+	// 	Title: "Message was deleted",
+	// 	Color: 0xf39c12,
+	// 	Fields: []*discordgo.MessageEmbedField{
+	// 		&discordgo.MessageEmbedField{
+	// 			Name:   "MessageID",
+	// 			Value:  messageID,
+	// 			Inline: true,
+	// 		},
+	// 		&discordgo.MessageEmbedField{
+	// 			Name:   "Message Content",
+	// 			Value:  message,
+	// 			Inline: true,
+	// 		},
+	// 	},
+	// }
 
 	// TODO: Need to use new config for embed audit to log to a webhook
 	// 	sendDiscordEmbed(getDiscordConfigString("embed.audit"), embed)
 
 	Log.Debug("message was deleted.")
 
-	return nil
+	return
 }
 
 // send message handling
-func sendDiscordMessage(s *discordgo.Session, channelID, authorID, prefix string, responseArray []string) error {
+func sendDiscordMessage(dg *discordgo.Session, channelID, authorID, prefix string, responseArray []string) (err error) {
 	response := strings.Join(responseArray, "\n")
 	response = strings.Replace(response, "&user&", authorID, -1)
 	response = strings.Replace(response, "&prefix&", prefix, -1)
 	response = strings.Replace(response, "&react&", "", -1)
 
-	_, err := s.ChannelMessageSend(channelID, response)
-	if err != nil {
-		return err
+	// if there is an error return the error
+	if _, err = dg.ChannelMessageSend(channelID, response); err != nil {
+		return
 	}
 
-	return nil
+	return
 }
 
-func sendDiscordReaction(s *discordgo.Session, channelID string, messageID string, reactionArray []string) {
+// send a reaction to a message
+func sendDiscordReaction(dg *discordgo.Session, channelID string, messageID string, reactionArray []string) (err error) {
 	for _, reaction := range reactionArray {
 		Log.Debugf("sending \"%s\" as a reaction to message: %s", reaction, messageID)
-		err := s.MessageReactionAdd(channelID, messageID, reaction)
-		if err != nil {
-			Log.Errorf("There was an error sending the reaction. %s", err)
+		// if there is an error sending a message return it
+		if err = dg.MessageReactionAdd(channelID, messageID, reaction); err != nil {
+			return
 		}
 	}
+	return
 }
 
-func sendDiscordEmbed(channelID string, embed *discordgo.MessageEmbed) error {
-	_, err := dg.ChannelMessageSendEmbed(channelID, embed)
-	if err != nil {
+// send a message with an embed
+func sendDiscordEmbed(dg *discordgo.Session, channelID string, embed *discordgo.MessageEmbed) error {
+	// if there is an error sending the embed message
+	if _, err := dg.ChannelMessageSendEmbed(channelID, embed); err != nil {
 		Log.Fatal("Embed send error")
 		return err
 	}
@@ -160,23 +177,67 @@ func sendDiscordEmbed(channelID string, embed *discordgo.MessageEmbed) error {
 }
 
 // service handling
-func startDiscordConnection() {
-	loadConfigs(confDir)
+// start all the bots
+func startDiscordsBots() {
+	Log.Infof("Starting IRC server connections\n")
+	// range over the bots available to start
+	for _, bot := range discordGlobal.Bots {
+		Log.Infof("Connecting to %s\n", bot.BotName)
 
+		// spin up a channel to tell the bot to shutdown later
+		stopDiscord[bot.BotName] = make(chan string)
+
+		// start the bot
+		go startDiscordBotConnection(bot)
+		// wait on bot being able to start.
+		<-discordLoad
+	}
+
+	Log.Debug("Discord service started\n")
+	servStart <- "discord_online"
+}
+
+// when a shutdown is sent close out services properly
+func stopDiscordBots() {
+	Log.Infof("stopping discord connections")
+	// loop through bots and send shutdowns
+	for _, bot := range discordGlobal.Bots {
+		Log.Infof("stopping %s", bot.BotName)
+		stopDiscord[bot.BotName] <- ""
+
+		<-stopDiscord[bot.BotName]
+		Log.Infof("stopped %s", bot.BotName)
+	}
+	Log.Infof("discord connections stopped")
+	// return shutdown signal on channel
+	servStopped <- "discord_stopped"
+}
+
+// start connections to discord
+func startDiscordBotConnection(discordConfig discordBot) {
 	// Initializing Discord connection
 	// Create a new Discord session using the provided bot token.
-	dg, err = discordgo.New("Bot " + discordConfig.Token)
-
+	dg, err := discordgo.New("Bot " + discordConfig.Config.Token)
 	if err != nil {
-		Log.Fatal("error creating Discord session,", err)
+		Log.Errorf("error creating Discord session for %s: %v", discordConfig.BotName, err)
 		return
 	}
 
 	// Register ready as a callback for the ready events
-	dg.AddHandler(readyDiscord)
+	// dg.AddHandler(readyDiscord)
+	// Thank Stroom on the discordgopher discord for getting me this
+	dg.AddHandler(func(dg *discordgo.Session, event *discordgo.Ready) {
+		readyDiscord(dg, event, discordConfig.Config.Game)
+	})
 
 	// Register messageCreate as a callback for the messageCreate events.
-	dg.AddHandler(discordMessageHandler)
+	// dg.AddHandler(discordMessageHandler)
+	// Thank Stroom on the discordgopher discord for getting me this
+	for _, server := range discordConfig.Servers {
+		dg.AddHandler(func(dg *discordgo.Session, event *discordgo.MessageCreate) {
+			discordMessageHandler(dg, event, server)
+		})
+	}
 
 	Log.Debug("Discord service connected\n")
 
@@ -186,7 +247,6 @@ func startDiscordConnection() {
 		Log.Fatal("error opening connection,", err)
 		return
 	}
-	Log.Debug("Discord service started\n")
 
 	bot, err := dg.User("@me")
 	if err != nil {
@@ -195,29 +255,13 @@ func startDiscordConnection() {
 
 	Log.Debug("Invite the bot to your server with https://discordapp.com/oauth2/authorize?client_id=" + bot.ID + "&scope=bot")
 
-	servStat <- "discord_online"
-	<-stopDiscord
+	discordLoad <- ""
+
+	<-stopDiscord[discordConfig.BotName]
+
 	// properly send a shutdown to the discord server so the bot goes offline.
 	dg.Close()
-	stopDiscord <- ""
-}
 
-// when a shutdown is sent close out services properly
-func stopDiscordConnection() {
-	Log.Infof("stopping discord connection")
-	stopDiscord <- ""
-	<-stopDiscord
-	Log.Infof("discord connection stopped")
-	shutdown <- ""
-}
-
-// This function will be called (due to AddHandler above) when the bot receives
-// the "ready" event from Discord.
-func readyDiscord(s *discordgo.Session, event *discordgo.Ready) {
-	err := s.UpdateStatus(0, discordConfig.Token)
-	if err != nil {
-		Log.Fatalf("error setting game: %s", err)
-		return
-	}
-	Log.Debugf("set game to: %s", discordConfig.Game)
+	// return the shutdown signal
+	stopDiscord[discordConfig.BotName] <- ""
 }

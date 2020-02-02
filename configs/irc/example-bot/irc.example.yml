@@ -20,7 +20,7 @@ server_name:
   channels: ## each channel is in a group. one to many channels can be in a single group.
     - channel: ## example channel
         channel_ids:
-          - "#pbtg"
+          - "pbtg"
 
         commands:
           example:
