@@ -1,0 +1,7 @@
+services: ## currently the only real service is the discord service.
+    - "discord"
+    # - "irc"
+    # - "slack"
+log:
+    level: debug
+    location: /var/log/parkertron/

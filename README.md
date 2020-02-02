@@ -42,26 +42,29 @@ Working on adding other services and additions.
 
 The checklist so far
 
-- [x] Full OSS release
-
-- [x] Read config files
-  - [x] Separate service config (currently only discord)
-
-- [ ] support multiple services
+- support multiple services
   - [x] Discord
   - [ ] Slack
   - [x] IRC
 
 #### Discord specific support
-  - [x] Support @mentions for the bot
-  - [x] Use @mentions for other users
-  - [x] Watch for @mentions on groups
+  - [ ] Support @mentions for the bot
+  - [ ] Use @mentions for other users
+  - [ ] Watch for @mentions on groups
+  - [ ] Respond with multi-line output in a single message
 
+#### IRC specific support
+  - [x] Logging into service and validating
+  - [x] Create account on a server
+    - [x] Freenode
+    - [ ] Others
 
 #### General support
 - [x] Get inbound messages
   - [x] Listen to specific channels
+    - [x] per-channel configs
   - [x] Listen for mentions
+    - [ ] respond according to context
 
 - [x] Respond to inbound messages
   - [x] respond to commands with prefix
@@ -70,14 +73,12 @@ The checklist so far
   - [ ] Separate server commands
 
 - [x] Image parsing
-  - [x] image from url support
+  - [x] image from url support (others may work)
     - [x] png support
     - [x] jpg support
   - [x] direct embedded images
 
 - [x] Respond with correct output from configs
-
-- [x] Respond with multi-line output in a single message
 
 - [x] Impliment blacklist/whitelist mode (Blacklist by User ID only)
 
@@ -86,12 +87,13 @@ The checklist so far
   - [ ] channel cooldown
   - [ ] user cooldown
 
-- [x] Permissions
+- Permissions
+  - Server own gets all perms
   - [ ] Permissions management
 
-- [ ] logging
+- logging
   - [ ] log user join/leave 
-  - [x] log chats (only logs channels it is watching to cut on logging)
+  - [x] log chats (only logs channels it is watching to cut minimize logging)
   - [ ] log edits (show original and edited)
   - [ ] log chats/edits to separate files/folders
   

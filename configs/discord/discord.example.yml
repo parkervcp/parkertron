@@ -1,4 +1,0 @@
-discord:
-  token: "This is only an example..." ## You need to create an app and get a token here - https://discordapp.com/developers/
-  dm_response: "Please message in the main server."
-  game: "Half Life 3.0 Alpha"

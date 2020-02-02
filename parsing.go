@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -16,6 +15,16 @@ import (
 )
 
 // image handling
+func matchImage(input string, imageTypes parsingImageConfig) bool {
+	for _, ro := range imageTypes.Filetypes {
+		if strings.Contains(input, ro) {
+			Log.Debug("Image found with a " + ro + " format")
+			return true
+		}
+	}
+	return false
+}
+
 func parseImage(remoteURL string) string {
 	Log.Info("Reading from " + remoteURL)
 
@@ -72,18 +81,6 @@ func parseImage(remoteURL string) string {
 	return text
 }
 
-func matchImage(input string) bool {
-	imageTpyes := getParsingImageFiletypes()
-
-	for _, ro := range imageTpyes {
-		if strings.Contains(input, ro) {
-			Log.Debug("Image found with a " + ro + " format")
-			return true
-		}
-	}
-	return false
-}
-
 func getImageDimension(imagePath string) (int, int) {
 	file, err := os.Open(imagePath)
 	if err != nil {
@@ -98,16 +95,14 @@ func getImageDimension(imagePath string) (int, int) {
 }
 
 // paste site handling
-func parseBin(domain string, filename string) string {
-	Log.Info("Reading from " + getParsingPasteString(domain+".url"))
+func parseBin(pasteConfig parsingPasteConfig, filename string) string {
+	Log.Info("Reading from " + pasteConfig.Name)
 
 	Log.Debug("Filename is: " + filename)
 
-	urlformat := getParsingPasteString(domain + ".format")
+	Log.Debug("format is " + pasteConfig.Format)
 
-	Log.Debug("format is " + urlformat)
-
-	rawURL := strings.Replace(strings.Replace(strings.Replace(urlformat, "&url&", getParsingPasteString(domain+".URL"), 1), "&filename&", filename, 1), "&append&", getParsingPasteString(domain+".append"), 1)
+	rawURL := strings.Replace(strings.Replace(pasteConfig.Format, "&url&", pasteConfig.URL, 1), "&filename&", filename, 1)
 
 	Log.Debug("Raw text URL is " + rawURL)
 
@@ -125,121 +120,80 @@ func parseBin(domain string, filename string) string {
 	return content
 }
 
-func matchPasteDomain(input string) (bool, string) {
-	// Watched for matched domains
-	re := regexp.MustCompile("([a-z]*.(url))")
-	rm := re.FindAllStringSubmatch(getParsingPasteKeys(), -1)
-
-	for x, ro := range rm {
-		for y := range ro {
-			if y%2 == 0 && rm[x][y] != "url" {
-				Log.Debug(rm[x][y])
-				if strings.Contains(input, getParsingPasteString(rm[x][y])) {
-					Log.Debug("Matched on: " + rm[x][y])
-					return true, strings.Replace(rm[x][y], ".url", "", -1)
-				}
-			}
-		}
-	}
-	return false, ""
-}
-
-func formatURL(input string) string {
-	// Watched for matched domains
-	re := regexp.MustCompile("&([a-z]*)&")
-	rm := re.FindAllStringSubmatch(getParsingPasteKeys(), -1)
-
-	for x, ro := range rm {
-		for y := range ro {
-			if y%2 == 0 && rm[x][y] != "url" {
-				if strings.Contains(input, rm[x][y]) {
-					Log.Debug("Matched on: " + rm[x][y])
-					return rm[x][y]
-				}
-			}
-		}
-	}
-	return ""
-}
-
 //     __                               __
 //    / /_____ __ ___    _____  _______/ /
 //   /  '_/ -_) // / |/|/ / _ \/ __/ _  /
 //  /_/\_\\__/\_, /|__,__/\___/_/  \_,_/
 //  	     /___/
-
-func parseKeyword(dpack DataPackage) {
+func parseKeyword(message string, attached []string, channelKeywords []keyword, parseConf parsing) (response, reaction []string) {
 
 	Log.Debug("Parsing inbound chat")
 
-	pasteMatched, pasteDomain := matchPasteDomain(dpack.Message)
-
-	Log.Debug("Matched domain: " + strconv.FormatBool(pasteMatched))
-
 	//Catch domains and route to the proper controllers (image, binsite parsers)
 	Log.Debug("Matching on links in text")
-	for _, url := range xurls.Relaxed.FindStringSubmatch(dpack.Message) {
+	for _, url := range xurls.Relaxed.FindStringSubmatch(message) {
 		Log.Debug(url)
 	}
 
-	if dpack.Attached != nil {
-		Log.Debug("Matching on Attached links")
-		for x := range dpack.Attached {
-			if matchImage(dpack.Attached[x]) {
-				if matchImage(xurls.Relaxed.FindString(dpack.Attached[x])) {
-					dpack.Message = parseImage(xurls.Relaxed.FindString(dpack.Attached[x]))
-				}
-			}
-		}
-	}
+	// if attached != nil {
+	// 	Log.Debug("Matching on Attached links")
+	// 	for x := range attached {
+	// 		if matchImage(attached[x], parseConf.Image) {
+	// 			if matchImage(xurls.Relaxed.FindString(attached[x]), parseConf.Image) {
+	// 				message = parseImage(xurls.Relaxed.FindString(attached[x]))
+	// 			}
+	// 		}
+	// 	}
+	// }
 
-	if matchImage(dpack.Message) {
-		if matchImage(xurls.Relaxed.FindString(dpack.Message)) {
-			dpack.Message = parseImage(xurls.Relaxed.FindString(dpack.Message))
-		}
-	} else if pasteMatched {
-		if xurls.Relaxed.FindString(dpack.Message) != "" {
-			Log.Debug("Sending: " + pasteDomain)
-			Log.Debug("xurls matched: " + xurls.Relaxed.FindString(dpack.Message))
-			Log.Debug("Guessing file name is: " + strings.Replace(xurls.Relaxed.FindString(dpack.Message), getParsingPasteString(pasteDomain+".url"), "", -1))
-			dpack.Message = parseBin(pasteDomain, strings.Replace(xurls.Relaxed.FindString(dpack.Message), getParsingPasteString(pasteDomain+".url"), "", -1))
-		}
-	}
+	// if matchImage(message, parseConf.Image) {
+	// 	if matchImage(xurls.Relaxed.FindString(message), parseConf.Image) {
+	// 		message = parseImage(xurls.Relaxed.FindString(message))
+	// 	}
+	// } else if pasteMatched {
+	// 	matchedURL := xurls.Relaxed.FindString(message)
+	// 	if matchedURL != "" {
+	// 		Log.Debug("Sending: " + pasteDomain)
+	// 		Log.Debug("xurls matched: " + matchedURL)
+	// 		// TODO: actually fix this
+	// 		_, fileName := filepath.Split(matchedURL)
+	// 		Log.Debug("Guessing file name is: " + fileName)
+	// 		// message = parseBin(, fileName)
+	// 	}
+	// }
 
 	//exact match search
 	Log.Debug("Testing exact matches")
-	for _, kr := range getKeywords() {
-		if strings.Contains(strings.ToLower(dpack.Message), strings.TrimSuffix(strings.TrimPrefix(kr, "keyword.exact."), ".response")) {
-			Log.Debug(strings.TrimSuffix(strings.TrimPrefix(kr, "keyword.exact."), ".response") + " match is " + strconv.FormatBool(strings.Contains(strings.ToLower(dpack.Message), strings.TrimSuffix(strings.TrimPrefix(kr, "keyword.exact."), ".response"))))
-		}
-		if strings.ToLower(dpack.Message) == strings.TrimSuffix(strings.TrimPrefix(kr, "keyword.exact."), ".response") {
-			dpack.Response = getKeywordResponseString(strings.TrimSuffix(strings.TrimPrefix(kr, "keyword."), ".response"))
-			dpack.Keyword = strings.TrimSuffix(strings.TrimPrefix(kr, "keyword."), ".response")
-			Log.Debug("Response is " + dpack.Response)
-			sendResponse(dpack)
+	for _, keyWord := range channelKeywords {
+		if strings.ToLower(message) == keyWord.Keyword && keyWord.Exact { // if the match was an exact match
+			Log.Debugf("Response is %v", keyWord.Response)
+			Log.Debugf("Reaction is %v", keyWord.Reaction)
+			return keyWord.Response, keyWord.Reaction
+		} else if strings.Contains(strings.ToLower(message), keyWord.Keyword) { // if the match was just a match
+			Log.Debugf("Response is %v", keyWord.Response)
+			Log.Debugf("Reaction is %v", keyWord.Reaction)
+			return keyWord.Response, keyWord.Reaction
 		}
 	}
 
-	lastKeyword := ""
 	lastIndex := -1
+
 	//Match on errors
 	Log.Debug("Testing error matches")
-	for _, kr := range getKeywords() {
-		if strings.Contains(strings.ToLower(dpack.Message), strings.TrimSuffix(strings.TrimPrefix(kr, "keyword."), ".response")) {
-			Log.Debug(strings.TrimSuffix(strings.TrimPrefix(kr, "keyword."), ".response") + " match is " + strconv.FormatBool(strings.Contains(strings.ToLower(dpack.Message), strings.TrimSuffix(strings.TrimPrefix(kr, "keyword."), ".response"))))
+
+	for _, keyWord := range channelKeywords {
+		if strings.Contains(strings.ToLower(message), keyWord.Keyword) {
+			Log.Debugf("match is %s", keyWord.Keyword)
 		}
-		i := strings.LastIndex(strings.ToLower(dpack.Message), strings.TrimSuffix(strings.TrimPrefix(kr, "keyword."), ".response"))
-		if i > lastIndex {
-			lastIndex = i
-			lastKeyword = kr
-			dpack.Keyword = strings.TrimSuffix(strings.TrimPrefix(lastKeyword, "keyword."), ".response")
+
+		index := strings.LastIndex(strings.ToLower(message), keyWord.Keyword)
+		if index > lastIndex {
+			lastIndex = index
+			response = keyWord.Response
+			reaction = keyWord.Reaction
 		}
 	}
 
-	if lastIndex > -1 {
-		dpack.Response = getKeywordResponseString(strings.TrimSuffix(strings.TrimPrefix(lastKeyword, "keyword."), ".response"))
-		sendResponse(dpack)
-	}
 	return
 }
 
@@ -250,57 +204,21 @@ func parseKeyword(dpack DataPackage) {
 //
 
 // AdminCommand commands are hard coded for now
-func adminCommand(servCommands []match, servKeywords []match, message string) (response []string) {
+func adminCommand(servCommands, servKeywords []response, message string) (response, reaction []string) {
 	message = strings.ToLower(message)
-	Log.Debugf("parsing inbound admin command: %s\n", message)
-	if strings.HasPrefix(message, "list") {
-		Log.Debugf("getting available %s\n", strings.TrimPrefix(message, "list "))
-		req := strings.TrimPrefix(message, "list ")
-		if req == "commands" {
-			allCommands := []string{"All commands are as follows"}
-			for _, command := range servCommands {
-				allCommands = append(allCommands, command.Command)
-			}
-			return allCommands
-		} else if req == "keywords" {
-			allKeywords := []string{"All keywords are as follows"}
-			for _, keyword := range servKeywords {
-				for _, keywords := range keyword.Keywords {
-					allKeywords = append(allKeywords, keywords)
-				}
-			}
-			return allKeywords
-		} else if req == "" {
-			return []string{"I can only look up keywords and commands right now."}
-		} else {
-			return []string{"There was no match for " + req + " options "}
-		}
-	}
-	return []string{}
+
+	return
 }
 
 // ModCommand commands are hard coded for now
-func modCommand(servCommands []match, message string) (response []string) {
+func modCommand(message string) (response, reaction []string) {
 	message = strings.ToLower(message)
-	Log.Debugf("parsing inbound mod command: %s", message)
-	return []string{}
+	return
 }
 
 // Command parses commands
-func parseCommand(servCommands match, message string) (response []string) {
+func parseCommand(message string, channelCommands []command) (response, reaction []string) {
 	message = strings.ToLower(message)
-	Log.Debugf("parsing inbound command: %s", message)
 
-	if strings.HasPrefix(message, "ggl") {
-		Log.Debugf("googling for user.\n")
-		return []string{"<https://lmgtfy.com/?q=" + strings.Replace(strings.TrimPrefix(message, "ggl "), " ", "+", -1) + ">"}
-	}
-
-	for _, command := range servCommands.Match {
-		if command == message {
-			return command.Response
-		}
-	}
-
-	return []string{}
+	return
 }

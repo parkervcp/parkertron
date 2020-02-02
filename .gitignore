@@ -1,18 +1,7 @@
-debug
-
 logs/
-
-vendor/
+.vscode/
+.idea/
 
 parkertron
 
-configs/local/
-
-configs/permissions\.yml
-
 Gopkg\.lock
-
-.vscode/
-
-.idea/
-file_layout.txt
