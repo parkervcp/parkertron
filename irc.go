@@ -95,10 +95,10 @@ func ircMessageHandler(conn hirc.Conn, ircConfig ircBot) {
 
 			if !strings.HasPrefix(message.Trailing, ircConfig.Config.Prefix) {
 				Log.Debug("sending to \"" + message.Params[0])
-				parseKeyword(message.Trailing, []string{}, channelKeywords, channelParsing)
+				parseKeyword(message.Trailing, ircConfig.BotName, []string{}, channelKeywords, channelParsing)
 			} else {
 				Log.Debug("sending to \"" + message.Params[0])
-				parseCommand(strings.TrimPrefix(message.Trailing, ircConfig.Config.Prefix), channelCommands)
+				parseCommand(strings.TrimPrefix(message.Trailing, ircConfig.Config.Prefix), ircConfig.BotName, channelCommands)
 			}
 			return
 		}

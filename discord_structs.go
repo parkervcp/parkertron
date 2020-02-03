@@ -13,9 +13,9 @@ type discordBot struct {
 }
 
 type discordBotConfig struct {
-	Token  string   `json:"token,omitempty"`
-	Game   string   `json:"game,omitempty"`
-	DMResp []string `json:"dm_response,omitempty"`
+	Token  string        `json:"token,omitempty"`
+	Game   string        `json:"game,omitempty"`
+	DMResp responseArray `json:"dm_response,omitempty"`
 }
 
 type discordServer struct {
@@ -45,8 +45,9 @@ type discordChannelGroups struct {
 }
 
 type discordKickOnMention struct {
-	Roles   []string `json:"roles,omitempty"`
-	Users   []string `json:"users,omitempty"`
-	Direct  response `json:"dm,omitempty"`
-	Channel response `json:"channel,omitempty"`
+	Roles   []string      `json:"roles,omitempty"`
+	Users   []string      `json:"users,omitempty"`
+	Direct  responseArray `json:"dm,omitempty"`
+	Channel responseArray `json:"channel,omitempty"`
+	Kick    bool          `json:"kick,omitempty"`
 }

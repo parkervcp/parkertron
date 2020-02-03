@@ -1,5 +1,8 @@
 config:
-    token: "a test token"
-    game: "Half Life 3 Alpha"
-    dm_response:
+  token: "a test token"
+  game: "Half Life 3 Alpha"
+  dm_response:
+    response:
     - "Please message me in the main server channels"
+    reaction:
+    - "🍩"

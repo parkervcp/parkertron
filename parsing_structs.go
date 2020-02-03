@@ -9,11 +9,6 @@ type permission struct {
 	Blacklisted bool     `json:"blacklisted,omitempty"`
 }
 
-type response struct {
-	Reaction []string `json:"reaction,omitempty"`
-	Response []string `json:"response,omitempty"`
-}
-
 type command struct {
 	Command  string   `json:"command,omitempty"`
 	Response []string `json:"response,omitempty"`
@@ -28,8 +23,13 @@ type keyword struct {
 }
 
 type mentions struct {
-	Ping    response `json:"ping,omitempty"`
-	Mention response `json:"mention,omitempty"`
+	Ping    responseArray `json:"ping,omitempty"`
+	Mention responseArray `json:"mention,omitempty"`
+}
+
+type responseArray struct {
+	Reaction []string `json:"reaction,omitempty"`
+	Response []string `json:"response,omitempty"`
 }
 
 type parsing struct {

@@ -15,6 +15,9 @@ import (
 	"github.com/goccy/go-yaml"
 )
 
+// TODO: write config handlers to return data on the fly.
+// This is make reloads actually give new data.
+
 var (
 	// stores info on files for easier loading
 	files confFiles
@@ -247,9 +250,12 @@ func loadConf(conf confFile) (err error) {
 					for sid, server := range discordGlobal.Bots[bid].Servers {
 						// if the server exists drop it and re-append config
 						if server.ServerID == tempServer.ServerID {
-							discordGlobal.Bots[bid].Servers[sid] = discordGlobal.Bots[bid].Servers[len(discordGlobal.Bots[bid].Servers)-1]
-							discordGlobal.Bots[bid].Servers = discordGlobal.Bots[bid].Servers[:len(discordGlobal.Bots[bid].Servers)-1]
-							discordGlobal.Bots[bid].Servers = append(discordGlobal.Bots[bid].Servers, tempServer)
+							discordGlobal.Bots[bid].Servers[sid].ChanGroups = tempServer.ChanGroups
+							discordGlobal.Bots[bid].Servers[sid].Config = tempServer.Config
+							discordGlobal.Bots[bid].Servers[sid].Permissions = tempServer.Permissions
+							// discordGlobal.Bots[bid].Servers[sid] = discordGlobal.Bots[bid].Servers[len(discordGlobal.Bots[bid].Servers)-1]
+							// discordGlobal.Bots[bid].Servers = discordGlobal.Bots[bid].Servers[:len(discordGlobal.Bots[bid].Servers)-1]
+							// discordGlobal.Bots[bid].Servers = append(discordGlobal.Bots[bid].Servers, tempServer)
 							return
 						}
 					}
