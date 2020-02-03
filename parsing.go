@@ -125,14 +125,15 @@ func parseBin(pasteConfig parsingPasteConfig, filename string) string {
 //   /  '_/ -_) // / |/|/ / _ \/ __/ _  /
 //  /_/\_\\__/\_, /|__,__/\___/_/  \_,_/
 //  	     /___/
-func parseKeyword(message string, attached []string, channelKeywords []keyword, parseConf parsing) (response, reaction []string) {
+func parseKeyword(message, botName string, attached []string, channelKeywords []keyword, parseConf parsing) (response, reaction []string) {
+	Log.Debugf("Parsing inbound chat for %s", botName)
 
-	Log.Debug("Parsing inbound chat")
+	message = strings.ToLower(message)
 
 	//Catch domains and route to the proper controllers (image, binsite parsers)
-	Log.Debug("Matching on links in text")
+	Log.Debugf("Matching on links in text")
 	for _, url := range xurls.Relaxed.FindStringSubmatch(message) {
-		Log.Debug(url)
+		Log.Debugf(url)
 	}
 
 	// if attached != nil {
@@ -163,13 +164,13 @@ func parseKeyword(message string, attached []string, channelKeywords []keyword, 
 	// }
 
 	//exact match search
-	Log.Debug("Testing exact matches")
+	Log.Debug("Testing matches")
 	for _, keyWord := range channelKeywords {
-		if strings.ToLower(message) == keyWord.Keyword && keyWord.Exact { // if the match was an exact match
+		if message == keyWord.Keyword && keyWord.Exact { // if the match was an exact match
 			Log.Debugf("Response is %v", keyWord.Response)
 			Log.Debugf("Reaction is %v", keyWord.Reaction)
 			return keyWord.Response, keyWord.Reaction
-		} else if strings.Contains(strings.ToLower(message), keyWord.Keyword) { // if the match was just a match
+		} else if strings.Contains(message, keyWord.Keyword) { // if the match was just a match
 			Log.Debugf("Response is %v", keyWord.Response)
 			Log.Debugf("Reaction is %v", keyWord.Reaction)
 			return keyWord.Response, keyWord.Reaction
@@ -179,14 +180,14 @@ func parseKeyword(message string, attached []string, channelKeywords []keyword, 
 	lastIndex := -1
 
 	//Match on errors
-	Log.Debug("Testing error matches")
+	Log.Debug("Testing matches")
 
 	for _, keyWord := range channelKeywords {
-		if strings.Contains(strings.ToLower(message), keyWord.Keyword) {
+		if strings.Contains(message, keyWord.Keyword) {
 			Log.Debugf("match is %s", keyWord.Keyword)
 		}
 
-		index := strings.LastIndex(strings.ToLower(message), keyWord.Keyword)
+		index := strings.LastIndex(message, keyWord.Keyword)
 		if index > lastIndex {
 			lastIndex = index
 			response = keyWord.Response
@@ -204,21 +205,31 @@ func parseKeyword(message string, attached []string, channelKeywords []keyword, 
 //
 
 // AdminCommand commands are hard coded for now
-func adminCommand(servCommands, servKeywords []response, message string) (response, reaction []string) {
+func adminCommand(message, botName string, servCommands []command, servKeywords []keyword) (response, reaction []string) {
+	Log.Debugf("Parsing inbound admin command for %s", botName)
 	message = strings.ToLower(message)
 
 	return
 }
 
 // ModCommand commands are hard coded for now
-func modCommand(message string) (response, reaction []string) {
+func modCommand(message, botName string, servCommands []command) (response, reaction []string) {
+	Log.Debugf("Parsing inbound mod command for %s", botName)
 	message = strings.ToLower(message)
 	return
 }
 
 // Command parses commands
-func parseCommand(message string, channelCommands []command) (response, reaction []string) {
+func parseCommand(message, botName string, channelCommands []command) (response, reaction []string) {
+	Log.Debugf("Parsing inbound command for %s", botName)
 	message = strings.ToLower(message)
+
+	for _, command := range channelCommands {
+		if command.Command == message {
+			response = command.Response
+			reaction = command.Reaction
+		}
+	}
 
 	return
 }
