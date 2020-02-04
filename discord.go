@@ -30,6 +30,8 @@ func readyDiscord(dg *discordgo.Session, event *discordgo.Ready, game string) {
 // This function will be called (due to AddHandler) every time a new
 // message is created on any channel that the autenticated bot has access to.
 func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, botName string) {
+	Log.Debugf("message '%s'", m.Content)
+
 	// data to send to discord
 	var response []string
 	var reaction []string
@@ -58,7 +60,7 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 	channelKeywords := getKeywords("discord", botName, channel.GuildID, m.ChannelID)
 	channelParsing := getParsing("discord", botName, channel.GuildID, m.ChannelID)
 
-	Log.Debugf("%s", prefix)
+	Log.Debugf("prefix: %s", prefix)
 
 	// if the channel is a DM
 	if channel.Type == 1 {
@@ -69,13 +71,13 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 	}
 
 	// if the channel isn't in a group drop the message
-	for _, channel := range getChannels("discord", botName, channel.GuildID) {
-		if channel == m.ChannelID {
-			Log.Debugf("channel not found")
-			return
-		}
+	Log.Debugf("checking channels")
+	if !contains(getChannels("discord", botName, channel.GuildID), m.ChannelID) {
+		Log.Debugf("channel not found")
+		return
 	}
 
+	Log.Debugf("checking blacklist")
 	// drop messages from blacklisted users
 	for _, user := range getBlacklist("discord", botName, channel.GuildID, m.ChannelID) {
 		if user == m.Author.ID {
@@ -84,30 +86,43 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 		}
 	}
 
+	Log.Debugf("checking attachments")
 	// for all attachment urls
 	var attachmentURLs []string
 	for _, url := range m.Attachments {
 		attachmentURLs = append(attachmentURLs, url.ProxyURL)
 	}
 
-	if len(m.Mentions) == 0 {
-		ping, mention := getMentions("discord", botName, channel.GuildID, "DirectMessage")
-		if m.Mentions[0].ID == bot.ID && strings.TrimPrefix(m.Content, "<@"+dg.State.User.ID+">") == "" {
+	Log.Debugf("checking mentions")
+	if len(m.Mentions) != 0 {
+		ping, mention := getMentions("discord", botName, channel.GuildID, m.ChannelID)
+		if m.Mentions[0].ID == bot.ID && strings.Replace(m.Content, "<@!"+dg.State.User.ID+">", "", -1) == "" {
+			Log.Debugf("bot was pinged")
 			response = ping.Response
-			response = ping.Reaction
+			reaction = ping.Reaction
 		} else {
-			response = mention.Response
-			response = mention.Reaction
+			for _, mentioned := range m.Mentions {
+				if mentioned.ID == bot.ID {
+					Log.Debugf("bot was mentioned")
+					response = mention.Response
+					reaction = mention.Reaction
+				}
+			}
 		}
 	} else {
+		Log.Debugf("no mentions found")
 		if strings.HasPrefix(m.Content, prefix) {
+			// command
 			response, reaction = parseCommand(strings.TrimPrefix(m.Content, prefix), dg.State.User.Username, channelCommands)
 		} else {
+			// keyword
 			response, reaction = parseKeyword(m.Content, dg.State.User.Username, attachmentURLs, channelKeywords, channelParsing)
 		}
 	}
 
+	Log.Debugf("sending response %s", response)
 	sendDiscordMessage(dg, m.ChannelID, m.Author.Username, prefix, response)
+	Log.Debugf("sending reaction %s", reaction)
 	sendDiscordReaction(dg, m.ChannelID, m.ID, reaction)
 }
 
