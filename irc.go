@@ -15,90 +15,94 @@ var (
 	ircLoad = make(chan string)
 )
 
+func ircIdentityHandler(botName string) (nickname, password string) {
+	for _, bot := range ircGlobal.Bots {
+		if bot.BotName == botName {
+			nickname = bot.Config.Server.Nickname
+			password = bot.Config.Server.Password
+		}
+	}
+	return
+}
+
 //ircMessageHandler the IRC listener that manages inbound messaging
-func ircMessageHandler(conn hirc.Conn, ircConfig ircBot) {
+func ircMessageHandler(conn hirc.Conn, botName string) {
+	nickname, password := ircIdentityHandler(botName)
+
 	message, err := conn.ReadMessage()
 	if err != nil {
 		Log.Errorf("cannot read message: ", err)
 		return
 	}
 
+	// make these easier to send and recieve
+	channel := message.Params[0]
+	author := message.Nick()
+	messageIn := message.Trailing
+
 	// Log.Debugf("started handle")
 	Log.Debug("irc inbound " + message.String())
 
 	// keep alive messaging
 	if message.Command == "PING" {
-		conn.Send("PONG " + message.Trailing)
+		conn.Send("PONG " + messageIn)
 		Log.Debug("PONG Sent")
 		return
 	}
 
 	// for authentication
 	if message.Command == "NOTICE" {
-		if strings.Contains(strings.ToLower(message.Trailing), "this nickname is registered") {
-			conn.Send("%s IDENTIFY %s %s", message.Nick(), ircConfig.Config.Server.Nickname, ircConfig.Config.Server.Password)
+		if strings.Contains(strings.ToLower(messageIn), "this nickname is registered") {
+			conn.Send("%s IDENTIFY %s %s", author, nickname, password)
 		}
 		return
 	}
 
 	// message handling
 	if message.Command == "PRIVMSG" {
-		Log.Debug("message.Params[0]: " + message.Params[0]) // channel
-		Log.Debug("message.Nick(): " + message.Nick())       // user
-		Log.Debug("message.Trailing: " + message.Trailing)   // actual message
+		Log.Debug("channel: " + channel)     // channel
+		Log.Debug("author: " + author)       // user
+		Log.Debug("messageIn: " + messageIn) // actual message
 
-		var blacklistedUsers string
-		var channelCommands []command
-		var channelKeywords []keyword
-		var channelParsing parsing
+		// get all the configs
+		prefix := getPrefix("irc", botName, botName, channel)
+		channelCommands := getCommands("irc", botName, "", channel)
+		channelKeywords := getKeywords("irc", botName, "", channel)
+		channelParsing := getParsing("irc", botName, "", channel)
 
-		for gid, group := range ircConfig.ChanGroups {
-			for _, channel := range group.ChannelIDs {
-				if message.Params[0] == channel {
-					for pid, perms := range ircConfig.ChanGroups[gid].Permissions {
-						if perms.Blacklisted {
-							for _, user := range ircConfig.ChanGroups[gid].Permissions[pid].Users {
-								blacklistedUsers = blacklistedUsers + ", " + user
-							}
-						}
-					}
-					channelCommands = group.Commands
-					channelKeywords = group.Keywords
-				}
-			}
+		if author == nickname {
+			Log.Debug("User is the bot and being ignored.")
+			return
 		}
 
 		// if the user nickname matches bot or blacklisted.
-		if message.Nick() == ircConfig.Config.Server.Nickname || strings.Contains(blacklistedUsers, message.Nick()) {
-			if message.Nick() == ircConfig.Config.Server.Nickname {
-				Log.Debug("User is the bot and being ignored.")
-				return
-			}
-			if strings.Contains(blacklistedUsers, message.Nick()) {
-				Log.Debug("User is blacklisted")
+		for _, user := range getBlacklist("discord", botName, "", channel) {
+			if user == author {
+				Log.Debugf("user %s is blacklisted", author)
 				return
 			}
 		}
 
 		// if bot is DM'd
-		if message.Params[0] == ircConfig.Config.Server.Nickname {
+		if channel == nickname {
 			Log.Debug("This was a DM")
-			sendIRCMessage(conn, message.Params[0], message.Nick(), ircConfig.Config.Prefix, ircConfig.Config.DMResp)
+			_, mention := getMentions("irc", botName, "", channel)
+			sendIRCMessage(conn, channel, author, prefix, mention.Response)
 			return
 		}
 
 		//
 		// Message Handling
 		//
-		if message.Trailing != "" {
-			Log.Debug("Message Content: " + message.Trailing)
+		if messageIn != "" {
+			Log.Debug("Message Content: " + messageIn)
 
-			if !strings.HasPrefix(message.Trailing, ircConfig.Config.Prefix) {
-				Log.Debug("sending to \"" + message.Params[0])
-				parseKeyword(message.Trailing, ircConfig.BotName, []string{}, channelKeywords, channelParsing)
+			if !strings.HasPrefix(messageIn, prefix) {
+				Log.Debug("sending to \"" + channel)
+				parseKeyword(messageIn, botName, []string{}, channelKeywords, channelParsing)
 			} else {
-				Log.Debug("sending to \"" + message.Params[0])
-				parseCommand(strings.TrimPrefix(message.Trailing, ircConfig.Config.Prefix), ircConfig.BotName, channelCommands)
+				Log.Debug("sending to \"" + channel)
+				parseCommand(strings.TrimPrefix(messageIn, prefix), botName, channelCommands)
 			}
 			return
 		}
@@ -220,7 +224,7 @@ func startIRCConnection(ircConfig ircBot) {
 			Log.Debugf("%s channel closed", ircConfig.BotName)
 			return
 		default:
-			ircMessageHandler(*conn, ircConfig)
+			ircMessageHandler(*conn, ircConfig.BotName)
 		}
 	}
 }

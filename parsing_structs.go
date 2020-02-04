@@ -46,3 +46,13 @@ type parsingPasteConfig struct {
 type parsingImageConfig struct {
 	Filetypes []string `json:"filetypes,omitempty"`
 }
+
+type channelGroups struct {
+	ChannelIDs  []string             `json:"channels,omitempty"`
+	Mentions    mentions             `json:"mentions,omitempty"`
+	Commands    []command            `json:"commands,omitempty"`
+	Keywords    []keyword            `json:"keywords,omitempty"`
+	Parsing     parsing              `json:"parsing,omitempty"`
+	Permissions []permission         `json:"permissions,omitempty"`
+	KOM         discordKickOnMention `json:"kick_on_mention,omitempty"`
+}
