@@ -15,9 +15,6 @@ import (
 	"github.com/goccy/go-yaml"
 )
 
-// TODO: write config handlers to return data on the fly.
-// This is make reloads actually give new data.
-
 var (
 	// stores info on files for easier loading
 	files confFiles

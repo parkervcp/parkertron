@@ -6,14 +6,14 @@ type irc struct {
 }
 
 type ircBot struct {
-	BotName    string             `json:"bot_name,omitempty"`
-	Config     ircBotConfig       `json:"config,omitempty"`
-	ChanGroups []ircChannelGroups `json:"channel_groups,omitempty"`
+	BotName    string          `json:"bot_name,omitempty"`
+	Config     ircBotConfig    `json:"config,omitempty"`
+	ChanGroups []channelGroups `json:"channel_groups,omitempty"`
 }
 
 type ircBotConfig struct {
 	Server ircServerConfig `json:"server,omitempty"`
-	DMResp []string        `json:"dm_response,omitempty"`
+	DMResp responseArray   `json:"dm_response,omitempty"`
 	Prefix string          `json:"prefix,omitempty"`
 }
 
@@ -26,13 +26,4 @@ type ircServerConfig struct {
 	Password  string `json:"password,omitempty"`
 	Nickname  string `json:"nickname,omitempty"`
 	RealName  string `json:"real_name,omitempty"`
-}
-
-type ircChannelGroups struct {
-	ChannelIDs  []string     `json:"channels,omitempty"`
-	Permissions []permission `json:"permissions,omitempty"`
-	Mentions    mentions     `json:"mentions,omitempty"`
-	Commands    []command    `json:"commands,omitempty"`
-	Keywords    []keyword    `json:"keywords,omitempty"`
-	Parsing     parsing      `json:"parsing,omitempty"`
 }

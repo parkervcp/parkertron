@@ -19,10 +19,10 @@ type discordBotConfig struct {
 }
 
 type discordServer struct {
-	ServerID    string                 `json:"server_id,omitempty"`
-	Config      discordServerConfig    `json:"config,omitempty"`
-	ChanGroups  []discordChannelGroups `json:"channel_groups,omitempty"`
-	Permissions []permission           `json:"permissions,omitempty"`
+	ServerID    string              `json:"server_id,omitempty"`
+	Config      discordServerConfig `json:"config,omitempty"`
+	ChanGroups  []channelGroups     `json:"channel_groups,omitempty"`
+	Permissions []permission        `json:"permissions,omitempty"`
 }
 
 type discordServerConfig struct {
@@ -33,15 +33,6 @@ type discordServerConfig struct {
 
 type discordWebhooks struct {
 	Logs string `json:"logs,omitempty"`
-}
-
-type discordChannelGroups struct {
-	ChannelIDs []string             `json:"channels,omitempty"`
-	Mentions   mentions             `json:"mentions,omitempty"`
-	Commands   []command            `json:"commands,omitempty"`
-	Keywords   []keyword            `json:"keywords,omitempty"`
-	Parsing    parsing              `json:"parsing,omitempty"`
-	KOM        discordKickOnMention `json:"kick_on_mention,omitempty"`
 }
 
 type discordKickOnMention struct {

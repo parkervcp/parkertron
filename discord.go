@@ -29,47 +29,20 @@ func readyDiscord(dg *discordgo.Session, event *discordgo.Ready, game string) {
 
 // This function will be called (due to AddHandler) every time a new
 // message is created on any channel that the autenticated bot has access to.
-func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, serverConfig *discordServer, DMResp responseArray) {
-	// channel setting stuff
-	var blacklistedUsers []string
-	var channelCommands []command
-	var channelKeywords []keyword
-	var channelParsing parsing
-
-	// internal use only
-	var allChannels []string
-
+func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, botName string) {
 	// data to send to discord
 	var response []string
 	var reaction []string
+
+	bot, err := dg.User("@me")
+	if err != nil {
+		fmt.Println("error obtaining account details,", err)
+	}
 
 	// Ignore all messages created by bots (stops the bot uprising)
 	if m.Author.Bot {
 		Log.Debug("User is a bot and being ignored.")
 		return
-	}
-
-	// load users that are in blacklisted groups
-	for _, perms := range serverConfig.Permissions {
-		if perms.Blacklisted {
-			for _, user := range perms.Users {
-				blacklistedUsers = append(blacklistedUsers, user)
-			}
-		}
-	}
-
-	// prep stuff for passing to the parser
-	for _, group := range serverConfig.ChanGroups {
-		for _, channel := range group.ChannelIDs {
-			if m.ChannelID == channel {
-				for _, command := range group.Commands {
-					channelCommands = append(channelCommands, command)
-				}
-				for _, keyword := range group.Keywords {
-					channelKeywords = append(channelKeywords, keyword)
-				}
-			}
-		}
 	}
 
 	// get channel information
@@ -79,44 +52,62 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, se
 		return
 	}
 
+	// get all the configs
+	prefix := getPrefix("discord", botName, channel.GuildID, m.ChannelID)
+	channelCommands := getCommands("discord", botName, channel.GuildID, m.ChannelID)
+	channelKeywords := getKeywords("discord", botName, channel.GuildID, m.ChannelID)
+	channelParsing := getParsing("discord", botName, channel.GuildID, m.ChannelID)
+
+	Log.Debugf("%s", prefix)
+
 	// if the channel is a DM
 	if channel.Type == 1 {
-		sendDiscordMessage(dg, m.ChannelID, m.Author.ID, serverConfig.Config.Prefix, DMResp.Response)
-		sendDiscordReaction(dg, m.ChannelID, m.ID, DMResp.Reaction)
+		_, dmResp := getMentions("discord", botName, channel.GuildID, "DirectMessage")
+		sendDiscordMessage(dg, m.ChannelID, m.Author.ID, getPrefix("discord", botName, channel.GuildID, "DirectMessage"), dmResp.Reaction)
+		sendDiscordReaction(dg, m.ChannelID, m.ID, dmResp.Reaction)
 		return
-	}
-
-	// append all channels into the array
-	for _, group := range serverConfig.ChanGroups {
-		for _, channel := range group.ChannelIDs {
-			allChannels = append(allChannels, channel)
-		}
 	}
 
 	// if the channel isn't in a group drop the message
-	for !strings.Contains(strings.Join(allChannels, ", "), m.ChannelID) {
-		Log.Debugf("channel not found")
-		return
+	for _, channel := range getChannels("discord", botName, channel.GuildID) {
+		if channel == m.ChannelID {
+			Log.Debugf("channel not found")
+			return
+		}
 	}
 
 	// drop messages from blacklisted users
-	if strings.Contains(strings.Join(blacklistedUsers, ", "), m.Author.ID) {
-		Log.Debugf("user %s is blacklisted username is %s", m.Author.ID, m.Author.Username)
-		return
+	for _, user := range getBlacklist("discord", botName, channel.GuildID, m.ChannelID) {
+		if user == m.Author.ID {
+			Log.Debugf("user %s is blacklisted username is %s", m.Author.ID, m.Author.Username)
+			return
+		}
 	}
 
+	// for all attachment urls
 	var attachmentURLs []string
 	for _, url := range m.Attachments {
 		attachmentURLs = append(attachmentURLs, url.ProxyURL)
 	}
 
-	if strings.HasPrefix(m.Content, serverConfig.Config.Prefix) {
-		response, reaction = parseCommand(strings.TrimPrefix(m.Content, serverConfig.Config.Prefix), dg.State.User.Username, channelCommands)
+	if len(m.Mentions) == 0 {
+		ping, mention := getMentions("discord", botName, channel.GuildID, "DirectMessage")
+		if m.Mentions[0].ID == bot.ID && strings.TrimPrefix(m.Content, "<@"+dg.State.User.ID+">") == "" {
+			response = ping.Response
+			response = ping.Reaction
+		} else {
+			response = mention.Response
+			response = mention.Reaction
+		}
 	} else {
-		response, reaction = parseKeyword(m.Content, dg.State.User.Username, attachmentURLs, channelKeywords, channelParsing)
+		if strings.HasPrefix(m.Content, prefix) {
+			response, reaction = parseCommand(strings.TrimPrefix(m.Content, prefix), dg.State.User.Username, channelCommands)
+		} else {
+			response, reaction = parseKeyword(m.Content, dg.State.User.Username, attachmentURLs, channelKeywords, channelParsing)
+		}
 	}
 
-	sendDiscordMessage(dg, m.ChannelID, m.Author.Username, serverConfig.Config.Prefix, response)
+	sendDiscordMessage(dg, m.ChannelID, m.Author.Username, prefix, response)
 	sendDiscordReaction(dg, m.ChannelID, m.ID, reaction)
 }
 
@@ -330,9 +321,9 @@ func startDiscordBotConnection(discordConfig *discordBot) {
 	// Register messageCreate as a callback for the messageCreate events.
 	// dg.AddHandler(discordMessageHandler)
 	// Thank Stroom on the discordgopher discord for getting me this
-	for _, server := range discordConfig.Servers {
+	for range discordConfig.Servers {
 		dg.AddHandler(func(dg *discordgo.Session, event *discordgo.MessageCreate) {
-			discordMessageHandler(dg, event, &server, discordConfig.Config.DMResp)
+			discordMessageHandler(dg, event, discordConfig.BotName)
 		})
 	}
 

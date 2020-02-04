@@ -102,7 +102,7 @@ func main() {
 	go catchSig()
 	go console()
 
-	Log.Infof("Bot is now running. Send 'shutdown' or 'ctrl + c' to stop the bot .\n")
+	Log.Infof("Bot is now running. Send 'shutdown' or 'ctrl + c' to stop the bot.\n")
 
 	<-shutdown
 
