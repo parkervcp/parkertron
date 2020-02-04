@@ -38,6 +38,33 @@ func getBlacklist(inService, botName, inServer, inChannel string) (blacklist []s
 }
 
 func getChannels(inService, botName, inServer string) (channels []string) {
+	switch inService {
+	case "discord":
+		for _, bot := range discordGlobal.Bots {
+			if bot.BotName == botName {
+				for _, server := range bot.Servers {
+					if inServer == server.ServerID {
+						for _, group := range server.ChanGroups {
+							for _, channel := range group.ChannelIDs {
+								channels = append(channels, channel)
+							}
+						}
+					}
+				}
+			}
+		}
+	case "irc":
+		for _, bot := range ircGlobal.Bots {
+			if bot.BotName == botName {
+				for _, group := range bot.ChanGroups {
+					for _, channel := range group.ChannelIDs {
+						channels = append(channels, channel)
+					}
+				}
+			}
+		}
+	default:
+	}
 
 	return
 }
@@ -109,8 +136,12 @@ func getMentions(inService, botName, inServer, inChannel string) (ping, mention 
 							for _, group := range server.ChanGroups {
 								for _, channel := range group.ChannelIDs {
 									if inChannel == channel {
+										Log.Debugf("bot was mentioned on channel %s", channel)
+										Log.Debugf("ping resp %s", group.Mentions.Ping)
+										Log.Debugf("mention resp %s", group.Mentions.Mention)
 										ping = group.Mentions.Ping
 										mention = group.Mentions.Mention
+										return
 									}
 								}
 							}
@@ -130,6 +161,7 @@ func getMentions(inService, botName, inServer, inChannel string) (ping, mention 
 							if inChannel == channel {
 								ping = group.Mentions.Ping
 								mention = group.Mentions.Mention
+								return
 							}
 						}
 					}

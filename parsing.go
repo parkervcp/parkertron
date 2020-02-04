@@ -230,6 +230,15 @@ func parseCommand(message, botName string, channelCommands []command) (response,
 			reaction = command.Reaction
 		}
 	}
-
 	return
+}
+
+// general funcs
+func contains(array []string, str string) bool {
+	for _, value := range array {
+		if value == str {
+			return true
+		}
+	}
+	return false
 }
