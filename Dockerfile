@@ -14,6 +14,6 @@ RUN apk add --no-cache --update git curl lua-stdlib lua musl-dev g++ libc-dev te
 
 FROM alpine:latest
 WORKDIR /root/
-RUN apk add --no-cache --update git curl lua-stdlib lua musl-dev g++ libc-dev tesseract-ocr tesseract-ocr-dev
+RUN apk add --no-cache --update lua-stdlib lua musl-dev g++ libc-dev tesseract-ocr tesseract-ocr-dev
 COPY --from=0 /parkertron/parkertron .
 CMD ["./parkertron"]
