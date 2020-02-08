@@ -33,4 +33,5 @@ require (
 	golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543 // indirect
 	honnef.co/go/tools v0.0.1-2019.2.3
 	mvdan.cc/xurls v1.1.0
+	mvdan.cc/xurls/v2 v2.1.0
 )

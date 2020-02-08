@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
+	"mvdan.cc/xurls/v2"
 )
 
 var (
@@ -55,6 +56,7 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 	}
 
 	// get all the configs
+	// requires channel info we get from the channel info above
 	prefix := getPrefix("discord", botName, channel.GuildID, m.ChannelID)
 	channelCommands := getCommands("discord", botName, channel.GuildID, m.ChannelID)
 	channelKeywords := getKeywords("discord", botName, channel.GuildID, m.ChannelID)
@@ -93,6 +95,34 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 		attachmentURLs = append(attachmentURLs, url.ProxyURL)
 	}
 
+	// this was for debugging/testing only
+	// for _, url := range attachmentURLs {
+	// 	parseURL(url, channelParsing)
+	// }
+
+	Log.Debug(attachmentURLs)
+
+	Log.Debugf("checking for any urls in the message")
+	var allURLS []string
+	for _, url := range xurls.Relaxed().FindAllString(m.Content, -1) {
+		allURLS = append(allURLS, url)
+	}
+
+	// this was for debugging/testing only
+	// for _, url := range allURLS {
+	// 	parseURL(url, channelParsing)
+	// }
+
+	// Log.Debug(allURLS)
+
+	// add all urls together
+	Log.Debug("adding attachment URLS to allURLS")
+	for i := 0; i < len(attachmentURLs); i++ {
+		allURLS = append(allURLS, attachmentURLs[i])
+	}
+
+	// Log.Debug(allURLS)
+
 	Log.Debugf("checking mentions")
 	if len(m.Mentions) != 0 {
 		ping, mention := getMentions("discord", botName, channel.GuildID, m.ChannelID)
@@ -113,10 +143,33 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 		Log.Debugf("no mentions found")
 		if strings.HasPrefix(m.Content, prefix) {
 			// command
-			response, reaction = parseCommand(strings.TrimPrefix(m.Content, prefix), dg.State.User.Username, channelCommands)
+			response, reaction = parseCommand(strings.TrimPrefix(m.Content, prefix), botName, channelCommands)
 		} else {
 			// keyword
-			response, reaction = parseKeyword(m.Content, dg.State.User.Username, attachmentURLs, channelKeywords, channelParsing)
+			response, reaction = parseKeyword(m.Content, botName, channelKeywords, channelParsing)
+		}
+	}
+
+	if len(allURLS) > 5 {
+		Log.Debug("too many logs or screenshots to try and read.")
+		response = []string{"There were too many logs to read &user&. Please post less than 5"}
+		sendDiscordMessage(dg, m.ChannelID, m.Author.Username, prefix, response)
+		return
+	}
+
+	// get parsed content for each url/attachment
+	Log.Debugf("reading all attachments and logs")
+	allParsed := make(map[string]string)
+	for _, url := range allURLS {
+		allParsed[url] = parseURL(url, channelParsing)
+	}
+
+	//parse logs and append to current response.
+	for _, url := range allURLS {
+		response = append(response, fmt.Sprintf("I have found the following for the following log: %s", url))
+		urlResponse, _ := parseKeyword(allParsed[url], botName, channelKeywords, channelParsing)
+		for _, singleLine := range urlResponse {
+			response = append(response, singleLine)
 		}
 	}
 

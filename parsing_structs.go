@@ -33,18 +33,23 @@ type responseArray struct {
 }
 
 type parsing struct {
-	Image parsingImageConfig   `json:"image,omitempty"`
-	Paste []parsingPasteConfig `json:"paste,omitempty"`
+	Image parsingImageConfig `json:"image,omitempty"`
+	Paste parsingPasteConfig `json:"paste,omitempty"`
 }
 
-type parsingPasteConfig struct {
+type parsingConfig struct {
 	Name   string `json:"name,omitempty"`
 	URL    string `json:"url,omitempty"`
 	Format string `json:"format,omitempty"`
 }
 
 type parsingImageConfig struct {
-	Filetypes []string `json:"filetypes,omitempty"`
+	Filetypes []string        `json:"filetypes,omitempty"`
+	Sites     []parsingConfig `json:"sites,omitempty"`
+}
+
+type parsingPasteConfig struct {
+	Sites []parsingConfig `json:"sites,omitempty"`
 }
 
 type channelGroups struct {

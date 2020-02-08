@@ -99,7 +99,7 @@ func ircMessageHandler(conn hirc.Conn, botName string) {
 
 			if !strings.HasPrefix(messageIn, prefix) {
 				Log.Debug("sending to \"" + channel)
-				parseKeyword(messageIn, botName, []string{}, channelKeywords, channelParsing)
+				parseKeyword(messageIn, botName, channelKeywords, channelParsing)
 			} else {
 				Log.Debug("sending to \"" + channel)
 				parseCommand(strings.TrimPrefix(messageIn, prefix), botName, channelCommands)

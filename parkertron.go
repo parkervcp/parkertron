@@ -52,22 +52,28 @@ var (
 )
 
 type parkertron struct {
-	Services []string       `json:"services"`
-	Log      logConf        `json:"log"`
-	Database databaseConfig `json:"database"`
+	Services []string       `json:"services,omitempty"`
+	Log      logConf        `json:"log,omitempty"`
+	Database databaseConfig `json:"database,omitempty"`
+	Parsing  botParseConfig `json:"parsing,omitempty"`
 }
 
 type logConf struct {
-	Level    string `json:"level"`
-	Location string `json:"location"`
+	Level    string `json:"level,omitempty"`
+	Location string `json:"location,omitempty"`
 }
 
 type databaseConfig struct {
-	Host     string `json:"host"`
-	Port     int    `json:"port"`
-	User     string `json:"user"`
-	Pass     string `json:"pass"`
-	Database string `json:"database"`
+	Host     string `json:"host,omitempty"`
+	Port     int    `json:"port,omitempty"`
+	User     string `json:"user,omitempty"`
+	Pass     string `json:"pass,omitempty"`
+	Database string `json:"database,omitempty"`
+}
+
+type botParseConfig struct {
+	*responseArray
+	Max int `json:"max,omitempty"`
 }
 
 func init() {
@@ -146,7 +152,7 @@ func catchSig() {
 	signal.Notify(sigc,
 		os.Interrupt)
 	<-sigc
-	Log.Info("interupt caught")
+	Log.Debugf("interupt caught\n")
 	shutdown <- ""
 }
 

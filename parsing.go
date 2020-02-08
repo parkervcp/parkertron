@@ -6,31 +6,20 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 
 	"github.com/h2non/filetype"
 	"github.com/otiai10/gosseract"
-	"mvdan.cc/xurls"
 )
 
-// image handling
-func matchImage(input string, imageTypes parsingImageConfig) bool {
-	for _, ro := range imageTypes.Filetypes {
-		if strings.Contains(input, ro) {
-			Log.Debug("Image found with a " + ro + " format")
-			return true
-		}
-	}
-	return false
-}
-
-func parseImage(remoteURL string) string {
+func parseImage(remoteURL string) (imageText string, err error) {
 	Log.Info("Reading from " + remoteURL)
 
 	remote, err := http.Get(remoteURL)
 	if err != nil {
-		Log.Fatal("", err)
+		return
 	}
 
 	defer remote.Body.Close()
@@ -42,25 +31,31 @@ func parseImage(remoteURL string) string {
 	//open a file for writing
 	file, err := os.Create("/tmp/" + fileName)
 	if err != nil {
-		Log.Fatal("", err)
+		return
 	}
+
 	// Use io.Copy to just dump the response body to the file. This supports huge files
 	_, err = io.Copy(file, remote.Body)
 	if err != nil {
-		Log.Fatal("", err)
+		return
 	}
 
 	file.Close()
 	Log.Debug("Image File Pulled and saved to /tmp/" + fileName)
 
-	buf, _ := ioutil.ReadFile("/tmp/" + fileName)
-
-	if filetype.IsImage(buf) {
-		Log.Debug("File is an image")
-	} else {
-		Log.Debug("File is not an image")
-		return ""
+	//load file to read
+	buf, err := ioutil.ReadFile("/tmp/" + fileName)
+	if err != nil {
+		return
 	}
+
+	// check filetype
+	if !filetype.IsImage(buf) {
+		Log.Debugf("file is not an image\n")
+		return
+	}
+
+	Log.Debug("File is an image")
 
 	client := gosseract.NewClient()
 	defer client.Close()
@@ -69,16 +64,16 @@ func parseImage(remoteURL string) string {
 	w, h := getImageDimension("/tmp/" + fileName)
 	Log.Debug("Image width is " + strconv.Itoa(h))
 	Log.Debug("Image height is " + strconv.Itoa(w))
-	text, err := client.Text()
+	imageText, err = client.Text()
 	if err != nil {
-		Log.Fatal("", err)
+		return
 	}
 
-	text = text[:len(text)-1]
-	Log.Debug(text)
+	imageText = imageText[:len(imageText)-1]
+	Log.Debug(imageText)
 	Log.Debug("Image Parsed")
 
-	return text
+	return
 }
 
 func getImageDimension(imagePath string) (int, int) {
@@ -95,29 +90,68 @@ func getImageDimension(imagePath string) (int, int) {
 }
 
 // paste site handling
-func parseBin(pasteConfig parsingPasteConfig, filename string) string {
-	Log.Info("Reading from " + pasteConfig.Name)
+func parseBin(url, format string) (binText string, err error) {
+	var rawURL string
 
-	Log.Debug("Filename is: " + filename)
-
-	Log.Debug("format is " + pasteConfig.Format)
-
-	rawURL := strings.Replace(strings.Replace(pasteConfig.Format, "&url&", pasteConfig.URL, 1), "&filename&", filename, 1)
+	Log.Debugf("reading from %s", url)
+	_, file := path.Split(url)
+	rawURL = strings.Replace(format, "&filename&", file, 1)
 
 	Log.Debug("Raw text URL is " + rawURL)
 
 	resp, err := http.Get(rawURL)
 	if err != nil {
-		Log.Fatal("", err)
+		return
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 
-	content := string(body)
+	binText = string(body)
 
-	Log.Debug("Contents = \n" + content)
+	Log.Debug("Contents = \n" + binText)
 
-	return content
+	return
+}
+
+// get urls in message
+func parseURL(url string, parseConf parsing) (parsedText string) {
+	//Catch domains and route to the proper controllers (image, binsite parsers)
+	Log.Debugf("checkign for pastes and images on %s\n", url)
+	for _, site := range parseConf.Image.Sites {
+		Log.Debugf("%s", site.URL)
+		if strings.HasPrefix(url, site.URL) {
+			Log.Debugf("matched on url %s", site.URL)
+			_, file := path.Split(url)
+			url = strings.Replace(site.Format, "&filename&", file, 1)
+		}
+	}
+
+	for _, filetype := range parseConf.Image.Filetypes {
+		Log.Debug("checking if image")
+		if strings.HasSuffix(url, filetype) {
+			Log.Debug("found image file")
+			if imageText, err := parseImage(url); err != nil {
+				Log.Errorf("%s\n", err)
+			} else {
+				Log.Debugf(imageText)
+				parsedText = imageText
+			}
+		} else {
+			Log.Debug("checking if bin file")
+			for _, paste := range parseConf.Paste.Sites {
+				if strings.HasPrefix(url, paste.URL) {
+					if binText, err := parseBin(url, paste.Format); err != nil {
+						Log.Errorf("%s\n", err)
+					} else {
+						Log.Debugf(binText)
+						parsedText = binText
+					}
+				}
+			}
+		}
+	}
+
+	return
 }
 
 //     __                               __
@@ -125,43 +159,10 @@ func parseBin(pasteConfig parsingPasteConfig, filename string) string {
 //   /  '_/ -_) // / |/|/ / _ \/ __/ _  /
 //  /_/\_\\__/\_, /|__,__/\___/_/  \_,_/
 //  	     /___/
-func parseKeyword(message, botName string, attached []string, channelKeywords []keyword, parseConf parsing) (response, reaction []string) {
+func parseKeyword(message, botName string, channelKeywords []keyword, parseConf parsing) (response, reaction []string) {
 	Log.Debugf("Parsing inbound chat for %s", botName)
 
 	message = strings.ToLower(message)
-
-	//Catch domains and route to the proper controllers (image, binsite parsers)
-	Log.Debugf("Matching on links in text")
-	for _, url := range xurls.Relaxed.FindStringSubmatch(message) {
-		Log.Debugf(url)
-	}
-
-	// if attached != nil {
-	// 	Log.Debug("Matching on Attached links")
-	// 	for x := range attached {
-	// 		if matchImage(attached[x], parseConf.Image) {
-	// 			if matchImage(xurls.Relaxed.FindString(attached[x]), parseConf.Image) {
-	// 				message = parseImage(xurls.Relaxed.FindString(attached[x]))
-	// 			}
-	// 		}
-	// 	}
-	// }
-
-	// if matchImage(message, parseConf.Image) {
-	// 	if matchImage(xurls.Relaxed.FindString(message), parseConf.Image) {
-	// 		message = parseImage(xurls.Relaxed.FindString(message))
-	// 	}
-	// } else if pasteMatched {
-	// 	matchedURL := xurls.Relaxed.FindString(message)
-	// 	if matchedURL != "" {
-	// 		Log.Debug("Sending: " + pasteDomain)
-	// 		Log.Debug("xurls matched: " + matchedURL)
-	// 		// TODO: actually fix this
-	// 		_, fileName := filepath.Split(matchedURL)
-	// 		Log.Debug("Guessing file name is: " + fileName)
-	// 		// message = parseBin(, fileName)
-	// 	}
-	// }
 
 	//exact match search
 	Log.Debug("Testing matches")

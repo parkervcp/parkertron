@@ -53,13 +53,18 @@ channel_groups:
           - "png"
           - "jpg"
 
+      sites:
+        - url: "https://gyazo.com"
+          format: "https://i.gyazo.com/&filename&.png"
+
       paste:
-        - name: pastebin
-          url: "https://pastebin.com/"
-          format: "&url&raw/&filename&"
-        - name: hastebin
-          url: "https://hastebin.com/"
-          format: "&url&raw/&filename&"
+        sites:
+          - name: pastebin
+            url: "https://pastebin.com/"
+            format: "&url&raw/&filename&"
+          - name: hastebin
+            url: "https://hastebin.com/"
+            format: "&url&raw/&filename&"
 
     permissions: ## discord permissions are per-server
       - group: admin ## server owners automatically get all permissions.
