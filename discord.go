@@ -150,26 +150,34 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 		}
 	}
 
-	if len(allURLS) > 5 {
+	maxLogs, logResponse, logReaction := getBotParseConfig()
+
+	if len(allURLS) > maxLogs {
 		Log.Debug("too many logs or screenshots to try and read.")
-		response = []string{"There were too many logs to read &user&. Please post less than 5"}
-		sendDiscordMessage(dg, m.ChannelID, m.Author.Username, prefix, response)
+		sendDiscordMessage(dg, m.ChannelID, m.Author.Username, prefix, logResponse)
+		sendDiscordReaction(dg, m.ChannelID, m.ID, logReaction)
 		return
 	}
 
-	// get parsed content for each url/attachment
-	Log.Debugf("reading all attachments and logs")
-	allParsed := make(map[string]string)
-	for _, url := range allURLS {
-		allParsed[url] = parseURL(url, channelParsing)
-	}
+	if len(response) == 0 && len(allURLS) != 0 {
+		sendDiscordReaction(dg, m.ChannelID, m.ID, []string{"👀"})
 
-	//parse logs and append to current response.
-	for _, url := range allURLS {
-		response = append(response, fmt.Sprintf("I have found the following for the following log: %s", url))
-		urlResponse, _ := parseKeyword(allParsed[url], botName, channelKeywords, channelParsing)
-		for _, singleLine := range urlResponse {
-			response = append(response, singleLine)
+		// get parsed content for each url/attachment
+		Log.Debugf("reading all attachments and logs")
+		allParsed := make(map[string]string)
+		for _, url := range allURLS {
+			allParsed[url] = parseURL(url, channelParsing)
+		}
+
+		//parse logs and append to current response.
+		for _, url := range allURLS {
+			urlResponse, _ := parseKeyword(allParsed[url], botName, channelKeywords, channelParsing)
+			if len(urlResponse) != 0 {
+				response = append(response, fmt.Sprintf("I have found the following for: <%s>", url))
+				for _, singleLine := range urlResponse {
+					response = append(response, singleLine)
+				}
+			}
 		}
 	}
 
@@ -335,7 +343,7 @@ func sendDiscordEmbed(dg *discordgo.Session, channelID string, embed *discordgo.
 // service handling
 // start all the bots
 func startDiscordsBots() {
-	Log.Infof("Starting IRC server connections\n")
+	Log.Infof("Starting discord server connections\n")
 	// range over the bots available to start
 	for _, bot := range discordGlobal.Bots {
 		Log.Infof("Connecting to %s\n", bot.BotName)

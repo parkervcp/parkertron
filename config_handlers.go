@@ -187,6 +187,14 @@ func getParsing(inService, botName, inServer, inChannel string) (parseConf parsi
 	return
 }
 
+func getBotParseConfig() (maxLogs int, response, reaction []string) {
+	maxLogs = botConfig.Parsing.Max
+	response = botConfig.Parsing.Response
+	reaction = botConfig.Parsing.Reaction
+
+	return
+}
+
 func getPrefix(inService, botName, inServer, inChannel string) (prefix string) {
 	switch inService {
 	case "discord":

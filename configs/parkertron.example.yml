@@ -1,7 +1,13 @@
 services: ## currently the only real service is the discord service.
     - "discord"
-    # - "irc"
-    # - "slack"
+
 log:
-    level: debug
-    location: /var/log/parkertron/
+    level: info
+    location: logs/
+
+parsing:
+    max: 5 ## max number of files to parse (bin/image/attachment)
+    response:
+        - "There were too many logs to read @&user&. Please post 5 or less."
+    reaction:
+        - ""
