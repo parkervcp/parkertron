@@ -19,7 +19,7 @@ type ircBotConfig struct {
 
 type ircServerConfig struct {
 	Address   string `json:"address,omitempty"`
-	Port      string `json:"port,omitempty"`
+	Port      int    `json:"port,omitempty"`
 	SSLEnable bool   `json:"ssl,omitempty"`
 	Ident     string `json:"ident,omitempty"`
 	Email     string `json:"email,omitempty"`

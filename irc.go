@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strconv"
 	"strings"
 	"time"
 
@@ -185,7 +186,7 @@ func stopIRCBots() {
 
 // start connections to irc
 func startIRCConnection(ircConfig ircBot) {
-	host := ircConfig.Config.Server.Address + ":" + ircConfig.Config.Server.Port
+	host := ircConfig.Config.Server.Address + ":" + strconv.Itoa(ircConfig.Config.Server.Port)
 	Log.Debugf("Connecting on %s\n", host)
 
 	// Connect to the server
