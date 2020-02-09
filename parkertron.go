@@ -2,6 +2,9 @@ package main
 
 import (
 	"bufio"
+	"fmt"
+	"io/ioutil"
+	"log"
 	"os"
 	"os/signal"
 	"reflect"
@@ -12,6 +15,7 @@ import (
 	"github.com/rifflock/lfshook"
 	"github.com/sirupsen/logrus"
 	flag "github.com/spf13/pflag"
+	"github.com/syfaro/haste-client"
 )
 
 var (
@@ -41,6 +45,8 @@ var (
 	verbose string
 	logDir  string
 	confDir string
+	conf    string
+	diag    bool
 
 	asciiArt = `
                       __             __
@@ -72,16 +78,40 @@ type databaseConfig struct {
 }
 
 type botParseConfig struct {
-	*responseArray
-	Max int `json:"max,omitempty"`
+	Reaction []string `json:"reaction,omitempty"`
+	Response []string `json:"response,omitempty"`
+	Max      int      `json:"max,omitempty"`
 }
 
 func init() {
 	flag.StringVarP(&verbose, "verbosity", "v", "info", "set the verbosity level for the bot {info,debug} (default is info)")
 	flag.StringVarP(&logDir, "logdir", "l", "logs/", "set the log directory of the bot. (default is ./logs/)")
-	flag.StringVarP(&confDir, "confdir", "c", "configs/", "set the config directory of the bot. (default is ./configs/)")
+	flag.StringVarP(&confDir, "confdir", "d", "configs/", "set the config directory of the bot. (default is ./configs/)")
+	flag.StringVarP(&conf, "conffile", "c", "parkertron.yml", "set the config name for the bot. (default is parkertron.yml)")
+	flag.BoolVar(&diag, "diag", false, "uploads diagnotics to hastebin")
 	flag.Parse()
 
+	if !strings.HasPrefix(confDir, "/") {
+		confDir = confDir + "/"
+	}
+
+	if newbot, err := loadInitConfig(confDir, conf, verbose); err != nil {
+		log.Fatal(err)
+	} else {
+		if !flag.CommandLine.Changed(verbose) {
+			verbose = newbot.Log.Level
+		}
+
+		if !flag.CommandLine.Changed(logDir) {
+			logDir = newbot.Log.Location
+		}
+	}
+
+	if diag {
+		uploadDiag(logDir)
+	}
+
+	log.Print("starting logging")
 	Log = newLogger(logDir, verbose)
 	Log.Infof("logging online\n")
 
@@ -91,6 +121,27 @@ func init() {
 }
 
 func main() {
+	// if there are no bots configured write default example configs
+	if len(discordGlobal.Bots) == 0 && len(ircGlobal.Bots) == 0 {
+		Log.Infof("No bots are configured")
+		for _, service := range botConfig.Services {
+			switch service {
+			case "discord":
+				if err := createExampleDiscordConfig(confDir+"discord/", verbose); err != nil {
+					Log.Fatalf("%s", err)
+				}
+			case "irc":
+				if err := createExampleIRCConfig(confDir+"irc/", verbose); err != nil {
+					Log.Fatalf("%s", err)
+				}
+			default:
+			}
+		}
+		Log.Infof("Example configs have been created.")
+		Log.Info("shutting down")
+		os.Exit(0)
+	}
+
 	for _, cr := range botConfig.Services {
 		if service, ok := serviceStart[cr]; ok {
 			Log.Debugf("running %s", runtime.FuncForPC(reflect.ValueOf(service).Pointer()).Name())
@@ -161,9 +212,21 @@ func newLogger(logDir, level string) *logrus.Logger {
 		return Log
 	}
 
+	if _, err := os.Stat(logDir + "latest.log"); err != nil {
+	} else {
+		os.Rename(logDir+"latest.log", logDir+time.Now().Format(time.RFC3339)+".log")
+	}
+
+	if _, err := os.Stat(logDir + "debug.log"); err != nil {
+	} else {
+		os.Rename(logDir+"debug.log", logDir+"debug-"+time.Now().Format(time.RFC3339)+".log")
+	}
+
 	pathMap := lfshook.PathMap{
-		logrus.InfoLevel:  logDir + "info.log",
-		logrus.ErrorLevel: logDir + "error.log",
+		logrus.InfoLevel:  logDir + "latest.log",
+		logrus.DebugLevel: logDir + "debug.log",
+		logrus.ErrorLevel: logDir + "latest.log",
+		logrus.FatalLevel: logDir + "latest.log",
 	}
 
 	Log = logrus.New()
@@ -182,4 +245,36 @@ func newLogger(logDir, level string) *logrus.Logger {
 		&logrus.JSONFormatter{},
 	))
 	return Log
+}
+
+func uploadDiag(logDir string) {
+	log.Printf("uploading logs to hastebin")
+	if _, err := os.Stat(logDir + "latest.log"); err != nil {
+	} else {
+		uploadFile(logDir + "latest.log")
+	}
+
+	if _, err := os.Stat(logDir + "debug.log"); err != nil {
+	} else {
+		uploadFile(logDir + "debug.log")
+	}
+
+	os.Exit(0)
+}
+
+func uploadFile(name string) {
+	hasteClient := haste.NewHaste("https://ptero.co")
+	data, err := ioutil.ReadFile(name)
+	if err != nil {
+		Log.Infof("Unable to read file: %s\n", err.Error())
+		os.Exit(2)
+	}
+
+	resp, err := hasteClient.UploadBytes(data)
+	if err != nil {
+		Log.Infof("Error uploading: %s\n", err.Error())
+		os.Exit(3)
+	}
+
+	fmt.Println(name, resp.GetLink(hasteClient))
 }

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -250,9 +251,6 @@ func loadConf(conf confFile) (err error) {
 							discordGlobal.Bots[bid].Servers[sid].ChanGroups = tempServer.ChanGroups
 							discordGlobal.Bots[bid].Servers[sid].Config = tempServer.Config
 							discordGlobal.Bots[bid].Servers[sid].Permissions = tempServer.Permissions
-							// discordGlobal.Bots[bid].Servers[sid] = discordGlobal.Bots[bid].Servers[len(discordGlobal.Bots[bid].Servers)-1]
-							// discordGlobal.Bots[bid].Servers = discordGlobal.Bots[bid].Servers[:len(discordGlobal.Bots[bid].Servers)-1]
-							// discordGlobal.Bots[bid].Servers = append(discordGlobal.Bots[bid].Servers, tempServer)
 							return
 						}
 					}
@@ -279,9 +277,7 @@ func loadConf(conf confFile) (err error) {
 		}
 	// slack config loading
 	case "slack":
-		// if err = loadFromFile(conf.Location, &tempBot); err != nil {
-		// 	return
-		// }
+
 	}
 
 	return nil
@@ -318,7 +314,7 @@ func saveConfig(file string, iface interface{}) error {
 	}
 
 	// Log.Printf("writing bytes to file")
-	if err := writeJSONToFile(bytes, file); err != nil {
+	if err := writeJSONToFile(file, bytes); err != nil {
 		return err
 	}
 
@@ -326,8 +322,12 @@ func saveConfig(file string, iface interface{}) error {
 }
 
 // File management
-func writeJSONToFile(jdata []byte, file string) error {
-	Log.Printf("updating file %s", file)
+func writeJSONToFile(file string, iface interface{}) (err error) {
+	jdata, err := json.MarshalIndent(iface, "", "  ")
+	if err != nil {
+		return
+	}
+
 	// create a file with a supplied name
 	if jsonFile, err := os.Create(file); err != nil {
 		return err
@@ -339,7 +339,6 @@ func writeJSONToFile(jdata []byte, file string) error {
 }
 
 func readJSONFromFile(file string, iface interface{}) error {
-	Log.Debugf("reading from json file: %s", file)
 	// Log.Printf("opening json file\n")
 	jsonFile, err := os.Open(file)
 	// if we os.Open returns an error then handle it
@@ -366,44 +365,125 @@ func readJSONFromFile(file string, iface interface{}) error {
 	return nil
 }
 
-func writeYamlToFile(ydata []byte, file string) error {
-	Log.Printf("updating file %s", file)
+func writeYamlToFile(file string, iface interface{}) (err error) {
+	ydata, err := yaml.Marshal(iface)
+	if err != nil {
+		return
+	}
+
 	// create a file with a supplied name
 	yamlFile, err := os.Create(file)
 	if err != nil {
-		return err
+		return
 	}
 
 	if _, err = yamlFile.Write(ydata); err != nil {
-		return err
+		return
 	}
 
-	return nil
+	return
 }
 
-func readYamlFromFile(file string, iface interface{}) error {
-	Log.Debugf("reading from yaml file: %s", file)
+func readYamlFromFile(file string, iface interface{}) (err error) {
 	// Log.Debugf("opening yaml file\n")
 	yamlFile, err := os.Open(file)
-
-	// if we os.Open returns an error then handle it
 	if err != nil {
-		return err
+		return
 	}
 
 	// Log.Debugf("holding file open\n")
 	// defer the closing of our jsonFile so that we can parse it later on
 	defer func() {
 		if err := yamlFile.Close(); err != nil {
-			Log.Printf("Error while closing yaml file: %+v", err)
+			return
 		}
 	}()
 
 	// Log.Printf("reading file\n")
 	byteValue, _ := ioutil.ReadAll(yamlFile)
 	if err = yaml.Unmarshal(byteValue, iface); err != nil {
-		return err
+		return
 	}
 
-	return nil
+	return
+}
+
+// Exists reports whether the named file or directory exists.
+func createIfDoesntExist(name string) (err error) {
+	path, file := path.Split(name)
+
+	// if confdir exists carry on
+	if _, err := os.Stat(name); err != nil {
+		if os.IsNotExist(err) {
+			if _, err = os.Stat(name); err != nil {
+				if file == "" {
+					if err = os.Mkdir(path, 0755); err != nil {
+					}
+				} else {
+					if fileCheck, err := os.OpenFile(name, os.O_RDONLY|os.O_CREATE, 0644); err != nil {
+					} else {
+						fileCheck.Close()
+					}
+				}
+			}
+		}
+	}
+	return
+}
+
+func loadInitConfig(confDir, conf, verbose string) (botConfig parkertron, err error) {
+	// All of this is pre-Logrus init
+	if verbose == "debug" {
+		log.Printf("Checking for dir at %s", confDir)
+	}
+
+	// if the config dir doesn't exist make it
+	if err := createIfDoesntExist(confDir); err != nil {
+		return botConfig, err
+		// if we can't make a confdir log a fatal error.
+	}
+
+	// if confdir exists carry on
+	info, err := os.Stat(confDir)
+	if err != nil {
+		return botConfig, err
+	}
+
+	// if not a directory error out
+	if !info.IsDir() {
+		return botConfig, errors.New("given file not directory")
+	}
+
+	if verbose == "debug" {
+		log.Printf("loading initial bot config at %s%s", confDir, conf)
+	}
+
+	// if config doesn't exist make it.
+	if err = createIfDoesntExist(confDir + conf); err != nil {
+		if verbose == "debug" {
+			log.Printf("creating config %s", confDir+conf)
+			createExampleBotConfig(confDir, conf, verbose)
+		}
+	}
+
+	// if conf file exists carry on
+	if verbose == "debug" {
+		log.Printf("file %s%s exists", confDir, conf)
+	}
+
+	if verbose == "debug" {
+		log.Printf("reading from %s%s", confDir, conf)
+	}
+
+	if strings.HasSuffix(conf, "yaml") || strings.HasSuffix(conf, "yml") {
+		if err = readYamlFromFile(confDir+conf, &botConfig); err != nil {
+			return
+		}
+	} else if strings.HasSuffix(conf, "json") {
+		if err = readJSONFromFile(confDir+conf, &botConfig); err != nil {
+			return botConfig, err
+		}
+	}
+
+	return
 }
