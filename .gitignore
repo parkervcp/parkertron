@@ -5,3 +5,5 @@ logs/
 parkertron
 
 Gopkg\.lock
+
+test/
