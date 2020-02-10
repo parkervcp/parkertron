@@ -21,7 +21,7 @@ type discordBotConfig struct {
 type discordServer struct {
 	ServerID    string              `json:"server_id,omitempty"`
 	Config      discordServerConfig `json:"config,omitempty"`
-	ChanGroups  []channelGroups     `json:"channel_groups,omitempty"`
+	ChanGroups  []channelGroup      `json:"channel_groups,omitempty"`
 	Permissions []permission        `json:"permissions,omitempty"`
 }
 

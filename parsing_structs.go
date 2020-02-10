@@ -52,7 +52,7 @@ type parsingPasteConfig struct {
 	Sites []parsingConfig `json:"sites,omitempty"`
 }
 
-type channelGroups struct {
+type channelGroup struct {
 	ChannelIDs  []string             `json:"channels,omitempty"`
 	Mentions    mentions             `json:"mentions,omitempty"`
 	Commands    []command            `json:"commands,omitempty"`

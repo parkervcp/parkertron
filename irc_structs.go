@@ -6,9 +6,9 @@ type irc struct {
 }
 
 type ircBot struct {
-	BotName    string          `json:"bot_name,omitempty"`
-	Config     ircBotConfig    `json:"config,omitempty"`
-	ChanGroups []channelGroups `json:"channel_groups,omitempty"`
+	BotName    string         `json:"bot_name,omitempty"`
+	Config     ircBotConfig   `json:"config,omitempty"`
+	ChanGroups []channelGroup `json:"channel_groups,omitempty"`
 }
 
 type ircBotConfig struct {

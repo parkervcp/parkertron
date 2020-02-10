@@ -109,8 +109,8 @@ func createExampleDiscordConfig(confDir, verbose string) (err error) {
 			Prefix: ".",
 			Clear:  true,
 		},
-		ChanGroups: []channelGroups{
-			channelGroups{
+		ChanGroups: []channelGroup{
+			channelGroup{
 				ChannelIDs: []string{
 					"a-channel-id",
 					"another-channel-id",
@@ -204,8 +204,8 @@ func createExampleIRCConfig(confDir, verbose string) (err error) {
 			},
 			Prefix: ".",
 		},
-		ChanGroups: []channelGroups{
-			channelGroups{
+		ChanGroups: []channelGroup{
+			channelGroup{
 				ChannelIDs: []string{
 					"a-channel-name",
 					"another-channel-name",

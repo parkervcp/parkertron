@@ -69,7 +69,7 @@ func getChannels(inService, botName, inServer string) (channels []string) {
 	return
 }
 
-func getChannelGroups(inService, botName, inServer, inChannel string) (chanGroups []channelGroups) {
+func getChannelGroups(inService, botName, inServer, inChannel string) (chanGroups []channelGroup) {
 	switch inService {
 	case "discord":
 		for _, bot := range discordGlobal.Bots {
