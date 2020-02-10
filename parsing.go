@@ -171,7 +171,7 @@ func parseKeyword(message, botName string, channelKeywords []keyword, parseConf 
 			Log.Debugf("Response is %v", keyWord.Response)
 			Log.Debugf("Reaction is %v", keyWord.Reaction)
 			return keyWord.Response, keyWord.Reaction
-		} else if strings.Contains(message, keyWord.Keyword) { // if the match was just a match
+		} else if strings.Contains(message, keyWord.Keyword) && !keyWord.Exact { // if the match was just a match
 			Log.Debugf("Response is %v", keyWord.Response)
 			Log.Debugf("Reaction is %v", keyWord.Reaction)
 			return keyWord.Response, keyWord.Reaction
@@ -189,7 +189,7 @@ func parseKeyword(message, botName string, channelKeywords []keyword, parseConf 
 		}
 
 		index := strings.LastIndex(message, keyWord.Keyword)
-		if index > lastIndex {
+		if index > lastIndex && !keyWord.Exact {
 			lastIndex = index
 			response = keyWord.Response
 			reaction = keyWord.Reaction

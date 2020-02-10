@@ -240,7 +240,12 @@ func loadConf(conf confFile) (err error) {
 			var tempServer discordServer
 
 			if err = loadFromFile(conf.Location, &tempServer); err != nil {
+				Log.Error(err)
 				return
+			}
+
+			for i := range tempServer.ChanGroups {
+				Log.Infof("channel groups %+v", tempServer.ChanGroups[i].ChannelIDs)
 			}
 
 			for bid, bot := range discordGlobal.Bots {
@@ -292,12 +297,12 @@ func loadFromFile(file string, iface interface{}) (err error) {
 			return
 		}
 	} else if strings.HasSuffix(file, ".yml") || strings.HasSuffix(file, ".yaml") { // if yaml file
-		Log.Debug("loading yaml file")
+		Log.Debug("loading yaml file %s", file)
 		if err = readYamlFromFile(file, iface); err != nil {
 			Log.Error(err)
 			return
 		}
-		Log.Debugf("%+v", iface)
+		Log.Debugf("interface %+v", iface)
 	} else {
 		return errors.New("no supported file type located")
 	}
@@ -471,8 +476,14 @@ func loadInitConfig(confDir, conf, verbose string) (botConfig parkertron, err er
 		log.Printf("file %s%s exists", confDir, conf)
 	}
 
-	if verbose == "debug" {
-		log.Printf("reading from %s%s", confDir, conf)
+	// if confdir exists carry on
+	file, err := os.Stat(confDir + conf)
+	if err != nil {
+		return botConfig, err
+	}
+
+	if file.Size() == 0 {
+		createExampleBotConfig(confDir, conf, verbose)
 	}
 
 	if strings.HasSuffix(conf, "yaml") || strings.HasSuffix(conf, "yml") {

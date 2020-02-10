@@ -91,7 +91,7 @@ func init() {
 	flag.BoolVar(&diag, "diag", false, "uploads diagnotics to hastebin")
 	flag.Parse()
 
-	if !strings.HasPrefix(confDir, "/") {
+	if !strings.HasSuffix(confDir, "/") {
 		confDir = confDir + "/"
 	}
 
