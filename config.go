@@ -210,6 +210,7 @@ func loadConf(conf confFile) (err error) {
 		if err = loadFromFile(conf.Location, &botConfig); err != nil {
 			Log.Error()
 		}
+
 	// discord conf loading
 	case "discord":
 		if conf.Context == "botConf" {

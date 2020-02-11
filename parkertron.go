@@ -81,6 +81,7 @@ type botParseConfig struct {
 	Reaction []string `json:"reaction,omitempty"`
 	Response []string `json:"response,omitempty"`
 	Max      int      `json:"max,omitempty"`
+	AllowIP  bool     `json:"allow_ip,omitempty"`
 }
 
 func init() {

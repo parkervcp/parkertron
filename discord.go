@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -100,11 +101,19 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 	// 	parseURL(url, channelParsing)
 	// }
 
+	maxLogs, logResponse, logReaction, allowIP := getBotParseConfig()
+
 	Log.Debug(attachmentURLs)
 
 	Log.Debugf("checking for any urls in the message")
 	var allURLS []string
 	for _, url := range xurls.Relaxed().FindAllString(m.Content, -1) {
+		// if the url is an ip filter it out
+		if match, err := regexp.Match("^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])", []byte(url)); err != nil {
+			Log.Error(err)
+		} else if match && !allowIP {
+			continue
+		}
 		allURLS = append(allURLS, url)
 	}
 
@@ -150,7 +159,7 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 		}
 	}
 
-	maxLogs, logResponse, logReaction := getBotParseConfig()
+	Log.Debugf("%d", (allURLS))
 
 	if len(allURLS) > maxLogs {
 		Log.Debug("too many logs or screenshots to try and read.")
