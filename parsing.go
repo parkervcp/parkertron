@@ -116,9 +116,9 @@ func parseBin(url, format string) (binText string, err error) {
 // get urls in message
 func parseURL(url string, parseConf parsing) (parsedText string) {
 	//Catch domains and route to the proper controllers (image, binsite parsers)
-	Log.Debugf("checkign for pastes and images on %s\n", url)
+	Log.Debugf("checking for pastes and images on %s\n", url)
 	for _, site := range parseConf.Image.Sites {
-		Log.Debugf("%s", site.URL)
+		Log.Debugf("checking paste site %s", site.URL)
 		if strings.HasPrefix(url, site.URL) {
 			Log.Debugf("matched on url %s", site.URL)
 			_, file := path.Split(url)

@@ -10,7 +10,8 @@ import (
 )
 
 var (
-	stopDiscord = make(map[string]chan string)
+	stopDiscordServer    = make(chan string)
+	discordServerStopped = make(chan string)
 
 	discordGlobal discord
 
@@ -32,6 +33,7 @@ func readyDiscord(dg *discordgo.Session, event *discordgo.Ready, game string) {
 // This function will be called (due to AddHandler) every time a new
 // message is created on any channel that the autenticated bot has access to.
 func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, botName string) {
+	Log.Debugf("bot is %s", botName)
 	Log.Debugf("message '%s'", m.Content)
 
 	// data to send to discord
@@ -58,21 +60,19 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 
 	// get all the configs
 	// requires channel info we get from the channel info above
-	prefix := getPrefix("discord", botName, channel.GuildID, m.ChannelID)
-	channelCommands := getCommands("discord", botName, channel.GuildID, m.ChannelID)
-	channelKeywords := getKeywords("discord", botName, channel.GuildID, m.ChannelID)
-	channelParsing := getParsing("discord", botName, channel.GuildID, m.ChannelID)
+	prefix := getPrefix("discord", botName, channel.GuildID)
 
 	Log.Debugf("prefix: %s", prefix)
 
 	// if the channel is a DM
 	if channel.Type == 1 {
 		_, dmResp := getMentions("discord", botName, channel.GuildID, "DirectMessage")
-		sendDiscordMessage(dg, m.ChannelID, m.Author.ID, getPrefix("discord", botName, channel.GuildID, "DirectMessage"), dmResp.Reaction)
+		sendDiscordMessage(dg, m.ChannelID, m.Author.ID, getPrefix("discord", botName, channel.GuildID), dmResp.Reaction)
 		sendDiscordReaction(dg, m.ChannelID, m.ID, dmResp.Reaction)
 		return
 	}
 
+	// Log.Debugf("all channels %s", getChannels("discord", botName, channel.GuildID))
 	// if the channel isn't in a group drop the message
 	Log.Debugf("checking channels")
 	if !contains(getChannels("discord", botName, channel.GuildID), m.ChannelID) {
@@ -130,8 +130,11 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 		allURLS = append(allURLS, attachmentURLs[i])
 	}
 
-	// Log.Debug(allURLS)
+	channelCommands := getCommands("discord", botName, channel.GuildID, m.ChannelID)
+	channelKeywords := getKeywords("discord", botName, channel.GuildID, m.ChannelID)
+	channelParsing := getParsing("discord", botName, channel.GuildID, m.ChannelID)
 
+	// Log.Debug(allURLS)
 	Log.Debugf("checking mentions")
 	if len(m.Mentions) != 0 {
 		ping, mention := getMentions("discord", botName, channel.GuildID, m.ChannelID)
@@ -153,13 +156,16 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 		if strings.HasPrefix(m.Content, prefix) {
 			// command
 			response, reaction = parseCommand(strings.TrimPrefix(m.Content, prefix), botName, channelCommands)
+			if getCommandClear("discord", botName, channel.GuildID) {
+
+			}
 		} else {
 			// keyword
 			response, reaction = parseKeyword(m.Content, botName, channelKeywords, channelParsing)
 		}
 	}
 
-	Log.Debugf("%d", (allURLS))
+	Log.Debugf("allURLS: %s", (allURLS))
 
 	if len(allURLS) > maxLogs {
 		Log.Debug("too many logs or screenshots to try and read.")
@@ -180,6 +186,7 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 
 		//parse logs and append to current response.
 		for _, url := range allURLS {
+			Log.Debugf("passing %s to keyword parser", url)
 			urlResponse, _ := parseKeyword(allParsed[url], botName, channelKeywords, channelParsing)
 			if len(urlResponse) != 0 {
 				response = append(response, fmt.Sprintf("I have found the following for: <%s>", url))
@@ -190,7 +197,7 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 		}
 	}
 
-	Log.Debugf("sending response %s", response)
+	Log.Debugf("sending response %s to %s", response, m.ChannelID)
 	sendDiscordMessage(dg, m.ChannelID, m.Author.Username, prefix, response)
 	Log.Debugf("sending reaction %s", reaction)
 	sendDiscordReaction(dg, m.ChannelID, m.ID, reaction)
@@ -358,10 +365,10 @@ func startDiscordsBots() {
 		Log.Infof("Connecting to %s\n", bot.BotName)
 
 		// spin up a channel to tell the bot to shutdown later
-		stopDiscord[bot.BotName] = make(chan string)
+		// stopDiscord[bot.BotName] = make(chan string)
 
 		// start the bot
-		go startDiscordBotConnection(&bot)
+		go startDiscordBotConnection(bot)
 		// wait on bot being able to start.
 		<-discordLoad
 	}
@@ -375,19 +382,22 @@ func stopDiscordBots() {
 	Log.Infof("stopping discord connections")
 	// loop through bots and send shutdowns
 	for _, bot := range discordGlobal.Bots {
-		Log.Infof("stopping %s", bot.BotName)
-		stopDiscord[bot.BotName] <- ""
-
-		<-stopDiscord[bot.BotName]
-		Log.Infof("stopped %s", bot.BotName)
+		stopDiscordServer <- bot.BotName
 	}
+
+	for range discordGlobal.Bots {
+		botIn := <-discordServerStopped
+		Log.Infof("%s", botIn)
+	}
+
 	Log.Infof("discord connections stopped")
 	// return shutdown signal on channel
 	servStopped <- "discord_stopped"
 }
 
 // start connections to discord
-func startDiscordBotConnection(discordConfig *discordBot) {
+func startDiscordBotConnection(discordConfig discordBot) {
+	Log.Debugf("starting connections for %s", discordConfig.BotName)
 	// Initializing Discord connection
 	// Create a new Discord session using the provided bot token.
 	dg, err := discordgo.New("Bot " + discordConfig.Config.Token)
@@ -412,7 +422,7 @@ func startDiscordBotConnection(discordConfig *discordBot) {
 		})
 	}
 
-	Log.Debug("Discord service connected\n")
+	Log.Debugf("Discord service connected for %s", discordConfig.BotName)
 
 	// Open the websocket and begin listening.
 	err = dg.Open()
@@ -430,11 +440,13 @@ func startDiscordBotConnection(discordConfig *discordBot) {
 
 	discordLoad <- ""
 
-	<-stopDiscord[discordConfig.BotName]
+	<-stopDiscordServer
 
+	Log.Debugf("stop recieved on %s", discordConfig.BotName)
 	// properly send a shutdown to the discord server so the bot goes offline.
 	dg.Close()
 
+	Log.Debugf("%s sent close", discordConfig.BotName)
 	// return the shutdown signal
-	stopDiscord[discordConfig.BotName] <- ""
+	discordServerStopped <- fmt.Sprintf("Closed connection for %s", discordConfig.BotName)
 }

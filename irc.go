@@ -66,7 +66,7 @@ func ircMessageHandler(conn hirc.Conn, botName string) {
 		Log.Debug("messageIn: " + messageIn) // actual message
 
 		// get all the configs
-		prefix := getPrefix("irc", botName, botName, channel)
+		prefix := getPrefix("irc", botName, botName)
 		channelCommands := getCommands("irc", botName, "", channel)
 		channelKeywords := getKeywords("irc", botName, "", channel)
 		channelParsing := getParsing("irc", botName, "", channel)

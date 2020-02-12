@@ -262,6 +262,7 @@ func loadConf(conf confFile) (err error) {
 					}
 					// if the server isn't in the list append it.
 					discordGlobal.Bots[bid].Servers = append(discordGlobal.Bots[bid].Servers, tempServer)
+					Log.Debugf("loaded server %s for bot %s", tempServer.ServerID, bot.BotName)
 				}
 			}
 		}
@@ -298,12 +299,12 @@ func loadFromFile(file string, iface interface{}) (err error) {
 			return
 		}
 	} else if strings.HasSuffix(file, ".yml") || strings.HasSuffix(file, ".yaml") { // if yaml file
-		Log.Debug("loading yaml file %s", file)
+		Log.Debugf("loading yaml file %s", file)
 		if err = readYamlFromFile(file, iface); err != nil {
 			Log.Error(err)
 			return
 		}
-		Log.Debugf("interface %+v", iface)
+		// Log.Debugf("interface %+v", iface)
 	} else {
 		return errors.New("no supported file type located")
 	}
