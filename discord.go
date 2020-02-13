@@ -61,8 +61,14 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 	// get all the configs
 	// requires channel info we get from the channel info above
 	prefix := getPrefix("discord", botName, channel.GuildID)
+	channelCommands := getCommands("discord", botName, channel.GuildID, m.ChannelID)
+	channelKeywords := getKeywords("discord", botName, channel.GuildID, m.ChannelID)
+	channelParsing := getParsing("discord", botName, channel.GuildID, m.ChannelID)
 
 	Log.Debugf("prefix: %s", prefix)
+
+	// bot level configs for log reading
+	maxLogs, logResponse, logReaction, allowIP := getBotParseConfig()
 
 	// if the channel is a DM
 	if channel.Type == 1 {
@@ -101,9 +107,8 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 	// 	parseURL(url, channelParsing)
 	// }
 
-	maxLogs, logResponse, logReaction, allowIP := getBotParseConfig()
-
 	Log.Debug(attachmentURLs)
+	Log.Debugf("all ignores %+v", channelParsing.Paste.Ignore)
 
 	Log.Debugf("checking for any urls in the message")
 	var allURLS []string
@@ -114,7 +119,17 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 		} else if match && !allowIP {
 			continue
 		}
-		allURLS = append(allURLS, url)
+
+		Log.Debugf("looking for disabled domains")
+		for _, ignoreURL := range channelParsing.Paste.Ignore {
+			Log.Debugf("url should be ignored: %t", strings.HasPrefix(url, ignoreURL.URL))
+			if strings.HasPrefix(url, ignoreURL.URL) {
+				Log.Debugf("domain %s is being ignored.", ignoreURL.URL)
+				continue
+			}
+			allURLS = append(allURLS, url)
+			Log.Debugf("no disabled domain found")
+		}
 	}
 
 	// this was for debugging/testing only
@@ -129,10 +144,6 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 	for i := 0; i < len(attachmentURLs); i++ {
 		allURLS = append(allURLS, attachmentURLs[i])
 	}
-
-	channelCommands := getCommands("discord", botName, channel.GuildID, m.ChannelID)
-	channelKeywords := getKeywords("discord", botName, channel.GuildID, m.ChannelID)
-	channelParsing := getParsing("discord", botName, channel.GuildID, m.ChannelID)
 
 	// Log.Debug(allURLS)
 	Log.Debugf("checking mentions")
@@ -166,15 +177,18 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 	}
 
 	Log.Debugf("allURLS: %s", (allURLS))
+	Log.Debugf("allURLS count: %d", len(allURLS))
 
-	if len(allURLS) > maxLogs {
+	// if we have too many logs ignore it.
+	if len(allURLS) == 0 {
+		Log.Debugf("no URLs to read")
+	} else if len(allURLS) > maxLogs {
 		Log.Debug("too many logs or screenshots to try and read.")
 		sendDiscordMessage(dg, m.ChannelID, m.Author.Username, prefix, logResponse)
 		sendDiscordReaction(dg, m.ChannelID, m.ID, logReaction)
 		return
-	}
-
-	if len(response) == 0 && len(allURLS) != 0 {
+	} else if len(allURLS) != 0 {
+		Log.Debugf("reading logs")
 		sendDiscordReaction(dg, m.ChannelID, m.ID, []string{"👀"})
 
 		// get parsed content for each url/attachment

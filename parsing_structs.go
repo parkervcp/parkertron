@@ -49,7 +49,8 @@ type parsingImageConfig struct {
 }
 
 type parsingPasteConfig struct {
-	Sites []parsingConfig `json:"sites,omitempty"`
+	Sites  []parsingConfig `json:"sites,omitempty"`
+	Ignore []parsingConfig `json:"ignore,omitmepty"`
 }
 
 type channelGroup struct {
