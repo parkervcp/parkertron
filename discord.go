@@ -168,7 +168,8 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 			// command
 			response, reaction = parseCommand(strings.TrimPrefix(m.Content, prefix), botName, channelCommands)
 			if getCommandClear("discord", botName, channel.GuildID) {
-
+				Log.Debugf("removing comand message %s", m.ID)
+				deleteDiscordMessage(dg, m.ChannelID, m.ID, "")
 			}
 		} else {
 			// keyword
@@ -202,7 +203,10 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 		for _, url := range allURLS {
 			Log.Debugf("passing %s to keyword parser", url)
 			urlResponse, _ := parseKeyword(allParsed[url], botName, channelKeywords, channelParsing)
-			if len(urlResponse) != 0 {
+			Log.Debugf("response length = %d", len(urlResponse))
+			if len(urlResponse) == 1 && urlResponse[0] == "" || len(urlResponse) == 0 {
+
+			} else {
 				response = append(response, fmt.Sprintf("I have found the following for: <%s>", url))
 				for _, singleLine := range urlResponse {
 					response = append(response, singleLine)
