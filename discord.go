@@ -107,28 +107,36 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 	// 	parseURL(url, channelParsing)
 	// }
 
-	Log.Debug(attachmentURLs)
+	Log.Debugf("all attachments %s", attachmentURLs)
 	Log.Debugf("all ignores %+v", channelParsing.Paste.Ignore)
 
 	Log.Debugf("checking for any urls in the message")
 	var allURLS []string
 	for _, url := range xurls.Relaxed().FindAllString(m.Content, -1) {
+		Log.Debugf("checking on %s", url)
 		// if the url is an ip filter it out
 		if match, err := regexp.Match("^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])", []byte(url)); err != nil {
 			Log.Error(err)
 		} else if match && !allowIP {
+			Log.Debugf("adding %s to the list", url)
 			continue
 		}
 
 		Log.Debugf("looking for disabled domains")
-		for _, ignoreURL := range channelParsing.Paste.Ignore {
-			Log.Debugf("url should be ignored: %t", strings.HasPrefix(url, ignoreURL.URL))
-			if strings.HasPrefix(url, ignoreURL.URL) {
-				Log.Debugf("domain %s is being ignored.", ignoreURL.URL)
-				continue
-			}
+		if len(channelParsing.Paste.Ignore) == 0 {
+			Log.Debugf("appending %s to allURLS", url)
 			allURLS = append(allURLS, url)
 			Log.Debugf("no disabled domain found")
+		} else {
+			for _, ignoreURL := range channelParsing.Paste.Ignore {
+				Log.Debugf("url should be ignored: %t", strings.HasPrefix(url, ignoreURL.URL))
+				if strings.HasPrefix(url, ignoreURL.URL) {
+					Log.Debugf("domain %s is being ignored.", ignoreURL.URL)
+					continue
+				}
+				Log.Debugf("appending %s to allURLS", url)
+				allURLS = append(allURLS, url)
+			}
 		}
 	}
 
@@ -167,9 +175,12 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 		if strings.HasPrefix(m.Content, prefix) {
 			// command
 			response, reaction = parseCommand(strings.TrimPrefix(m.Content, prefix), botName, channelCommands)
-			if getCommandClear("discord", botName, channel.GuildID) {
+			// if the flag for clearing commands is set and there is a response
+			if getCommandClear("discord", botName, channel.GuildID) && len(response) > 0 {
 				Log.Debugf("removing comand message %s", m.ID)
 				deleteDiscordMessage(dg, m.ChannelID, m.ID, "")
+			} else {
+
 			}
 		} else {
 			// keyword
