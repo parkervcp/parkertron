@@ -1,0 +1,33 @@
+server_id: a-server-id
+config:
+  prefix: .
+  clear_commands: true
+channel_groups:
+- channels:
+  - a-channel-id
+  - another-channel-id
+  mentions:
+    ping:
+      reaction:
+      - 👋
+      response:
+      - I see I was pinged.
+      - Please just post the issue you are having
+      - Or you can gather your logs and post them
+    mention:
+      reaction:
+      - 👋
+      response:
+      - ""
+  commands:
+  - command: example
+    response:
+    - This is the response to the &prefix&example command
+    reaction:
+    - ""
+  keywords:
+  - keyword: example
+    response:
+    - I have responded to seeing the word example.
+permissions:
+- group: admin

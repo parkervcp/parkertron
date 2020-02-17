@@ -82,7 +82,9 @@ func createExampleDiscordConfig(confDir, verbose string) (err error) {
 		return
 	}
 
-	newDiscord := discordBotConfig{
+	newDiscordBot := discordBot{}
+
+	newDiscordBotConfig := discordBotConfig{
 		Token: "An example token",
 		Game:  "Supporting Humans",
 		DMResp: responseArray{
@@ -93,7 +95,9 @@ func createExampleDiscordConfig(confDir, verbose string) (err error) {
 
 	Log.Debugf("writing example config to file %s", confDir+"example-bot/example.yml")
 
-	if err = writeYamlToFile(confDir+"example-bot/example.yml", newDiscord); err != nil {
+	newDiscordBot.Config = newDiscordBotConfig
+
+	if err = writeYamlToFile(confDir+"example-bot/example.yml", newDiscordBot); err != nil {
 		return
 	}
 

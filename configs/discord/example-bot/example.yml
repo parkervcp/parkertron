@@ -1,0 +1,8 @@
+config:
+  token: An example token
+  game: Supporting Humans
+  dm_response:
+    reaction:
+    - ""
+    response:
+    - ""
