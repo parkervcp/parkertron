@@ -226,8 +226,10 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 		}
 	}
 
+	// send response to channel
 	Log.Debugf("sending response %s to %s", response, m.ChannelID)
-	sendDiscordMessage(dg, m.ChannelID, m.Author.Username, prefix, response)
+	sendDiscordMessage(dg, m.ChannelID, m.Author.ID, prefix, response)
+	// send reaction to channel
 	Log.Debugf("sending reaction %s", reaction)
 	sendDiscordReaction(dg, m.ChannelID, m.ID, reaction)
 }
@@ -429,6 +431,7 @@ func startDiscordBotConnection(discordConfig discordBot) {
 	Log.Debugf("starting connections for %s", discordConfig.BotName)
 	// Initializing Discord connection
 	// Create a new Discord session using the provided bot token.
+	Log.Debugf("using token '%s' to auth", discordConfig.Config.Token)
 	dg, err := discordgo.New("Bot " + discordConfig.Config.Token)
 	if err != nil {
 		Log.Errorf("error creating Discord session for %s: %v", discordConfig.BotName, err)

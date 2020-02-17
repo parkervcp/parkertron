@@ -32,7 +32,7 @@ func ircMessageHandler(conn hirc.Conn, botName string) {
 
 	message, err := conn.ReadMessage()
 	if err != nil {
-		Log.Errorf("cannot read message: ", err)
+		Log.Errorf("cannot read message: %s", err)
 		return
 	}
 
