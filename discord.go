@@ -188,18 +188,22 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 		}
 	}
 
-	Log.Debugf("allURLS: %s", (allURLS))
-	Log.Debugf("allURLS count: %d", len(allURLS))
+	if len(channelParsing.Image.Filetypes) == 0 && len(channelParsing.Paste.Sites) == 0 {
+		Log.Debugf("no parsing configs found")
+	} else {
+		Log.Debugf("allURLS: %s", (allURLS))
+		Log.Debugf("allURLS count: %d", len(allURLS))
 
-	// if we have too many logs ignore it.
-	if len(allURLS) == 0 {
-		Log.Debugf("no URLs to read")
-	} else if len(allURLS) > maxLogs {
-		Log.Debug("too many logs or screenshots to try and read.")
-		sendDiscordMessage(dg, m.ChannelID, m.Author.Username, prefix, logResponse)
-		sendDiscordReaction(dg, m.ChannelID, m.ID, logReaction)
-		return
-	} else if len(allURLS) != 0 {
+		// if we have too many logs ignore it.
+		if len(allURLS) == 0 {
+			Log.Debugf("no URLs to read")
+		} else if len(allURLS) > maxLogs {
+			Log.Debug("too many logs or screenshots to try and read.")
+			sendDiscordMessage(dg, m.ChannelID, m.Author.Username, prefix, logResponse)
+			sendDiscordReaction(dg, m.ChannelID, m.ID, logReaction)
+			return
+		}
+
 		Log.Debugf("reading logs")
 		sendDiscordReaction(dg, m.ChannelID, m.ID, []string{"👀"})
 
@@ -224,6 +228,7 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 				}
 			}
 		}
+
 	}
 
 	// send response to channel
