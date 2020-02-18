@@ -351,7 +351,7 @@ func sendDiscordMessage(dg *discordgo.Session, channelID, authorID, prefix strin
 	}
 
 	response := strings.Join(responseArray, "\n")
-	response = strings.Replace(response, "&user&", authorID, -1)
+	response = strings.Replace(response, "&user&", "<@"+authorID+">", -1)
 	response = strings.Replace(response, "&prefix&", prefix, -1)
 	response = strings.Replace(response, "&react&", "", -1)
 
