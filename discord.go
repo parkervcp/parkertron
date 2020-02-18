@@ -202,33 +202,32 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 			sendDiscordMessage(dg, m.ChannelID, m.Author.Username, prefix, logResponse)
 			sendDiscordReaction(dg, m.ChannelID, m.ID, logReaction)
 			return
-		}
+		} else {
+			Log.Debugf("reading logs")
+			sendDiscordReaction(dg, m.ChannelID, m.ID, []string{"👀"})
 
-		Log.Debugf("reading logs")
-		sendDiscordReaction(dg, m.ChannelID, m.ID, []string{"👀"})
+			// get parsed content for each url/attachment
+			Log.Debugf("reading all attachments and logs")
+			allParsed := make(map[string]string)
+			for _, url := range allURLS {
+				allParsed[url] = parseURL(url, channelParsing)
+			}
 
-		// get parsed content for each url/attachment
-		Log.Debugf("reading all attachments and logs")
-		allParsed := make(map[string]string)
-		for _, url := range allURLS {
-			allParsed[url] = parseURL(url, channelParsing)
-		}
+			//parse logs and append to current response.
+			for _, url := range allURLS {
+				Log.Debugf("passing %s to keyword parser", url)
+				urlResponse, _ := parseKeyword(allParsed[url], botName, channelKeywords, channelParsing)
+				Log.Debugf("response length = %d", len(urlResponse))
+				if len(urlResponse) == 1 && urlResponse[0] == "" || len(urlResponse) == 0 {
 
-		//parse logs and append to current response.
-		for _, url := range allURLS {
-			Log.Debugf("passing %s to keyword parser", url)
-			urlResponse, _ := parseKeyword(allParsed[url], botName, channelKeywords, channelParsing)
-			Log.Debugf("response length = %d", len(urlResponse))
-			if len(urlResponse) == 1 && urlResponse[0] == "" || len(urlResponse) == 0 {
-
-			} else {
-				response = append(response, fmt.Sprintf("I have found the following for: <%s>", url))
-				for _, singleLine := range urlResponse {
-					response = append(response, singleLine)
+				} else {
+					response = append(response, fmt.Sprintf("I have found the following for: <%s>", url))
+					for _, singleLine := range urlResponse {
+						response = append(response, singleLine)
+					}
 				}
 			}
 		}
-
 	}
 
 	// send response to channel
