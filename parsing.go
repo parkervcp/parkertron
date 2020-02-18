@@ -113,19 +113,22 @@ func parseBin(url, format string) (binText string, err error) {
 	return
 }
 
-// get urls in message
+// parses url contents for images and paste sites.
 func parseURL(url string, parseConf parsing) (parsedText string) {
 	//Catch domains and route to the proper controllers (image, binsite parsers)
 	Log.Debugf("checking for pastes and images on %s\n", url)
-	for _, site := range parseConf.Image.Sites {
-		Log.Debugf("checking paste site %s", site.URL)
-		if strings.HasPrefix(url, site.URL) {
-			Log.Debugf("matched on url %s", site.URL)
-			_, file := path.Split(url)
-			url = strings.Replace(site.Format, "&filename&", file, 1)
+	if len(parseConf.Image.Sites) != 0 {
+		for _, site := range parseConf.Image.Sites {
+			Log.Debugf("checking paste site %s", site.URL)
+			if strings.HasPrefix(url, site.URL) {
+				Log.Debugf("matched on url %s", site.URL)
+				_, file := path.Split(url)
+				url = strings.Replace(site.Format, "&filename&", file, 1)
+			}
 		}
 	}
 
+	//check for image filetypes
 	for _, filetype := range parseConf.Image.Filetypes {
 		Log.Debug("checking if image")
 		if strings.HasSuffix(url, filetype) {
@@ -135,18 +138,21 @@ func parseURL(url string, parseConf parsing) (parsedText string) {
 			} else {
 				Log.Debugf(imageText)
 				parsedText = imageText
+				return
 			}
-		} else {
-			Log.Debug("checking if bin file")
-			for _, paste := range parseConf.Paste.Sites {
-				if strings.HasPrefix(url, paste.URL) {
-					if binText, err := parseBin(url, paste.Format); err != nil {
-						Log.Errorf("%s\n", err)
-					} else {
-						Log.Debugf(binText)
-						parsedText = binText
-					}
-				}
+		}
+	}
+
+	// check for paste sites
+	for _, paste := range parseConf.Paste.Sites {
+		Log.Debug("checking if bin file")
+		if strings.HasPrefix(url, paste.URL) {
+			if binText, err := parseBin(url, paste.Format); err != nil {
+				Log.Errorf("%s\n", err)
+			} else {
+				Log.Debugf(binText)
+				parsedText = binText
+				return
 			}
 		}
 	}
@@ -159,6 +165,8 @@ func parseURL(url string, parseConf parsing) (parsedText string) {
 //   /  '_/ -_) // / |/|/ / _ \/ __/ _  /
 //  /_/\_\\__/\_, /|__,__/\___/_/  \_,_/
 //  	     /___/
+
+// returns response and reaction for keywords
 func parseKeyword(message, botName string, channelKeywords []keyword, parseConf parsing) (response, reaction []string) {
 	Log.Debugf("Parsing inbound chat for %s", botName)
 
