@@ -129,15 +129,20 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 			Log.Debugf("no disabled domain found")
 			continue
 		} else {
+			var ignoreURL bool
 			for _, ignoreURL := range channelParsing.Paste.Ignore {
 				Log.Debugf("url should be ignored: %t", strings.HasPrefix(url, ignoreURL.URL))
 				if strings.HasPrefix(url, ignoreURL.URL) {
-					Log.Debugf("domain %s is being ignored.", ignoreURL.URL)
-					continue
+					ignoreURL = true
+					break
 				}
 			}
-			Log.Debugf("appending %s to allURLS", url)
-			allURLS = append(allURLS, url)
+			if ignoreURL {
+				Log.Debugf("domain %s is being ignored.", ignoreURL.URL)
+			} else {
+				Log.Debugf("appending %s to allURLS", url)
+				allURLS = append(allURLS, url)
+			}
 		}
 	}
 
