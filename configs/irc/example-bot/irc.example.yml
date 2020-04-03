@@ -1,0 +1,78 @@
+config:
+  server:
+    address: "irc.freenode.net"
+    port: 6667
+    ssl: true
+    ident: "parkertron"
+    email: ""
+    password: ""
+    nickname: "parkertron"
+    real_name: "Parkertron McBot"
+
+channel_groups:
+  - channels: ## an array of channels. Can hold one or many.
+    - "#a_channel_1"
+
+    mentions:
+      ping: ## bot gets pinged with no other text
+        response:
+          - ""
+      mention: ## bot gets mention in a message that it doesn't match anything in
+        response:
+          - ""
+
+    commands: ## an array of commands
+      - command: help ## each command needs this layout or the config will fail to load.
+        response:
+        - "Hello, I am a bot created by `parkervcp` designed to respond to commands and keywords."
+        reastion:
+          - ""
+
+      - command: help command
+        response:
+        - "You can add commands manually in the config file."
+      
+      - command: help keyword
+        response:
+        - "You can add keywords manually in the config file."
+
+    keywords: ## an array of keywords
+      - keyword: example ## each keyword needs this layout or the config will fail to load.
+        response:
+        - "This is an example keyword match"
+
+      - keyword: hello
+        response:
+        - "This is an example keyword match"
+        exact: true
+
+    parsing:
+      image:
+        filetypes:
+          - "png"
+          - "jpg"
+
+      sites:
+        - url: "https://gyazo.com"
+          format: "https://i.gyazo.com/&filename&.png"
+
+      paste:
+        sites:
+          - name: pastebin
+            url: "https://pastebin.com/"
+            format: "&url&raw/&filename&"
+          - name: hastebin
+            url: "https://hastebin.com/"
+            format: "&url&raw/&filename&"
+
+    permissions: ## discord permissions are per-server
+      - group: admin ## server owners automatically get all permissions.
+        users:
+        - "userID"
+
+      - group: mod
+        users:
+        - "Community Moderator"
+
+      - group: blasklist
+        blacklisted: true

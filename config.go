@@ -1,297 +1,502 @@
 package main
 
 import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"log"
+	"os"
+	"path"
+	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/fsnotify/fsnotify"
-	Log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
+	"github.com/goccy/go-yaml"
 )
 
 var (
-	//Bot Config
-	Bot = viper.New()
+	// stores info on files for easier loading
+	files confFiles
 
-	//Discord Config
-	Discord = viper.New()
-
-	//IRC Config
-	IRC = viper.New()
-
-	//Command Config
-	Command = viper.New()
-
-	//Keyword Config
-	Keyword = viper.New()
-
-	//Parsing Config
-	Parsing = viper.New()
+	// literally to make sure files load in order
+	fileLoad = make(chan string)
 )
 
-func setupConfig() {
+type confFiles struct {
+	Files []confFile
+}
 
-	if configFilecheck() == false {
-		Log.Error("There was an issue setting up the config", nil)
+type confFile struct {
+	Location string // full file path can be a dir or file
+	Context  string // conf, botConf, serverConf
+	Service  string // parkertron, discord, irc, slack
+	BotName  string // veriable based on folder name
+}
+
+func initConfig(confDir string) (err error) {
+	if err = loadConfDirs(confDir); err != nil {
+		return nil
 	}
 
-	//Setting Bot config settings
-	Bot.SetConfigName("bot")
-	Bot.AddConfigPath("configs/")
-	Bot.WatchConfig()
-
-	Bot.OnConfigChange(func(e fsnotify.Event) {
-		Log.Info("Bot config changed")
+	// sort files to load cirrectly
+	Log.Debugf("Sorting files")
+	sort.SliceStable(files.Files, func(i, j int) bool {
+		return files.Files[i].Location > files.Files[j].Location
 	})
 
-	if err := Bot.ReadInConfig(); err != nil {
-		Log.Fatal("Could not load Bot configuration.", err)
+	// for all files pass it to fsnotify.
+	Log.Debugf("loading files into file watcher")
+	for _, file := range files.Files {
+		go loadNWatch(file)
+		<-fileLoad
+	}
+
+	Log.Debugf("Files that were loaded.")
+	for _, v := range files.Files {
+		Log.Debugf("%+v", v)
+	}
+
+	return nil
+}
+
+func loadConfDirs(confdir string) (err error) {
+	cleanConfDir := path.Clean(confDir)
+
+	// Log.Debugf("reading from %s", cleanConfDir)
+	confFullPath, err := filepath.Abs(cleanConfDir)
+	if err != nil {
+		Log.Errorf("error converting path %s\n", err)
+	}
+
+	// walk config dir supplied in startup single dir deep.
+	err = filepath.Walk(confDir, func(fpath string, info os.FileInfo, err error) error {
+		// if there are errors log the error
+		if err != nil {
+			Log.Infof("prevent panic by handling failure accessing a path %q: %+v\n", fpath, err)
+			return err
+		}
+
+		// Log.Debugf("walking '%s'", fpath)
+
+		// if an object has example in the name skip it
+		if strings.Contains(info.Name(), "example") || strings.HasPrefix(info.Name(), ".") {
+			return nil
+		}
+
+		fileFullPath, err := filepath.Abs(fpath)
+		if err != nil {
+			Log.Errorf("error converting path %s\n", err)
+		}
+
+		// Log.Debugf("passing '%s' to depthCounter", fpath)
+		depth, err := depthCounter(confFullPath, fileFullPath)
+		if err != nil {
+			return err
+		}
+
+		// don't add to the file struct if it's a folder
+		if info.IsDir() {
+			return nil
+		}
+
+		// Log.Debugf(fpath)
+		if len(strings.Split(fpath, "/")) >= 4 {
+			// Log.Debug(strings.Split(fpath, "/")[2])
+			files.Files = append(files.Files, confFile{fileFullPath, getFileType(depth), getFileService(fileFullPath), strings.Split(fpath, "/")[2]})
+		} else {
+			files.Files = append(files.Files, confFile{fileFullPath, getFileType(depth), getFileService(fileFullPath), ""})
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func depthCounter(confFullPath, fileFullPath string) (depth int, err error) {
+	// Log.Debugf("checking on file %s\n", fileFullPath)
+	// get depth of folder/file
+	for depth := 1; depth <= 4; depth++ {
+		// Log.Debugf("checking on %d", depth)
+		// each /* is another file depth.
+		match, err := path.Match(confFullPath+strings.Repeat("/*", depth), fileFullPath)
+		if err != nil {
+			return 0, err
+		}
+		if match {
+			// Log.Debugf("Match on depth %d", depth)
+			return depth, nil
+		}
+	}
+
+	return 0, nil
+}
+
+func getFileType(depth int) (fileType string) {
+	switch depth {
+	case 1:
+		fileType = "conf"
+	case 3:
+		fileType = "botConf"
+	case 4:
+		fileType = "serverConf"
+	}
+
+	return fileType
+}
+
+func getFileService(filePath string) (service string) {
+	if strings.Contains(filePath, "discord") {
+		service = "discord"
+	} else if strings.Contains(filePath, "irc") {
+		service = "irc"
+	} else if strings.Contains(filePath, "slack") {
+		service = "slack"
+	} else {
+		service = "parkertron"
+	}
+
+	return service
+}
+
+func loadNWatch(file confFile) {
+	Log.Debugf("Loading file")
+	if err := loadConf(file); err != nil {
+		Log.Error(err)
+	}
+
+	Log.Debugf("Setting up watcher")
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		Log.Errorf("%+v", err)
 		return
 	}
 
-	for _, cr := range getBotServices() {
-		if strings.Contains(strings.TrimPrefix(cr, "bot.services."), cr) {
-			if strings.Contains(cr, "discord") {
-				//Setting Discord config settings
-				Discord.SetConfigName("discord")
-				Discord.AddConfigPath("configs/")
-				Discord.WatchConfig()
+	Log.Debugf("defer closing watcher")
+	defer watcher.Close()
 
-				Discord.OnConfigChange(func(e fsnotify.Event) {
-					Log.Info("Discord config changed")
-				})
+	done := make(chan bool)
+	go func() {
+		for {
+			select {
+			case event := <-watcher.Events:
+				switch event.Op {
+				case fsnotify.Write:
+					Log.Infof("file changed: %s", event.Name)
+					loadConf(file)
+				}
+			case err := <-watcher.Errors:
+				Log.Errorf("%+v", err)
+			}
+		}
+	}()
 
-				if err := Discord.ReadInConfig(); err != nil {
-					Log.Fatal("Could not load Discord configuration.", err)
+	if err := watcher.Add(file.Location); err != nil {
+		Log.Error(err)
+	}
+
+	fileLoad <- ""
+	<-done
+}
+
+func loadConf(conf confFile) (err error) {
+	switch conf.Service {
+	case "parkertron":
+		if err = loadFromFile(conf.Location, &botConfig); err != nil {
+			Log.Error()
+		}
+
+	// discord conf loading
+	case "discord":
+		if conf.Context == "botConf" {
+			Log.Debugf("loading config for discord bot %s", conf.BotName)
+			// set up new temp var for the bot
+			var tempBot discordBot
+			tempBot.BotName = conf.BotName
+
+			if err = loadFromFile(conf.Location, &tempBot); err != nil {
+				Log.Errorf("there was an error loading configs")
+				Log.Error(err)
+				return
+			}
+			for bid, bot := range discordGlobal.Bots {
+				if bot.BotName == conf.BotName {
+					discordGlobal.Bots[bid].Config.Game = tempBot.Config.Game
+					discordGlobal.Bots[bid].Config.DMResp = tempBot.Config.DMResp
 					return
 				}
-
-				Discord.SetDefault("discord.command.remove", true)
 			}
 
-			if strings.Contains(cr, "irc") {
-				//Setting IRC config settings
-				IRC.SetConfigName("irc")
-				IRC.AddConfigPath("configs/")
-				IRC.WatchConfig()
+			// add bot to discord bots array.
+			discordGlobal.Bots = append(discordGlobal.Bots, tempBot)
 
-				IRC.OnConfigChange(func(e fsnotify.Event) {
-					Log.Info("IRC config changed")
+		} else if conf.Context == "serverConf" {
+			Log.Debugf("loading discord server config for %s", conf.BotName)
+			// set up new temp var for the server
+			var tempServer discordServer
 
-				})
-				if err := IRC.ReadInConfig(); err != nil {
-					Log.Fatal("Could not load irc configuration.", err)
-					return
+			if err = loadFromFile(conf.Location, &tempServer); err != nil {
+				Log.Error(err)
+				return
+			}
+
+			for i := range tempServer.ChanGroups {
+				Log.Infof("channel groups %+v", tempServer.ChanGroups[i].ChannelIDs)
+			}
+
+			for bid, bot := range discordGlobal.Bots {
+				if bot.BotName == conf.BotName {
+					for sid, server := range discordGlobal.Bots[bid].Servers {
+						// if the server exists drop it and re-append config
+						if server.ServerID == tempServer.ServerID {
+							discordGlobal.Bots[bid].Servers[sid].ChanGroups = tempServer.ChanGroups
+							discordGlobal.Bots[bid].Servers[sid].Config = tempServer.Config
+							discordGlobal.Bots[bid].Servers[sid].Permissions = tempServer.Permissions
+							return
+						}
+					}
+					// if the server isn't in the list append it.
+					discordGlobal.Bots[bid].Servers = append(discordGlobal.Bots[bid].Servers, tempServer)
+					Log.Debugf("loaded server %s for bot %s", tempServer.ServerID, bot.BotName)
+				}
+			}
+		}
+	// irc conf loading
+	case "irc":
+		if conf.Context == "botConf" {
+			Log.Debugf("loading config for irc bot %s", conf.BotName)
+
+			var tempBot ircBot
+			tempBot.BotName = conf.BotName
+
+			// if there is an error loading the config return
+			if err = loadFromFile(conf.Location, &tempBot); err != nil {
+				return
+			}
+
+			// add bot to irc bots array
+			ircGlobal.Bots = append(ircGlobal.Bots, tempBot)
+		}
+	// slack config loading
+	case "slack":
+
+	}
+
+	return nil
+}
+
+// LoadConfig loads configs from a file to an interface
+func loadFromFile(file string, iface interface{}) (err error) {
+	if strings.HasSuffix(file, ".json") { // if json file
+		Log.Debug("loading json file")
+		if err = readJSONFromFile(file, iface); err != nil {
+			Log.Error(err)
+			return
+		}
+	} else if strings.HasSuffix(file, ".yml") || strings.HasSuffix(file, ".yaml") { // if yaml file
+		Log.Debugf("loading yaml file %s", file)
+		if err = readYamlFromFile(file, iface); err != nil {
+			Log.Error(err)
+			return
+		}
+		// Log.Debugf("interface %+v", iface)
+	} else {
+		return errors.New("no supported file type located")
+	}
+
+	return nil
+}
+
+// SaveConfig saves interfaces to a file
+func saveConfig(file string, iface interface{}) error {
+	// Log.Printf("converting struct data to bytesfor %s", file)
+	bytes, err := json.MarshalIndent(iface, "", " ")
+	if err != nil {
+		return fmt.Errorf("there was an error converting the user data to json")
+	}
+
+	// Log.Printf("writing bytes to file")
+	if err := writeJSONToFile(file, bytes); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// File management
+func writeJSONToFile(file string, iface interface{}) (err error) {
+	jdata, err := json.MarshalIndent(iface, "", "  ")
+	if err != nil {
+		return
+	}
+
+	// create a file with a supplied name
+	if jsonFile, err := os.Create(file); err != nil {
+		return err
+	} else if _, err = jsonFile.Write(jdata); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func readJSONFromFile(file string, iface interface{}) error {
+	// Log.Printf("opening json file\n")
+	jsonFile, err := os.Open(file)
+	// if we os.Open returns an error then handle it
+	if err != nil {
+		return err
+	}
+
+	// Log.Printf("holding file open\n")
+	// defer the closing of our jsonFile so that we can parse it later on
+	defer func() {
+		if err := jsonFile.Close(); err != nil {
+			Log.Printf("Error while closing JSON file: %+v", err)
+		}
+	}()
+
+	// Log.Printf("reading file\n")
+	// read our opened xmlFile as a byte array.
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+	if err = json.Unmarshal(byteValue, iface); err != nil {
+		return err
+	}
+
+	// return the json byte value.
+	return nil
+}
+
+func writeYamlToFile(file string, iface interface{}) (err error) {
+	ydata, err := yaml.Marshal(iface)
+	if err != nil {
+		return
+	}
+
+	// create a file with a supplied name
+	yamlFile, err := os.Create(file)
+	if err != nil {
+		return
+	}
+
+	if _, err = yamlFile.Write(ydata); err != nil {
+		return
+	}
+
+	return
+}
+
+func readYamlFromFile(file string, iface interface{}) (err error) {
+	// Log.Debugf("opening yaml file\n")
+	yamlFile, err := os.Open(file)
+	if err != nil {
+		return
+	}
+
+	// Log.Debugf("holding file open\n")
+	// defer the closing of our jsonFile so that we can parse it later on
+	defer func() {
+		if err := yamlFile.Close(); err != nil {
+			return
+		}
+	}()
+
+	// Log.Printf("reading file\n")
+	byteValue, _ := ioutil.ReadAll(yamlFile)
+	if err = yaml.Unmarshal(byteValue, iface); err != nil {
+		return
+	}
+
+	return
+}
+
+// Exists reports whether the named file or directory exists.
+func createIfDoesntExist(name string) (err error) {
+	path, file := path.Split(name)
+
+	// if confdir exists carry on
+	if _, err := os.Stat(name); err != nil {
+		if os.IsNotExist(err) {
+			if _, err = os.Stat(name); err != nil {
+				if file == "" {
+					if err = os.Mkdir(path, 0755); err != nil {
+					}
+				} else {
+					if fileCheck, err := os.OpenFile(name, os.O_RDONLY|os.O_CREATE, 0644); err != nil {
+					} else {
+						fileCheck.Close()
+					}
 				}
 			}
 		}
 	}
+	return
+}
 
-	//Setting Command config settings
-	Command.SetConfigName("commands")
-	Command.AddConfigPath("configs/")
-	Command.WatchConfig()
-
-	Command.OnConfigChange(func(e fsnotify.Event) {
-		Log.Info("Command config changed")
-	})
-
-	if err := Command.ReadInConfig(); err != nil {
-		Log.Fatal("Could not load Command configuration.", err)
-		return
+func loadInitConfig(confDir, conf, verbose string) (botConfig parkertron, err error) {
+	// All of this is pre-Logrus init
+	if verbose == "debug" {
+		log.Printf("Checking for dir at %s", confDir)
 	}
 
-	//Setting Keyword config settings
-	Keyword.SetConfigName("keywords")
-	Keyword.AddConfigPath("configs/")
-	Keyword.WatchConfig()
-
-	Keyword.OnConfigChange(func(e fsnotify.Event) {
-		Log.Info("Keyword config changed")
-	})
-
-	if err := Keyword.ReadInConfig(); err != nil {
-		Log.Fatal("Could not load Keyword configuration.", err)
-		return
+	// if the config dir doesn't exist make it
+	if err := createIfDoesntExist(confDir); err != nil {
+		return botConfig, err
+		// if we can't make a confdir log a fatal error.
 	}
 
-	//Setting website parsing config settings
-	Parsing.SetConfigName("parsing")
-	Parsing.AddConfigPath("configs/")
-	Parsing.WatchConfig()
-
-	Parsing.OnConfigChange(func(e fsnotify.Event) {
-		Log.Info("Parsing config changed")
-	})
-
-	if err := Parsing.ReadInConfig(); err != nil {
-		Log.Fatal("Could not load Parsing configuration.", err)
-		return
+	// if confdir exists carry on
+	info, err := os.Stat(confDir)
+	if err != nil {
+		return botConfig, err
 	}
 
-	Log.Info("Bot configs loaded")
-}
-
-//Bot Get funcs
-func getBotServices() []string {
-	return Bot.GetStringSlice("bot.services")
-}
-
-func getBotConfigBool(req string) bool {
-	return Bot.GetBool("bot." + req)
-}
-
-func getBotConfigString(req string) string {
-	return Bot.GetString("bot." + req)
-}
-
-func getBotConfigInt(req string) int {
-	return Bot.GetInt("bot." + req)
-}
-
-func getBotConfigFloat(req string) float64 {
-	return Bot.GetFloat64("bot." + req)
-}
-
-func setBotConfigString(req string, value string) {
-	Bot.Set("bot."+req, value)
-}
-
-//Discord get funcs
-func getDiscordConfigString(req string) string {
-	return Discord.GetString("discord." + req)
-}
-
-func getDiscordConfigInt(req string) int {
-	return Discord.GetInt("discord." + req)
-}
-
-func getDiscordConfigBool(req string) bool {
-	return Discord.GetBool("discord." + req)
-}
-
-func getDiscordChannels() string {
-	return strings.ToLower(strings.Join(Discord.GetStringSlice("discord.channels.listening"), " "))
-}
-
-func getDiscordGroup(req string) []string {
-	var groups []string
-	for x := range Discord.GetStringMapString("discord.permissions.group") {
-		groups = append(groups, x)
+	// if not a directory error out
+	if !info.IsDir() {
+		return botConfig, errors.New("given file not directory")
 	}
-	return groups
-}
 
-func getDiscordGroupRoles(req string) []string {
-	roles := Discord.GetStringSlice("discord.permissions.group." + req + ".roles")
-	return roles
-}
+	if verbose == "debug" {
+		log.Printf("loading initial bot config at %s%s", confDir, conf)
+	}
 
-func getDiscordGroupUsers(req string) []string {
-	users := Discord.GetStringSlice("discord.permissions.group." + req + ".users")
-	return users
-}
-
-func getDiscordBlacklist() string {
-	return strings.ToLower(strings.Join(Discord.GetStringSlice("discord.permissions.group.blacklist"), " "))
-}
-
-func getDiscordKOMChannel(req string) bool {
-	return Discord.IsSet("discord.kick_on_mention.channel." + req)
-}
-
-func getDiscordKOMID(req string) string {
-	return strings.ToLower(strings.Join(Discord.GetStringSlice("discord.kick_on_mention.channel."+req), " "))
-}
-
-func getDiscordKOMMessage(req string) string {
-	return strings.ToLower(strings.Join(Discord.GetStringSlice("discord.kick_on_mention.channel."+req+".message"), "\n"))
-}
-
-//IRC get funcs
-func getIRCConfigString(req string) string {
-	return IRC.GetString("irc." + req)
-}
-
-func getIRCConfigInt(req string) int {
-	return IRC.GetInt("irc." + req)
-}
-
-func getIRCConfigBool(req string) bool {
-	return IRC.GetBool("irc." + req)
-}
-
-func getIRCChannels() []string {
-	return IRC.GetStringSlice("irc.channels.listening")
-}
-
-func getIRCGroupMembers(req string) string {
-	return strings.ToLower(strings.Join(IRC.GetStringSlice("irc.permissions.group."+req), " "))
-}
-
-func getIRCBlacklist() string {
-	return strings.ToLower(strings.Join(IRC.GetStringSlice("discord.permissions.group.blacklist"), " "))
-}
-
-//Command get funcs
-func getCommands() []string {
-	return Command.AllKeys()
-}
-
-func getCommandsString() string {
-	return strings.ToLower(strings.Replace(strings.Replace(strings.Join(Command.AllKeys(), ", "), "command.", "", -1), ".response", "", -1))
-}
-
-func getCommandResonse(req string) []string {
-	return Command.GetStringSlice("command." + req + ".response")
-}
-
-func getCommandResponseString(req string) string {
-	return strings.Join(Command.GetStringSlice("command."+req+".response"), "\n")
-}
-
-func getCommandReaction(req string) []string {
-	return Command.GetStringSlice("command." + req + ".reaction")
-}
-
-func getCommandStatus(req string) bool {
-	for _, cr := range getCommands() {
-		if strings.Contains(strings.TrimPrefix(cr, "command."), req) {
-			return true
+	// if config doesn't exist make it.
+	if err = createIfDoesntExist(confDir + conf); err != nil {
+		if verbose == "debug" {
+			log.Printf("creating config %s", confDir+conf)
+			createExampleBotConfig(confDir, conf, verbose)
 		}
 	}
-	return false
-}
 
-//Keyword get funcs
-func getKeywords() []string {
-	return Keyword.AllKeys()
-}
+	// if conf file exists carry on
+	if verbose == "debug" {
+		log.Printf("file %s%s exists", confDir, conf)
+	}
 
-func getKeywordsString() string {
-	return strings.ToLower(strings.Replace(strings.Replace(strings.Join(Keyword.AllKeys(), ", "), "keyword.", "", -1), ".response", "", -1))
-}
+	// if confdir exists carry on
+	file, err := os.Stat(confDir + conf)
+	if err != nil {
+		return botConfig, err
+	}
 
-func getKeywordResponse(req string) []string {
-	return Keyword.GetStringSlice("keyword." + req + ".response")
-}
+	if file.Size() == 0 {
+		createExampleBotConfig(confDir, conf, verbose)
+	}
 
-func getKeywordResponseString(req string) string {
-	return strings.Join(Keyword.GetStringSlice("keyword."+req+".response"), "\n")
-}
+	if strings.HasSuffix(conf, "yaml") || strings.HasSuffix(conf, "yml") {
+		if err = readYamlFromFile(confDir+conf, &botConfig); err != nil {
+			return
+		}
+	} else if strings.HasSuffix(conf, "json") {
+		if err = readJSONFromFile(confDir+conf, &botConfig); err != nil {
+			return botConfig, err
+		}
+	}
 
-func getKeywordReaction(req string) []string {
-	return Keyword.GetStringSlice("keyword." + req + ".reaction")
-}
-
-//Parsing get funcs
-func getParsingPasteKeys() string {
-	return strings.Replace(strings.Join(Parsing.AllKeys(), ", "), "parse.paste.", "", -1)
-}
-
-func getParsingPasteString(key string) string {
-	return Parsing.GetString("parse.paste." + key)
-}
-
-func getParsingImageFiletypes() []string {
-	return Parsing.GetStringSlice("parse.image.filetype")
+	return
 }

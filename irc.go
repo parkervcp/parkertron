@@ -1,144 +1,231 @@
 package main
 
 import (
-	"log"
+	"strconv"
 	"strings"
 	"time"
 
-	"github.com/husio/irc"
-	Log "github.com/sirupsen/logrus"
+	hirc "github.com/husio/irc"
 )
 
 var (
-	address = getIRCConfigString("server.address") + ":" + getIRCConfigString("server.port")
+	stopIRC = make(map[string](chan string))
 
-	c, err = irc.Connect(address)
+	ircGlobal irc
+
+	ircLoad = make(chan string)
 )
 
+func ircIdentityHandler(botName string) (nickname, password string) {
+	for _, bot := range ircGlobal.Bots {
+		if bot.BotName == botName {
+			nickname = bot.Config.Server.Nickname
+			password = bot.Config.Server.Password
+		}
+	}
+	return
+}
+
 //ircMessageHandler the IRC listener that manages inbound messaging
-func ircMessageHandler() {
-	message, err := c.ReadMessage()
+func ircMessageHandler(conn hirc.Conn, botName string) {
+	nickname, password := ircIdentityHandler(botName)
+
+	message, err := conn.ReadMessage()
 	if err != nil {
-		Log.Fatal("cannot read message: ", err)
+		Log.Errorf("cannot read message: %s", err)
 		return
 	}
 
+	// make these easier to send and recieve
+	channel := message.Params[0]
+	author := message.Nick()
+	messageIn := message.Trailing
+
+	// Log.Debugf("started handle")
 	Log.Debug("irc inbound " + message.String())
 
 	// keep alive messaging
 	if message.Command == "PING" {
-		c.Send("PONG " + message.Trailing)
+		conn.Send("PONG " + messageIn)
 		Log.Debug("PONG Sent")
 		return
 	}
 
 	// for authentication
 	if message.Command == "NOTICE" {
-		if strings.Contains(strings.ToLower(message.Trailing), "this nickname is registered") {
-			c.Send("%s IDENTIFY %s %s", message.Nick(), getIRCConfigString("nick"), getIRCConfigString("password"))
+		if strings.Contains(strings.ToLower(messageIn), "this nickname is registered") {
+			conn.Send("%s IDENTIFY %s %s", author, nickname, password)
 		}
 		return
 	}
 
 	// message handling
 	if message.Command == "PRIVMSG" {
-		dpack := DataPackage{}
-		dpack.Service = "irc"
-		dpack.Message = message.Trailing
-		dpack.ChannelID = message.Params[0]
-		dpack.AuthorID = message.Nick()
-		dpack.BotID = getIRCConfigString("nick")
+		Log.Debug("channel: " + channel)     // channel
+		Log.Debug("author: " + author)       // user
+		Log.Debug("messageIn: " + messageIn) // actual message
 
-		Log.Debug("message.Params[0]: " + message.Params[0])
-		Log.Debug("message.Nick(): " + message.Nick())
-		Log.Debug("message.Trailing: " + message.Trailing)
+		// get all the configs
+		prefix := getPrefix("irc", botName, botName)
+		channelCommands := getCommands("irc", botName, "", channel)
+		channelKeywords := getKeywords("irc", botName, "", channel)
+		channelParsing := getParsing("irc", botName, "", channel)
+
+		if author == nickname {
+			Log.Debug("User is the bot and being ignored.")
+			return
+		}
 
 		// if the user nickname matches bot or blacklisted.
-		if message.Nick() == dpack.BotID || strings.Contains(getIRCBlacklist(), dpack.AuthorID) {
-			if message.Nick() == dpack.BotID {
-				Log.Debug("User is the bot and being ignored.")
-				return
-			}
-			if strings.Contains(getIRCBlacklist(), dpack.AuthorID) {
-				Log.Debug("User is blacklisted")
+		for _, user := range getBlacklist("discord", botName, "", channel) {
+			if user == author {
+				Log.Debugf("user %s is blacklisted", author)
 				return
 			}
 		}
 
 		// if bot is DM'd
-		if message.Params[0] == getIRCConfigString("nick") {
+		if channel == nickname {
 			Log.Debug("This was a DM")
-			dpack.Response = getDiscordConfigString("direct.response")
-			sendIRCMessage(message.Nick(), getIRCConfigString("direct.response"))
+			_, mention := getMentions("irc", botName, "", channel)
+			sendIRCMessage(conn, channel, author, prefix, mention.Response)
 			return
 		}
 
 		//
 		// Message Handling
 		//
-		if dpack.Message != "" {
-			Log.Debug("Message Content: " + dpack.Message)
+		if messageIn != "" {
+			Log.Debug("Message Content: " + messageIn)
 
-			if !strings.HasPrefix(dpack.Message, getIRCConfigString("prefix")) {
-				Log.Debug("sending to \"" + message.Params[0])
-				parseKeyword(dpack)
+			if !strings.HasPrefix(messageIn, prefix) {
+				Log.Debug("sending to \"" + channel)
+				parseKeyword(messageIn, botName, channelKeywords, channelParsing)
 			} else {
-				dpack.Message = strings.TrimPrefix(dpack.Message, getIRCConfigString("prefix"))
-				Log.Debug("sending to \"" + message.Params[0])
-				parseCommand(dpack)
+				Log.Debug("sending to \"" + channel)
+				parseCommand(strings.TrimPrefix(messageIn, prefix), botName, channelCommands)
 			}
 			return
 		}
-		Log.Debug(message.Raw)
+		// Log.Debug(message.Raw)
 	}
+	return
+}
+
+// kick irc user
+func kickIRCUser() {
+
+}
+
+// ban irc user
+func banIRCUser() {
+
 }
 
 //sendIRCMessage function to send messages separate of the listener
-func sendIRCMessage(ChannelID string, response string) {
-	response = strings.Replace(response, "&prefix&", getIRCConfigString("prefix"), -1)
-	multiresp := strings.Split(response, "\n")
-
-	Log.Debug("IRC Message Sent:")
-
-	for x := range multiresp {
-		Log.Debug("line sent: " + multiresp[x])
-		c.Send("PRIVMSG " + ChannelID + " :" + multiresp[x])
+func sendIRCMessage(conn hirc.Conn, channelName string, user string, prefix string, responseArray []string) {
+	// send nothing if there is nothing in the array
+	if len(responseArray) == 0 {
+		return
 	}
+
+	// send a line per item in the array.
+	for _, response := range responseArray {
+		Log.Debugf("line sent: " + response)
+		response = strings.Replace(response, "&user&", user, -1)
+		response = strings.Replace(response, "&prefix&", prefix, -1)
+		conn.Send("PRIVMSG " + "#" + channelName + " :" + response)
+		time.Sleep(time.Millisecond * 300)
+	}
+
+	// log the message that was sent in debug mode.
+	Log.Debugf("IRC Message Sent: %s", responseArray)
 }
 
-func startIRCConnection() {
-	// This is the address of the irc server and the port combined to make it easier to input later
-	address = getIRCConfigString("server.address") + ":" + getIRCConfigString("server.port")
+// service handling
+// start all the bots
+func startIRCBots() {
+	Log.Infof("Starting IRC server connections\n")
+	// range over the bots available to start
+	for _, bot := range ircGlobal.Bots {
+		Log.Infof("Connecting to %s\n", bot.BotName)
 
-	Log.Debug("Address should be " + getIRCConfigString("server.address") + ":" + getIRCConfigString("server.port"))
+		// spin up a channel to tell the bot to shutdown later
+		stopIRC[bot.BotName] = make(chan string)
 
-	Log.Debug("Connecting on " + address)
+		// start the bot
+		go startIRCConnection(bot)
+		// wait on bot being able to start.
+		<-ircLoad
+	}
 
-	c, err = irc.Connect(address)
+	Log.Infof("irc service started\n")
+	// inform main process that the bot is started
+	servStart <- "irc_online"
+}
+
+// when a shutdown is sent close out services properly
+func stopIRCBots() {
+	Log.Infof("stopping irc connections")
+	// loop through bots and send shutdowns
+	for _, bot := range ircGlobal.Bots {
+		Log.Infof("stopping %s", bot.BotName)
+		// send stop to bot
+		stopIRC[bot.BotName] <- ""
+		// wait for bot to send a stop back
+		<-stopIRC[bot.BotName]
+		// close channel
+		close(stopIRC[bot.BotName])
+		Log.Infof("stopped %s", bot.BotName)
+	}
+
+	Log.Infof("irc connections stopped")
+	// return shutdown signal on channel
+	servStopped <- "irc_stopped"
+}
+
+// start connections to irc
+func startIRCConnection(ircConfig ircBot) {
+	host := ircConfig.Config.Server.Address + ":" + strconv.Itoa(ircConfig.Config.Server.Port)
+	Log.Debugf("Connecting on %s\n", host)
 
 	// Connect to the server
+	conn, err := hirc.Connect(host)
 	if err != nil {
-		log.Fatalf("cannot connect to %q: %s", address, err)
+		Log.Errorf("cannot connect to %s: %s\n", host, err)
 	}
+
+	Log.Debugf("Connected to %s\n", host)
 
 	// send user info
-	c.Send("USER %s %s * :"+getIRCConfigString("real"), getIRCConfigString("ident"), address)
-	c.Send("NICK %s", getIRCConfigString("nick"))
+	conn.Send("USER %s %s * :"+ircConfig.Config.Server.RealName, ircConfig.Config.Server.Ident, host)
+	conn.Send("NICK %s", ircConfig.Config.Server.Nickname)
 
-	time.Sleep(time.Millisecond * 50)
+	time.Sleep(time.Millisecond * 100)
 
-	for _, name := range getIRCChannels() {
-		if !strings.HasPrefix(name, "#") {
-			name = "#" + name
+	ircLoad <- ""
+
+	for _, group := range ircConfig.ChanGroups {
+		for _, channel := range group.ChannelIDs {
+			Log.Debugf("joining %s", channel)
+			if !strings.HasPrefix(channel, "#") {
+				channel = "#" + channel
+			}
+			conn.Send("JOIN %s", channel)
 		}
-		c.Send("JOIN %s", name)
 	}
 
-	Log.Debug("irc service started\n")
-
-	ServStat <- "irc_online"
-
 	for {
-		ircMessageHandler()
+		// listen for stop on channel
+		select {
+		case <-stopIRC[ircConfig.BotName]:
+			Log.Debugf("closing channel for %s", ircConfig.BotName)
+			conn.Close()
+			stopIRC[ircConfig.BotName] <- ""
+			Log.Debugf("%s channel closed", ircConfig.BotName)
+			return
+		default:
+			ircMessageHandler(*conn, ircConfig.BotName)
+		}
 	}
 }
