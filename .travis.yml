@@ -1,0 +1,14 @@
+language: go
+
+go:
+  - 1.14.x
+  - master
+
+dist: bionic
+addons:
+  apt:
+    packages:
+    - libleptonica-dev
+    - tesseract-ocr
+    - tesseract-ocr-eng
+    - libtesseract-dev
