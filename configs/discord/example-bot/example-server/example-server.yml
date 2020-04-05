@@ -29,5 +29,20 @@ channel_groups:
   - keyword: example
     response:
     - I have responded to seeing the word example.
+  parsing:
+    image:
+      filetypes:
+        - png
+        - jpg
+    paste:
+      sites:
+        - name: pastebin
+          url: "https://pastebin.com/"
+          format: "https://pastebin.com/raw/&filename&"
+
+        - name: hastebin
+          url: "https://hastebin.com/"
+          format: "https://hastebin.com/raw/&filename&"
+
 permissions:
 - group: admin
