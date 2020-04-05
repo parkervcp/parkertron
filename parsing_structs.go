@@ -44,7 +44,7 @@ type parsingConfig struct {
 }
 
 type parsingImageConfig struct {
-	Filetypes []string        `json:"filetypes,omitempty"`
+	FileTypes []string        `json:"filetypes,omitempty"`
 	Sites     []parsingConfig `json:"sites,omitempty"`
 }
 

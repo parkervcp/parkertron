@@ -129,7 +129,7 @@ func parseURL(url string, parseConf parsing) (parsedText string) {
 	}
 
 	//check for image filetypes
-	for _, filetype := range parseConf.Image.Filetypes {
+	for _, filetype := range parseConf.Image.FileTypes {
 		Log.Debug("checking if image")
 		if strings.HasSuffix(url, filetype) {
 			Log.Debug("found image file")

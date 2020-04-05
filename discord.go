@@ -194,7 +194,7 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 		}
 	}
 
-	if len(channelParsing.Image.Filetypes) == 0 && len(channelParsing.Paste.Sites) == 0 {
+	if len(channelParsing.Image.FileTypes) == 0 && len(channelParsing.Paste.Sites) == 0 {
 		Log.Debugf("no parsing configs found")
 	} else {
 		Log.Debugf("allURLS: %s", (allURLS))
