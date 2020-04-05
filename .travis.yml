@@ -12,3 +12,11 @@ addons:
     - tesseract-ocr
     - tesseract-ocr-eng
     - libtesseract-dev
+
+deploy:
+  provider: releases
+  api_key: "GITHUB OAUTH TOKEN"
+  file: "parkertron"
+  skip_cleanup: true
+  on:
+    tags: true
