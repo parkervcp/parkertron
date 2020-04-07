@@ -145,7 +145,7 @@ func createExampleDiscordConfig(confDir, verbose string) (err error) {
 				},
 				Parsing: parsing{
 					Image: parsingImageConfig{
-						Filetypes: []string{},
+						FileTypes: []string{},
 						Sites:     []parsingConfig{},
 					},
 					Paste: parsingPasteConfig{
@@ -237,7 +237,7 @@ func createExampleIRCConfig(confDir, verbose string) (err error) {
 				},
 				Parsing: parsing{
 					Image: parsingImageConfig{
-						Filetypes: []string{},
+						FileTypes: []string{},
 						Sites:     []parsingConfig{},
 					},
 					Paste: parsingPasteConfig{

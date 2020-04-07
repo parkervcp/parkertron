@@ -117,6 +117,10 @@ func parseBin(url, format string) (binText string, err error) {
 func parseURL(url string, parseConf parsing) (parsedText string) {
 	//Catch domains and route to the proper controllers (image, binsite parsers)
 	Log.Debugf("checking for pastes and images on %s\n", url)
+	// if a url ends with a / remove it. Stupid chrome adds them.
+	if strings.HasSuffix(url,"/") {
+		url = strings.TrimSuffix(url, "/")
+	}
 	if len(parseConf.Image.Sites) != 0 {
 		for _, site := range parseConf.Image.Sites {
 			Log.Debugf("checking paste site %s", site.URL)
@@ -129,7 +133,7 @@ func parseURL(url string, parseConf parsing) (parsedText string) {
 	}
 
 	//check for image filetypes
-	for _, filetype := range parseConf.Image.Filetypes {
+	for _, filetype := range parseConf.Image.FileTypes {
 		Log.Debug("checking if image")
 		if strings.HasSuffix(url, filetype) {
 			Log.Debug("found image file")
