@@ -32,7 +32,7 @@ type confFile struct {
 	Location string // full file path can be a dir or file
 	Context  string // conf, botConf, serverConf
 	Service  string // parkertron, discord, irc, slack
-	BotName  string // veriable based on folder name
+	BotName  string // variable based on folder name
 }
 
 func initConfig(confDir string) (err error) {
@@ -40,7 +40,7 @@ func initConfig(confDir string) (err error) {
 		return nil
 	}
 
-	// sort files to load cirrectly
+	// sort files to load correctly
 	Log.Debugf("Sorting files")
 	sort.SliceStable(files.Files, func(i, j int) bool {
 		return files.Files[i].Location > files.Files[j].Location
@@ -62,7 +62,7 @@ func initConfig(confDir string) (err error) {
 }
 
 func loadConfDirs(confdir string) (err error) {
-	cleanConfDir := path.Clean(confDir)
+	cleanConfDir := path.Clean(confdir)
 
 	// Log.Debugf("reading from %s", cleanConfDir)
 	confFullPath, err := filepath.Abs(cleanConfDir)

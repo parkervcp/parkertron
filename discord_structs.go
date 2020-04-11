@@ -23,15 +23,16 @@ type discordServer struct {
 	Config      discordServerConfig `json:"config,omitempty"`
 	ChanGroups  []channelGroup      `json:"channel_groups,omitempty"`
 	Permissions []permission        `json:"permissions,omitempty"`
+	Filters 	[]filter 			`json:"filters,omitempty"`
 }
 
 type discordServerConfig struct {
 	Prefix   string          `json:"prefix,omitempty"`
 	Clear    bool            `json:"clear_commands,omitempty"`
-	Webhooks discordWebhooks `json:"webhooks,omitempty"`
+	WebHooks discordWebHooks `json:"web_hooks,omitempty"`
 }
 
-type discordWebhooks struct {
+type discordWebHooks struct {
 	Logs string `json:"logs,omitempty"`
 }
 
