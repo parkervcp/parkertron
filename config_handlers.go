@@ -195,6 +195,26 @@ func getParsing(inService, botName, inServer, inChannel string) (parseConf parsi
 	return
 }
 
+func getFilter(inService, botName, inServer string) (filters []filter) {
+	// prep stuff for passing to the parser
+	switch inService {
+	case "discord":
+		for _, bot := range discordGlobal.Bots {
+			if bot.BotName == botName {
+				for _, server := range bot.Servers {
+					if inServer == server.ServerID {
+						filters = server.Filters
+					}
+				}
+			}
+		}
+	case "irc":
+	default:
+	}
+
+	return
+}
+
 func getBotParseConfig() (maxLogs int, response, reaction []string, allowIP bool) {
 	return botConfig.Parsing.Max, botConfig.Parsing.Response, botConfig.Parsing.Reaction, botConfig.Parsing.AllowIP
 }

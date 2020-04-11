@@ -27,6 +27,11 @@ type mentions struct {
 	Mention responseArray `json:"mention,omitempty"`
 }
 
+type filter struct {
+	Term string `json:"term,omitempty"`
+	Reason []string `json:"reason,omitempty"`
+}
+
 type responseArray struct {
 	Reaction []string `json:"reaction,omitempty"`
 	Response []string `json:"response,omitempty"`
