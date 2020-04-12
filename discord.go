@@ -103,6 +103,8 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 					Log.Error(err)
 				}
 				return
+			} else {
+				continue
 			}
 		}
 	}
