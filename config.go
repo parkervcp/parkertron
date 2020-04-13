@@ -417,19 +417,23 @@ func readYamlFromFile(file string, iface interface{}) (err error) {
 
 // Exists reports whether the named file or directory exists.
 func createIfDoesntExist(name string) (err error) {
-	path, file := path.Split(name)
+	p, file := path.Split(name)
 
 	// if confdir exists carry on
 	if _, err := os.Stat(name); err != nil {
+		// if file doesn't exist
 		if os.IsNotExist(err) {
+			// stat 
 			if _, err = os.Stat(name); err != nil {
 				if file == "" {
-					if err = os.Mkdir(path, 0755); err != nil {
+					if err = os.Mkdir(p, 0755); err != nil {
 					}
 				} else {
 					if fileCheck, err := os.OpenFile(name, os.O_RDONLY|os.O_CREATE, 0644); err != nil {
 					} else {
-						fileCheck.Close()
+						if err := fileCheck.Close(); err != nil {
+							return
+						}
 					}
 				}
 			}
