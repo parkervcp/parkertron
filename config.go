@@ -432,7 +432,7 @@ func createIfDoesntExist(name string) (err error) {
 					if fileCheck, err := os.OpenFile(name, os.O_RDONLY|os.O_CREATE, 0644); err != nil {
 					} else {
 						if err := fileCheck.Close(); err != nil {
-							return
+							return err
 						}
 					}
 				}

@@ -132,21 +132,33 @@ func createExampleDiscordConfig(confDir, verbose string) (err error) {
 				Commands: []command{
 					command{
 						Command:  "example",
-						Reaction: []string{""},
 						Response: []string{"This is the response to the &prefix&example command"},
 					},
 				},
 				Keywords: []keyword{
 					keyword{
 						Keyword:  "example",
-						Reaction: []string{},
+						Reaction: []string{""},
 						Response: []string{"I have responded to seeing the word example."},
 					},
 				},
 				Parsing: parsing{
 					Image: parsingImageConfig{
-						FileTypes: []string{},
-						Sites:     []parsingConfig{},
+						FileTypes: []string{
+							"png",
+							"jpg"},
+						Sites:     []parsingConfig{
+							{
+								Name: "pastebin",
+								URL: "'https://pastebin.com/'",
+								Format: "'https://pastebin.com/raw/&filename&'",
+							},
+							{
+								Name: "hastebin",
+								URL: "'https://hastebin.com/'",
+								Format: "'https://hastebin.com/raw/&filename&'",
+							},
+						},
 					},
 					Paste: parsingPasteConfig{
 						Sites: []parsingConfig{},
@@ -161,6 +173,14 @@ func createExampleDiscordConfig(confDir, verbose string) (err error) {
 				Users:       []string{},
 				Roles:       []string{},
 				Blacklisted: false,
+			},
+		},
+		Filters: []filter{
+			{
+				Term: "a bad word",
+				Reason: []string{
+					"the message was removed because it had 'a bad word' in it",
+				},
 			},
 		},
 	}
