@@ -188,7 +188,9 @@ func loadNWatch(file confFile) {
 				switch event.Op {
 				case fsnotify.Write:
 					Log.Infof("file changed: %s", event.Name)
-					loadConf(file)
+					if err := loadConf(file); err != nil {
+						Log.Errorf("%+v", err)
+					}
 				}
 			case err := <-watcher.Errors:
 				Log.Errorf("%+v", err)
@@ -473,7 +475,9 @@ func loadInitConfig(confDir, conf, verbose string) (botConfig parkertron, err er
 	if err = createIfDoesntExist(confDir + conf); err != nil {
 		if verbose == "debug" {
 			log.Printf("creating config %s", confDir+conf)
-			createExampleBotConfig(confDir, conf, verbose)
+			if err := createExampleBotConfig(confDir, conf, verbose); err != nil {
+				return parkertron{}, err
+			}
 		}
 	}
 
@@ -489,7 +493,9 @@ func loadInitConfig(confDir, conf, verbose string) (botConfig parkertron, err er
 	}
 
 	if file.Size() == 0 {
-		createExampleBotConfig(confDir, conf, verbose)
+		if err := createExampleBotConfig(confDir, conf, verbose); err != nil {
+			return parkertron{}, err
+		}
 	}
 
 	if strings.HasSuffix(conf, "yaml") || strings.HasSuffix(conf, "yml") {
