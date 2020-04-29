@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	startTime = time.Now
+	//startTime = time.Now
 
 	// Log is a logrus logger
 	Log *logrus.Logger
@@ -116,7 +116,9 @@ func init() {
 	Log = newLogger(logDir, verbose)
 	Log.Infof("logging online\n")
 
-	initConfig(confDir)
+	if err := initConfig(confDir); err != nil {
+		Log.Panic(err)
+	}
 
 	Log.Infof("%s\n\n", asciiArt)
 }
@@ -128,11 +130,11 @@ func main() {
 		for _, service := range botConfig.Services {
 			switch service {
 			case "discord":
-				if err := createExampleDiscordConfig(confDir+"discord/", verbose); err != nil {
+				if err := createExampleDiscordConfig(confDir+"discord/"); err != nil {
 					Log.Fatalf("%s", err)
 				}
 			case "irc":
-				if err := createExampleIRCConfig(confDir+"irc/", verbose); err != nil {
+				if err := createExampleIRCConfig(confDir+"irc/"); err != nil {
 					Log.Fatalf("%s", err)
 				}
 			default:
@@ -215,12 +217,16 @@ func newLogger(logDir, level string) *logrus.Logger {
 
 	if _, err := os.Stat(logDir + "latest.log"); err != nil {
 	} else {
-		os.Rename(logDir+"latest.log", logDir+time.Now().Format(time.RFC3339)+".log")
+		if err := os.Rename(logDir+"latest.log", logDir+time.Now().Format(time.RFC3339)+".log"); err != nil {
+			Log.Errorf("there was an error opening the logs: %s", err)
+		}
 	}
 
 	if _, err := os.Stat(logDir + "debug.log"); err != nil {
 	} else {
-		os.Rename(logDir+"debug.log", logDir+"debug-"+time.Now().Format(time.RFC3339)+".log")
+		if err := os.Rename(logDir+"debug.log", logDir+"debug-"+time.Now().Format(time.RFC3339)+".log"); err != nil {
+			Log.Errorf("there was an error opening the logs: %s", err)
+		}
 	}
 
 	pathMap := lfshook.PathMap{
