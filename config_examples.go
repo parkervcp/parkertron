@@ -24,7 +24,9 @@ func createExampleBotConfig(confDir, conf, verbose string) (err error) {
 	if err != nil {
 		return
 	}
-	fileCheck.Close()
+	if err := fileCheck.Close(); err != nil {
+		return err
+	}
 
 	file, err := os.Stat(confDir + conf)
 	if err != nil {
@@ -63,7 +65,7 @@ func createExampleBotConfig(confDir, conf, verbose string) (err error) {
 	return
 }
 
-func createExampleDiscordConfig(confDir, verbose string) (err error) {
+func createExampleDiscordConfig(confDir string) (err error) {
 	// if the config dir doesn't exist make it
 	Log.Debugf("creating example config folder %s if it doesn't exist", confDir)
 	if err = createIfDoesntExist(confDir); err != nil {
@@ -114,7 +116,7 @@ func createExampleDiscordConfig(confDir, verbose string) (err error) {
 			Clear:  true,
 		},
 		ChanGroups: []channelGroup{
-			channelGroup{
+			{
 				ChannelIDs: []string{
 					"a-channel-id",
 					"another-channel-id",
@@ -130,23 +132,35 @@ func createExampleDiscordConfig(confDir, verbose string) (err error) {
 					},
 				},
 				Commands: []command{
-					command{
+					{
 						Command:  "example",
-						Reaction: []string{""},
 						Response: []string{"This is the response to the &prefix&example command"},
 					},
 				},
 				Keywords: []keyword{
-					keyword{
+					{
 						Keyword:  "example",
-						Reaction: []string{},
+						Reaction: []string{""},
 						Response: []string{"I have responded to seeing the word example."},
 					},
 				},
 				Parsing: parsing{
 					Image: parsingImageConfig{
-						FileTypes: []string{},
-						Sites:     []parsingConfig{},
+						FileTypes: []string{
+							"png",
+							"jpg"},
+						Sites:     []parsingConfig{
+							{
+								Name: "pastebin",
+								URL: "'https://pastebin.com/'",
+								Format: "'https://pastebin.com/raw/&filename&'",
+							},
+							{
+								Name: "hastebin",
+								URL: "'https://hastebin.com/'",
+								Format: "'https://hastebin.com/raw/&filename&'",
+							},
+						},
 					},
 					Paste: parsingPasteConfig{
 						Sites: []parsingConfig{},
@@ -156,11 +170,19 @@ func createExampleDiscordConfig(confDir, verbose string) (err error) {
 			},
 		},
 		Permissions: []permission{
-			permission{
+			{
 				Group:       "admin",
 				Users:       []string{},
 				Roles:       []string{},
 				Blacklisted: false,
+			},
+		},
+		Filters: []filter{
+			{
+				Term: "a bad word",
+				Reason: []string{
+					"the message was removed because it had 'a bad word' in it",
+				},
 			},
 		},
 	}
@@ -173,7 +195,7 @@ func createExampleDiscordConfig(confDir, verbose string) (err error) {
 	return
 }
 
-func createExampleIRCConfig(confDir, verbose string) (err error) {
+func createExampleIRCConfig(confDir string) (err error) {
 	// if the config dir doesn't exist make it
 	Log.Debugf("creating example config folder %s if it doesn't exist", confDir)
 	if err = createIfDoesntExist(confDir); err != nil {
@@ -209,7 +231,7 @@ func createExampleIRCConfig(confDir, verbose string) (err error) {
 			Prefix: ".",
 		},
 		ChanGroups: []channelGroup{
-			channelGroup{
+			{
 				ChannelIDs: []string{
 					"a-channel-name",
 					"another-channel-name",
@@ -223,14 +245,14 @@ func createExampleIRCConfig(confDir, verbose string) (err error) {
 					},
 				},
 				Commands: []command{
-					command{
+					{
 						Command:  "example",
 						Reaction: []string{""},
 						Response: []string{"This is the response to the &prefix&example command"},
 					},
 				},
 				Keywords: []keyword{
-					keyword{
+					{
 						Keyword:  "example",
 						Response: []string{"I have responded to seeing the word example."},
 					},
@@ -245,7 +267,7 @@ func createExampleIRCConfig(confDir, verbose string) (err error) {
 					},
 				},
 				Permissions: []permission{
-					permission{
+					{
 						Group:       "admin",
 						Users:       []string{},
 						Roles:       []string{},

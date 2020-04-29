@@ -188,7 +188,9 @@ func loadNWatch(file confFile) {
 				switch event.Op {
 				case fsnotify.Write:
 					Log.Infof("file changed: %s", event.Name)
-					loadConf(file)
+					if err := loadConf(file); err != nil {
+						Log.Errorf("%+v", err)
+					}
 				}
 			case err := <-watcher.Errors:
 				Log.Errorf("%+v", err)
@@ -417,19 +419,23 @@ func readYamlFromFile(file string, iface interface{}) (err error) {
 
 // Exists reports whether the named file or directory exists.
 func createIfDoesntExist(name string) (err error) {
-	path, file := path.Split(name)
+	p, file := path.Split(name)
 
 	// if confdir exists carry on
 	if _, err := os.Stat(name); err != nil {
+		// if file doesn't exist
 		if os.IsNotExist(err) {
+			// stat 
 			if _, err = os.Stat(name); err != nil {
 				if file == "" {
-					if err = os.Mkdir(path, 0755); err != nil {
+					if err = os.Mkdir(p, 0755); err != nil {
 					}
 				} else {
 					if fileCheck, err := os.OpenFile(name, os.O_RDONLY|os.O_CREATE, 0644); err != nil {
 					} else {
-						fileCheck.Close()
+						if err := fileCheck.Close(); err != nil {
+							return err
+						}
 					}
 				}
 			}
@@ -469,7 +475,9 @@ func loadInitConfig(confDir, conf, verbose string) (botConfig parkertron, err er
 	if err = createIfDoesntExist(confDir + conf); err != nil {
 		if verbose == "debug" {
 			log.Printf("creating config %s", confDir+conf)
-			createExampleBotConfig(confDir, conf, verbose)
+			if err := createExampleBotConfig(confDir, conf, verbose); err != nil {
+				return parkertron{}, err
+			}
 		}
 	}
 
@@ -485,7 +493,9 @@ func loadInitConfig(confDir, conf, verbose string) (botConfig parkertron, err er
 	}
 
 	if file.Size() == 0 {
-		createExampleBotConfig(confDir, conf, verbose)
+		if err := createExampleBotConfig(confDir, conf, verbose); err != nil {
+			return parkertron{}, err
+		}
 	}
 
 	if strings.HasSuffix(conf, "yaml") || strings.HasSuffix(conf, "yml") {

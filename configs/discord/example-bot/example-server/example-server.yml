@@ -23,26 +23,27 @@ channel_groups:
   - command: example
     response:
     - This is the response to the &prefix&example command
-    reaction:
-    - ""
   keywords:
   - keyword: example
+    reaction:
+    - ""
     response:
     - I have responded to seeing the word example.
   parsing:
     image:
       filetypes:
-        - png
-        - jpg
-    paste:
+      - png
+      - jpg
       sites:
-        - name: pastebin
-          url: "https://pastebin.com/"
-          format: "https://pastebin.com/raw/&filename&"
-
-        - name: hastebin
-          url: "https://hastebin.com/"
-          format: "https://hastebin.com/raw/&filename&"
-
+      - name: pastebin
+        url: 'https://pastebin.com/'
+        format: 'https://pastebin.com/raw/&filename&'
+      - name: hastebin
+        url: 'https://hastebin.com/'
+        format: 'https://hastebin.com/raw/&filename&'
 permissions:
 - group: admin
+filters:
+- term: a bad word
+  reason:
+  - the message was removed because it had 'a bad word' in it
