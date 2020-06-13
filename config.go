@@ -9,7 +9,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/fsnotify/fsnotify"
@@ -40,11 +39,12 @@ func initConfig(confDir string) (err error) {
 		return nil
 	}
 
-	// sort files to load correctly
-	Log.Debugf("Sorting files")
-	sort.SliceStable(files.Files, func(i, j int) bool {
-		return files.Files[i].Location > files.Files[j].Location
-	})
+	Log.Debug(files)
+
+	// sort all files to load in the correct order.
+	files = fileSort()
+
+	Log.Debug(files)
 
 	// for all files pass it to fsnotify.
 	Log.Debugf("loading files into file watcher")
@@ -59,6 +59,30 @@ func initConfig(confDir string) (err error) {
 	}
 
 	return nil
+}
+
+func fileSort() (newFiles confFiles) {
+	// sort bot config
+	for _, file := range files.Files {
+		if file.Context == "conf" {
+			newFiles.Files = append(newFiles.Files, file)
+		}
+	}
+
+	// sort server config
+	for _, file := range files.Files {
+		if file.Context == "botConf" {
+			newFiles.Files = append(newFiles.Files, file)
+		}
+	}
+
+	// sort channel config
+	for _, file := range files.Files {
+		if file.Context == "serverConf" {
+			newFiles.Files = append(newFiles.Files, file)
+		}
+	}
+	return
 }
 
 func loadConfDirs(confdir string) (err error) {
