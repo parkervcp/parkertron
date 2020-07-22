@@ -214,7 +214,7 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 			response, reaction = parseCommand(strings.TrimPrefix(m.Content, prefix), botName, channelCommands)
 			// if the flag for clearing commands is set and there is a response
 			if getCommandClear("discord", botName, channel.GuildID) && len(response) > 0 {
-				Log.Debugf("removing comand message %s", m.ID)
+				Log.Debugf("removing command message %s", m.ID)
 				if err := deleteDiscordMessage(dg, m.ChannelID, m.ID, ""); err != nil {
 					Log.Error(err)
 				}
@@ -238,7 +238,7 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 			Log.Debugf("no URLs to read")
 		} else if len(allURLS) > maxLogs {
 			Log.Debug("too many logs or screenshots to try and read.")
-			if err := sendDiscordMessage(dg, m.ChannelID, m.Author.Username, prefix, logResponse); err != nil {
+			if err := sendDiscordMessage(dg, m.ChannelID, m.Author.ID, prefix, logResponse); err != nil {
 				Log.Error(err)
 			}
 			if err := sendDiscordReaction(dg, m.ChannelID, m.ID, logReaction); err != nil {
@@ -247,7 +247,7 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 			return
 		} else {
 			Log.Debugf("reading logs")
-			if err:= sendDiscordReaction(dg, m.ChannelID, m.ID, []string{"👀"}); err != nil {
+			if err := sendDiscordReaction(dg, m.ChannelID, m.ID, []string{"👀"}); err != nil {
 				Log.Error(err)
 			}
 
