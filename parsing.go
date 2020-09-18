@@ -69,7 +69,10 @@ func parseImage(remoteURL string) (imageText string, err error) {
 		return
 	}
 
-	imageText = imageText[:len(imageText)-1]
+	if len(imageText) >= 1 {
+		imageText = imageText[:len(imageText)-1]
+	}
+
 	Log.Debug(imageText)
 	Log.Debug("Image Parsed")
 
