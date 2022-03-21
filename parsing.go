@@ -9,6 +9,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"regexp"
 
 	"github.com/h2non/filetype"
 	"github.com/otiai10/gosseract"
@@ -211,6 +212,24 @@ func parseKeyword(message, botName string, channelKeywords []keyword, parseConf 
 		}
 	}
 
+	return
+}
+
+// returns response and reaction for keywords
+func parseRegex(message, botName string, channelRegexPatterns []patterns, parseConf parsing) (response, reaction []string) {
+	Log.Debugf("Parsing inbound chat for %s", botName)
+
+	message = strings.ToLower(message)
+
+	//exact match search
+	Log.Debug("Testing matches")
+	for _, pattern := range patterns {
+		if  regexp.MatchString(pattern, message) { // if the match was an exact match
+			Log.Debugf("Response is %v", keyWord.Response)
+			Log.Debugf("Reaction is %v", keyWord.Reaction)
+			return keyWord.Response, keyWord.Reaction
+		}
+	}
 	return
 }
 

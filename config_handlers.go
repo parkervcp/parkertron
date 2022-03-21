@@ -131,6 +131,21 @@ func getKeywords(inService, botName, inServer, inChannel string) (keywords []key
 	return
 }
 
+func getRegexPatterns(inService, botName, inServer, inChannel string) (patterns []string) {
+	// prep stuff for passing to the parser
+	for _, group := range getChannelGroups(inService, botName, inServer, inChannel) {
+		for _, channel := range group.ChannelIDs {
+			if inChannel == channel {
+				for _, pattern := range group.Patterns {
+					patterns = append(patterns, pattern)
+				}
+			}
+		}
+	}
+
+	return
+}
+
 func getMentions(inService, botName, inServer, inChannel string) (ping, mention responseArray) {
 	switch inService {
 	case "discord":

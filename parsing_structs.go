@@ -63,6 +63,7 @@ type channelGroup struct {
 	Mentions    mentions             `json:"mentions,omitempty"`
 	Commands    []command            `json:"commands,omitempty"`
 	Keywords    []keyword            `json:"keywords,omitempty"`
+	Patterns    []string             `json:"patterns,omitempty"`
 	Parsing     parsing              `json:"parsing,omitempty"`
 	Permissions []permission         `json:"permissions,omitempty"`
 	KOM         discordKickOnMention `json:"kick_on_mention,omitempty"`
