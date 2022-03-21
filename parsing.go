@@ -228,12 +228,15 @@ func parseRegex(message, botName string, channelPatterns []pattern, parseConf pa
 		Log.Infof("Pattern is %s", pat.Pattern)
 		if match, err := regexp.MatchString(pat.Pattern, message); err != nil {
 			Log.Error(err)
-		} else if match { // if the pattern was a match
+		} else if match {
+			// if the pattern was a match
 			Log.Debugf("Response is %v", pat.Response)
 			Log.Debugf("Reaction is %v", pat.Reaction)
 			return pat.Response, pat.Reaction
+		} else {
+			Log.Info(match)
 		}
-		Log.Info(match)
+
 	}
 	return
 }
