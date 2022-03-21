@@ -146,7 +146,7 @@ func createExampleDiscordConfig(confDir string) (err error) {
 				},
 				Patterns: []pattern{
 					{
-						Patter:  ".*example.*",
+						Pattern:  ".*example.*",
 						Reaction: []string{""},
 						Response: []string{"I have found to the word example somewhere in there."},
 					},
@@ -266,7 +266,7 @@ func createExampleIRCConfig(confDir string) (err error) {
 				},
 				Patterns: []pattern{
 					{
-						Patter:  ".*example.*",
+						Pattern:  ".*example.*",
 						Reaction: []string{""},
 						Response: []string{"I have found to the word example somewhere in there."},
 					},
