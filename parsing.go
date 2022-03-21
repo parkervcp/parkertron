@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -121,7 +122,7 @@ func parseURL(url string, parseConf parsing) (parsedText string) {
 	//Catch domains and route to the proper controllers (image, binsite parsers)
 	Log.Debugf("checking for pastes and images on %s\n", url)
 	// if a url ends with a / remove it. Stupid chrome adds them.
-	if strings.HasSuffix(url,"/") {
+	if strings.HasSuffix(url, "/") {
 		url = strings.TrimSuffix(url, "/")
 	}
 	if len(parseConf.Image.Sites) != 0 {
@@ -211,6 +212,29 @@ func parseKeyword(message, botName string, channelKeywords []keyword, parseConf 
 		}
 	}
 
+	return
+}
+
+// returns response and reaction for patterns
+func parseRegex(message, botName string, channelPatterns []pattern, parseConf parsing) (response, reaction []string) {
+	Log.Debugf("Parsing inbound chat for %s", botName)
+
+	message = strings.ToLower(message)
+
+	//regex match search
+	Log.Debug("Testing regex patterns")
+
+	for _, pat := range channelPatterns {
+		Log.Infof("Pattern is %s", pat.Pattern)
+		if match, err := regexp.MatchString(pat.Pattern, message); err != nil {
+			Log.Error(err)
+		} else if match {
+			// if the pattern was a match
+			Log.Debugf("Response is %v", pat.Response)
+			Log.Debugf("Reaction is %v", pat.Reaction)
+			return pat.Response, pat.Reaction
+		}
+	}
 	return
 }
 
