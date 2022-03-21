@@ -144,6 +144,13 @@ func createExampleDiscordConfig(confDir string) (err error) {
 						Response: []string{"I have responded to seeing the word example."},
 					},
 				},
+				Patterns: []pattern{
+					{
+						Pattern:  ".*example.*",
+						Reaction: []string{""},
+						Response: []string{"I have found to the word example somewhere in there."},
+					},
+				},
 				Parsing: parsing{
 					Image: parsingImageConfig{
 						FileTypes: []string{
@@ -255,6 +262,13 @@ func createExampleIRCConfig(confDir string) (err error) {
 					{
 						Keyword:  "example",
 						Response: []string{"I have responded to seeing the word example."},
+					},
+				},
+				Patterns: []pattern{
+					{
+						Pattern:  ".*example.*",
+						Reaction: []string{""},
+						Response: []string{"I have found to the word example somewhere in there."},
 					},
 				},
 				Parsing: parsing{
