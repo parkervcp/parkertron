@@ -34,7 +34,6 @@ channel_groups:
       filetypes:
       - png
       - jpg
-    paste:
       sites:
       - name: pastebin
         url: 'https://pastebin.com/'
