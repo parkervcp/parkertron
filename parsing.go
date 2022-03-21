@@ -233,10 +233,7 @@ func parseRegex(message, botName string, channelPatterns []pattern, parseConf pa
 			Log.Debugf("Response is %v", pat.Response)
 			Log.Debugf("Reaction is %v", pat.Reaction)
 			return pat.Response, pat.Reaction
-		} else {
-			Log.Info(match)
 		}
-
 	}
 	return
 }
