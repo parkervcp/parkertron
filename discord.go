@@ -63,7 +63,7 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 	prefix := getPrefix("discord", botName, channel.GuildID)
 	channelCommands := getCommands("discord", botName, channel.GuildID, m.ChannelID)
 	channelKeywords := getKeywords("discord", botName, channel.GuildID, m.ChannelID)
-	channelRegexPatterns := getRegexPatterns("discord", botName, channel.GuildID, m.ChannelID)
+	channelPatterns := getRegexPatterns("discord", botName, channel.GuildID, m.ChannelID)
 	channelParsing := getParsing("discord", botName, channel.GuildID, m.ChannelID)
 	serverFilter := getFilter("discord", botName, channel.GuildID)
 
@@ -224,7 +224,7 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 			}
 		} else {
 			// regex -- priority over keywords
-			response, reaction = parseRegex(m.Content, botName, channelRegexPatterns, channelParsing)
+			response, reaction = parseRegex(m.Content, botName, channelPatterns, channelParsing)
 			
 			// keyword
 			if response == nil {

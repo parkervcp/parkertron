@@ -216,7 +216,7 @@ func parseKeyword(message, botName string, channelKeywords []keyword, parseConf 
 }
 
 // returns response and reaction for keywords
-func parseRegex(message, botName string, channelRegexPatterns []pattern, parseConf parsing) (response, reaction []string) {
+func parseRegex(message, botName string, channelPatterns []pattern, parseConf parsing) (response, reaction []string) {
 	Log.Debugf("Parsing inbound chat for %s", botName)
 
 	message = strings.ToLower(message)
@@ -224,7 +224,7 @@ func parseRegex(message, botName string, channelRegexPatterns []pattern, parseCo
 	//exact match search
 	Log.Debug("Testing matches")
 	
-	for _, pat := range channelRegexPatterns {
+	for _, pat := range channelPatterns {
 		var matched,_ = regexp.MatchString(pat.Pattern, message)
 		if  matched { // if the match was an exact match
 			Log.Debugf("Response is %v", pat.Response)
