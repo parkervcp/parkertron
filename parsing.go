@@ -225,8 +225,9 @@ func parseRegex(message, botName string, channelPatterns []pattern, parseConf pa
 	Log.Debug("Testing matches")
 	
 	for _, pat := range channelPatterns {
-		var matched,_ = regexp.MatchString(pat.Pattern, message)
-		if  matched { // if the match was an exact match
+		if match, err := regexp.Match(pat.Pattern, message) err != nil { 
+			Log.Error(err)
+		} else if match { // if the pattern was a match
 			Log.Debugf("Response is %v", pat.Response)
 			Log.Debugf("Reaction is %v", pat.Reaction)
 			return pat.Response, pat.Reaction
