@@ -224,7 +224,7 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 			}
 		} else {
 			// regex -- priority over keywords
-			response, reaction = parseRegex(m.Content, botname, channelRegexPatterns, channelParsing)
+			response, reaction = parseRegex(m.Content, botName, channelRegexPatterns, channelParsing)
 			
 			// keyword
 			if response == nil {

@@ -131,7 +131,7 @@ func getKeywords(inService, botName, inServer, inChannel string) (keywords []key
 	return
 }
 
-func getRegexPatterns(inService, botName, inServer, inChannel string) (patterns []string) {
+func getRegexPatterns(inService, botName, inServer, inChannel string) (patterns []pattern) {
 	// prep stuff for passing to the parser
 	for _, group := range getChannelGroups(inService, botName, inServer, inChannel) {
 		for _, channel := range group.ChannelIDs {
