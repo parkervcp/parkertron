@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"regexp"
 	"strconv"
 	"strings"
-	"regexp"
 
 	"github.com/h2non/filetype"
 	"github.com/otiai10/gosseract"
@@ -122,7 +122,7 @@ func parseURL(url string, parseConf parsing) (parsedText string) {
 	//Catch domains and route to the proper controllers (image, binsite parsers)
 	Log.Debugf("checking for pastes and images on %s\n", url)
 	// if a url ends with a / remove it. Stupid chrome adds them.
-	if strings.HasSuffix(url,"/") {
+	if strings.HasSuffix(url, "/") {
 		url = strings.TrimSuffix(url, "/")
 	}
 	if len(parseConf.Image.Sites) != 0 {
@@ -223,10 +223,10 @@ func parseRegex(message, botName string, channelPatterns []pattern, parseConf pa
 
 	//exact match search
 	Log.Debug("Testing matches")
-	
+
 	for _, pat := range channelPatterns {
 		Log.Info("Pattern is %s", pat.Pattern)
-		if match, err := regexp.Match(pat.Pattern, []byte(message)); err != nil { 
+		if match, err := regexp.MatchString(pat.Pattern, message); err != nil {
 			Log.Error(err)
 		} else if match { // if the pattern was a match
 			Log.Debugf("Response is %v", pat.Response)
