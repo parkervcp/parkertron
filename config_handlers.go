@@ -136,7 +136,7 @@ func getRegexPatterns(inService, botName, inServer, inChannel string) (patterns 
 	for _, group := range getChannelGroups(inService, botName, inServer, inChannel) {
 		for _, channel := range group.ChannelIDs {
 			if inChannel == channel {
-				for _, pat := range group.Patterns {
+				for _, pat := range group.Regex {
 					patterns = append(patterns, pat)
 				}
 			}

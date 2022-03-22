@@ -29,7 +29,7 @@ channel_groups:
     - ""
     response:
     - I have responded to seeing the word example.
-  patterns:
+  regex:
   - pattern: ".*example.*"
     reaction:
     - ""

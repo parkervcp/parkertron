@@ -34,7 +34,7 @@ type mentions struct {
 }
 
 type filter struct {
-	Term string `json:"term,omitempty"`
+	Term   string   `json:"term,omitempty"`
 	Reason []string `json:"reason,omitempty"`
 }
 
@@ -69,7 +69,7 @@ type channelGroup struct {
 	Mentions    mentions             `json:"mentions,omitempty"`
 	Commands    []command            `json:"commands,omitempty"`
 	Keywords    []keyword            `json:"keywords,omitempty"`
-	Patterns    []pattern            `json:"patterns,omitempty"`
+	Regex       []pattern            `json:"regex,omitempty"`
 	Parsing     parsing              `json:"parsing,omitempty"`
 	Permissions []permission         `json:"permissions,omitempty"`
 	KOM         discordKickOnMention `json:"kick_on_mention,omitempty"`
