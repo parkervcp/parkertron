@@ -29,6 +29,12 @@ channel_groups:
     - ""
     response:
     - I have responded to seeing the word example.
+  regex:
+  - pattern: ".*example.*"
+    reaction:
+    - ""
+    response:
+    - I have responded to matching the example regex pattern.
   parsing:
     image:
       filetypes:

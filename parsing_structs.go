@@ -22,13 +22,19 @@ type keyword struct {
 	Exact    bool     `json:"exact,omitempty"`
 }
 
+type pattern struct {
+	Pattern  string   `json:"pattern,omitempty"`
+	Reaction []string `json:"reaction,omitempty"`
+	Response []string `json:"response,omitempty"`
+}
+
 type mentions struct {
 	Ping    responseArray `json:"ping,omitempty"`
 	Mention responseArray `json:"mention,omitempty"`
 }
 
 type filter struct {
-	Term string `json:"term,omitempty"`
+	Term   string   `json:"term,omitempty"`
 	Reason []string `json:"reason,omitempty"`
 }
 
@@ -63,6 +69,7 @@ type channelGroup struct {
 	Mentions    mentions             `json:"mentions,omitempty"`
 	Commands    []command            `json:"commands,omitempty"`
 	Keywords    []keyword            `json:"keywords,omitempty"`
+	Regex       []pattern            `json:"regex,omitempty"`
 	Parsing     parsing              `json:"parsing,omitempty"`
 	Permissions []permission         `json:"permissions,omitempty"`
 	KOM         discordKickOnMention `json:"kick_on_mention,omitempty"`

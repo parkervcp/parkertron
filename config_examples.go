@@ -144,20 +144,27 @@ func createExampleDiscordConfig(confDir string) (err error) {
 						Response: []string{"I have responded to seeing the word example."},
 					},
 				},
+				Regex: []pattern{
+					{
+						Pattern:  ".*example.*",
+						Reaction: []string{""},
+						Response: []string{"I have found the word example somewhere in there."},
+					},
+				},
 				Parsing: parsing{
 					Image: parsingImageConfig{
 						FileTypes: []string{
 							"png",
 							"jpg"},
-						Sites:     []parsingConfig{
+						Sites: []parsingConfig{
 							{
-								Name: "pastebin",
-								URL: "'https://pastebin.com/'",
+								Name:   "pastebin",
+								URL:    "'https://pastebin.com/'",
 								Format: "'https://pastebin.com/raw/&filename&'",
 							},
 							{
-								Name: "hastebin",
-								URL: "'https://hastebin.com/'",
+								Name:   "hastebin",
+								URL:    "'https://hastebin.com/'",
 								Format: "'https://hastebin.com/raw/&filename&'",
 							},
 						},
@@ -255,6 +262,13 @@ func createExampleIRCConfig(confDir string) (err error) {
 					{
 						Keyword:  "example",
 						Response: []string{"I have responded to seeing the word example."},
+					},
+				},
+				Regex: []pattern{
+					{
+						Pattern:  ".*example.*",
+						Reaction: []string{""},
+						Response: []string{"I have found the word example somewhere in there."},
 					},
 				},
 				Parsing: parsing{
