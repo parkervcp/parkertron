@@ -22,7 +22,7 @@ var (
 // the "ready" event from Discord.
 func readyDiscord(dg *discordgo.Session, event *discordgo.Ready, game string) {
 	// if there is an error setting the game log and return
-	if err := dg.UpdateStatus(0, game); err != nil {
+	if err := dg.UpdateGameStatus(0, game); err != nil {
 		Log.Fatalf("error setting game: %s", err)
 		return
 	}
@@ -225,7 +225,7 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 		} else {
 			// regex -- priority over keywords
 			response, reaction = parseRegex(m.Content, botName, channelPatterns, channelParsing)
-			
+
 			// keyword
 			if response == nil {
 				response, reaction = parseKeyword(m.Content, botName, channelKeywords, channelParsing)
