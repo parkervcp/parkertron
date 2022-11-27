@@ -438,8 +438,8 @@ func sendDiscordMessage(dg *discordgo.Session, channelID, authorID, prefix strin
 
 // send a reaction to a message
 func sendDiscordReaction(dg *discordgo.Session, channelID string, messageID string, reactionArray []string) (err error) {
-	// if there is no reaction to sen just return
-	if len(reactionArray) == 0 {
+	// if there is no reaction to send just return
+	if len(reactionArray) == 0 || len(reactionArray) == 1 && reactionArray[0] == "" {
 		return
 	}
 
