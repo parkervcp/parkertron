@@ -443,6 +443,19 @@ func sendDiscordReaction(dg *discordgo.Session, channelID string, messageID stri
 		return
 	}
 
+	var hasReact bool
+
+	for _, reaction := range reactionArray {
+		if reaction != "" {
+			hasReact = true
+			break
+		}
+	}
+
+	if !hasReact {
+		return nil
+	}
+
 	for _, reaction := range reactionArray {
 		Log.Debugf("sending \"%s\" as a reaction to message: %s", reaction, messageID)
 		// if there is an error sending a message return it
