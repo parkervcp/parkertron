@@ -47,14 +47,17 @@ var (
 	confDir string
 	conf    string
 	diag    bool
+)
 
+const (
+	version  = "v.0.3.1"
 	asciiArt = `
                       __             __
     ____  ____ ______/ /_____  _____/ /__________  ____
    / __ \/ __ '/ ___/ //_/ _ \/ ___/ __/ ___/ __ \/ __ \
   / /_/ / /_/ / /  / ,< /  __/ /  / /_/ /  / /_/ / / / /
  / .___/\__,_/_/  /_/|_|\___/_/   \__/_/   \____/_/ /_/
-/_/ v.0.2.2`
+/_/`
 )
 
 type parkertron struct {
@@ -120,7 +123,7 @@ func init() {
 		Log.Panic(err)
 	}
 
-	Log.Infof("%s\n\n", asciiArt)
+	Log.Infof("%s %s\n\n", asciiArt, version)
 }
 
 func main() {
@@ -130,11 +133,11 @@ func main() {
 		for _, service := range botConfig.Services {
 			switch service {
 			case "discord":
-				if err := createExampleDiscordConfig(confDir+"discord/"); err != nil {
+				if err := createExampleDiscordConfig(confDir + "discord/"); err != nil {
 					Log.Fatalf("%s", err)
 				}
 			case "irc":
-				if err := createExampleIRCConfig(confDir+"irc/"); err != nil {
+				if err := createExampleIRCConfig(confDir + "irc/"); err != nil {
 					Log.Fatalf("%s", err)
 				}
 			default:
