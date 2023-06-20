@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	"github.com/h2non/filetype"
-	"github.com/otiai10/gosseract"
+	gosseract "github.com/otiai10/gosseract/v2"
 )
 
 func parseImage(remoteURL string) (imageText string, err error) {
@@ -124,16 +124,6 @@ func parseURL(url string, parseConf parsing) (parsedText string) {
 	// if a url ends with a / remove it. Stupid chrome adds them.
 	if strings.HasSuffix(url, "/") {
 		url = strings.TrimSuffix(url, "/")
-	}
-	if len(parseConf.Image.Sites) != 0 {
-		for _, site := range parseConf.Image.Sites {
-			Log.Debugf("checking paste site %s", site.URL)
-			if strings.HasPrefix(url, site.URL) {
-				Log.Debugf("matched on url %s", site.URL)
-				_, file := path.Split(url)
-				url = strings.Replace(site.Format, "&filename&", file, 1)
-			}
-		}
 	}
 
 	//check for image filetypes
