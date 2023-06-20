@@ -53,9 +53,9 @@ func discordMessageHandler(dg *discordgo.Session, m *discordgo.MessageCreate, bo
 	}
 
 	// get channel information
-	channel, err := dg.State.Channel(m.ChannelID)
+	channel, err := dg.Channel(m.ChannelID)
 	if err != nil {
-		Log.Fatal("Channel error", err)
+		Log.Fatal("Channel error ", err)
 		return
 	}
 
@@ -527,6 +527,8 @@ func startDiscordBotConnection(discordConfig discordBot) {
 		Log.Errorf("error creating Discord session for %s: %v", discordConfig.BotName, err)
 		return
 	}
+
+	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsAllWithoutPrivileged | discordgo.IntentsGuildPresences | discordgo.IntentsGuildMembers)
 
 	// Register ready as a callback for the ready events
 	// dg.AddHandler(readyDiscord)

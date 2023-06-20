@@ -6,4 +6,5 @@ parkertron
 
 Gopkg\.lock
 
-test/
+configs/
+pkg/
