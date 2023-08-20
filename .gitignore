@@ -6,5 +6,4 @@ parkertron
 
 Gopkg\.lock
 
-configs/
-pkg/
+old/*
