@@ -23,9 +23,8 @@ func parseImage(remoteURL string) (imageText string, err error) {
 		return
 	}
 
-	defer remote.Body.Close()
 	lastBin := strings.LastIndex(remoteURL, "/")
-	fileName := remoteURL[lastBin+1:]
+	fileName := strings.Split(remoteURL[lastBin+1:], "?")[0]
 
 	Log.Debug("Filename is " + fileName)
 
@@ -41,11 +40,20 @@ func parseImage(remoteURL string) (imageText string, err error) {
 		return
 	}
 
-	file.Close()
+	err = remote.Body.Close()
+	if err != nil {
+		return
+	}
+
+	err = file.Close()
+	if err != nil {
+		return
+	}
+
 	Log.Debug("Image File Pulled and saved to /tmp/" + fileName)
 
 	//load file to read
-	buf, err := ioutil.ReadFile("/tmp/" + fileName)
+	buf, err := os.ReadFile("/tmp/" + fileName)
 	if err != nil {
 		return
 	}
@@ -59,12 +67,16 @@ func parseImage(remoteURL string) (imageText string, err error) {
 	Log.Debug("File is an image")
 
 	client := gosseract.NewClient()
-	defer client.Close()
 
-	client.SetImage("/tmp/" + fileName)
+	err = client.SetImage("/tmp/" + fileName)
+	if err != nil {
+		return
+	}
+
 	w, h := getImageDimension("/tmp/" + fileName)
 	Log.Debug("Image width is " + strconv.Itoa(h))
 	Log.Debug("Image height is " + strconv.Itoa(w))
+
 	imageText, err = client.Text()
 	if err != nil {
 		return
@@ -73,6 +85,13 @@ func parseImage(remoteURL string) (imageText string, err error) {
 	if len(imageText) >= 1 {
 		imageText = imageText[:len(imageText)-1]
 	}
+
+	err = client.Close()
+	if err != nil {
+		return
+	}
+
+	err = os.Remove("/tmp/" + fileName)
 
 	Log.Debug(imageText)
 	Log.Debug("Image Parsed")
@@ -121,15 +140,16 @@ func parseBin(url, format string) (binText string, err error) {
 func parseURL(url string, parseConf parsing) (parsedText string) {
 	//Catch domains and route to the proper controllers (image, binsite parsers)
 	Log.Debugf("checking for pastes and images on %s\n", url)
-	// if a url ends with a / remove it. Stupid chrome adds them.
+	// If the url ends with a / remove it. Stupid chrome adds them.
 	if strings.HasSuffix(url, "/") {
 		url = strings.TrimSuffix(url, "/")
 	}
 
 	//check for image filetypes
+	Log.Debug("checking if image")
 	for _, filetype := range parseConf.Image.FileTypes {
-		Log.Debug("checking if image")
-		if strings.HasSuffix(url, filetype) {
+		// need to remove any flags set for the url by cutting anything from the ? to the end
+		if strings.HasSuffix(strings.Split(url, "?")[0], filetype) {
 			Log.Debug("found image file")
 			if imageText, err := parseImage(url); err != nil {
 				Log.Errorf("%s\n", err)
@@ -142,8 +162,8 @@ func parseURL(url string, parseConf parsing) (parsedText string) {
 	}
 
 	// check for paste sites
+	Log.Debug("checking if bin file")
 	for _, paste := range parseConf.Paste.Sites {
-		Log.Debug("checking if bin file")
 		if strings.HasPrefix(url, paste.URL) {
 			if binText, err := parseBin(url, paste.Format); err != nil {
 				Log.Errorf("%s\n", err)
