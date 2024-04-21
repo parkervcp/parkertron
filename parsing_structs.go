@@ -65,12 +65,12 @@ type parsingPasteConfig struct {
 }
 
 type channelGroup struct {
-	ChannelIDs  []string             `json:"channels,omitempty"`
-	Mentions    mentions             `json:"mentions,omitempty"`
-	Commands    []command            `json:"commands,omitempty"`
-	Keywords    []keyword            `json:"keywords,omitempty"`
-	Regex       []pattern            `json:"regex,omitempty"`
-	Parsing     parsing              `json:"parsing,omitempty"`
-	Permissions []permission         `json:"permissions,omitempty"`
-	KOM         discordKickOnMention `json:"kick_on_mention,omitempty"`
+	ChannelIDs  []string     `json:"channels,omitempty"`
+	Mentions    mentions     `json:"mentions,omitempty"`
+	Commands    []command    `json:"commands,omitempty"`
+	Keywords    []keyword    `json:"keywords,omitempty"`
+	Regex       []pattern    `json:"regex,omitempty"`
+	Parsing     parsing      `json:"parsing,omitempty"`
+	Permissions []permission `json:"permissions,omitempty"`
+	// KOM         discordKickOnMention `json:"kick_on_mention,omitempty"`
 }
