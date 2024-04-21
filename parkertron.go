@@ -3,15 +3,14 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
-	"reflect"
-	"runtime"
 	"strings"
 	"time"
 
+	"github.com/parkervcp/parkertron/config"
+	"github.com/parkervcp/parkertron/services"
 	"github.com/rifflock/lfshook"
 	"github.com/sirupsen/logrus"
 	flag "github.com/spf13/pflag"
@@ -30,16 +29,6 @@ var (
 	servStopped = make(chan string)
 
 	botConfig parkertron
-
-	serviceStart = map[string]func(){
-		"discord": startDiscordsBots,
-		"irc":     startIRCBots,
-	}
-
-	serviceStop = map[string]func(){
-		"discord": stopDiscordBots,
-		"irc":     stopIRCBots,
-	}
 
 	// startup flag values
 	verbose string
@@ -99,18 +88,6 @@ func init() {
 		confDir = confDir + "/"
 	}
 
-	if newbot, err := loadInitConfig(confDir, conf, verbose); err != nil {
-		log.Fatal(err)
-	} else {
-		if !flag.CommandLine.Changed(verbose) {
-			verbose = newbot.Log.Level
-		}
-
-		if !flag.CommandLine.Changed(logDir) {
-			logDir = newbot.Log.Location
-		}
-	}
-
 	if diag {
 		uploadDiag(logDir)
 	}
@@ -119,64 +96,33 @@ func init() {
 	Log = newLogger(logDir, verbose)
 	Log.Infof("logging online\n")
 
-	if err := initConfig(confDir); err != nil {
-		Log.Panic(err)
-	}
-
 	Log.Infof("%s %s\n\n", asciiArt, version)
 }
 
 func main() {
-	// if there are no bots configured write default example configs
-	if len(discordGlobal.Bots) == 0 && len(ircGlobal.Bots) == 0 {
-		Log.Infof("No bots are configured")
-		for _, service := range botConfig.Services {
-			switch service {
-			case "discord":
-				if err := createExampleDiscordConfig(confDir + "discord/"); err != nil {
-					Log.Fatalf("%s", err)
-				}
-			case "irc":
-				if err := createExampleIRCConfig(confDir + "irc/"); err != nil {
-					Log.Fatalf("%s", err)
-				}
-			default:
-			}
-		}
-		Log.Infof("Example configs have been created.")
-		Log.Info("shutting down")
-		os.Exit(0)
+	cfg, err := config.LoadBot()
+	if err != nil {
+		Log.WithError(err).Fatal("failed to load main configuration")
 	}
 
-	for _, cr := range botConfig.Services {
-		if service, ok := serviceStart[cr]; ok {
-			Log.Debugf("running %s", runtime.FuncForPC(reflect.ValueOf(service).Pointer()).Name())
-			go service()
-		} else {
-			Log.Errorf("unexpected array value: %q", cr)
-		}
+	count, err := config.LoadServers()
+	if err != nil {
+		Log.WithError(err).Fatal("failed to load server configurations")
 	}
 
-	for range botConfig.Services {
-		Log.Debugf("checking for servStart")
-		<-servStart
+	if count == 0 {
+		log.Fatal("no server configurations found")
 	}
+	Log.Infof("loaded %d server configurations", count)
 
+	go services.Start(cfg)
 	go catchSig()
-	go console()
+	// go console()
 
 	Log.Infof("Bot is now running. Send 'shutdown' or 'ctrl + c' to stop the bot.\n")
 
 	<-shutdown
-
-	for _, cr := range botConfig.Services {
-		if service, ok := serviceStop[cr]; ok {
-			Log.Debugf("running %s", runtime.FuncForPC(reflect.ValueOf(service).Pointer()).Name())
-			go service()
-		} else {
-			Log.Errorf("unexpected array value: %q", cr)
-		}
-	}
+	services.Stop()
 
 	for range botConfig.Services {
 		Log.Debugf("checking for servStopped")
@@ -206,8 +152,7 @@ func console() {
 
 func catchSig() {
 	sigc := make(chan os.Signal, 1)
-	signal.Notify(sigc,
-		os.Interrupt)
+	signal.Notify(sigc, os.Interrupt, os.Kill)
 	<-sigc
 	Log.Debugf("interupt caught\n")
 	shutdown <- ""
@@ -274,7 +219,7 @@ func uploadDiag(logDir string) {
 
 func uploadFile(name string) {
 	hasteClient := haste.NewHaste("https://ptero.co")
-	data, err := ioutil.ReadFile(name)
+	data, err := os.ReadFile(name)
 	if err != nil {
 		Log.Infof("Unable to read file: %s\n", err.Error())
 		os.Exit(2)
