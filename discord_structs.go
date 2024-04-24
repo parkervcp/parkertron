@@ -1,7 +1,7 @@
 package main
 
 // discord configs
-type discord struct {
+type discordBase struct {
 	Bots []discordBot `json:"bots,omitempty"`
 }
 
@@ -23,7 +23,7 @@ type discordServer struct {
 	Config      discordServerConfig `json:"config,omitempty"`
 	ChanGroups  []channelGroup      `json:"channel_groups,omitempty"`
 	Permissions []permission        `json:"permissions,omitempty"`
-	Filters 	[]filter 			`json:"filters,omitempty"`
+	Filters     []filter            `json:"filters,omitempty"`
 }
 
 type discordServerConfig struct {
