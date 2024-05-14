@@ -1,19 +1,28 @@
 # ----------------------------------
-# Pterodactyl Panel Dockerfile
+# parkertron dockerfile
 # ----------------------------------
 
-FROM golang:1.14.4-alpine
+FROM golang:1.22-bookworm
 
 COPY . /parkertron
 
 WORKDIR /parkertron
 
-RUN apk add --no-cache --update git curl lua-stdlib lua musl-dev g++ libc-dev tesseract-ocr tesseract-ocr-dev \
+RUN apt update -y \
+ && apt install -y tesseract-ocr tesseract-ocr-eng libtesseract-dev \
  && go mod tidy \
  && go build -o parkertron
 
-FROM alpine:latest
-WORKDIR /root/
-RUN apk add --no-cache --update git curl lua-stdlib lua musl-dev g++ libc-dev tesseract-ocr tesseract-ocr-dev
-COPY --from=0 /parkertron/parkertron .
+FROM debian:bookworm-slim
+
+RUN apt update -y \
+    && apt install -y iproute2 ca-certificates libtesseract-dev tesseract-ocr-eng
+
+WORKDIR /app/
+
+COPY --from=0 /parkertron/parkertron /app/
+
+VOLUME /app/configs
+VOLUME /app/logs
+
 CMD ["./parkertron"]
