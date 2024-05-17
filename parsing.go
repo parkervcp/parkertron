@@ -1,18 +1,18 @@
 package main
 
 import (
+	"errors"
 	"image"
+	"image/png"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/h2non/filetype"
-	gosseract "github.com/otiai10/gosseract/v2"
+	"github.com/otiai10/gosseract/v2"
 )
 
 func parseImage(remoteURL string) (imageText string, err error) {
@@ -73,9 +73,13 @@ func parseImage(remoteURL string) (imageText string, err error) {
 		return
 	}
 
-	w, h := getImageDimension("/tmp/" + fileName)
-	Log.Debug("Image width is " + strconv.Itoa(h))
-	Log.Debug("Image height is " + strconv.Itoa(w))
+	imageData, err := getImageDimension("/tmp/" + fileName)
+	if err != nil {
+		return
+	}
+
+	Log.Debugf("Image width is %d", imageData.Width)
+	Log.Debugf("Image height is %d", imageData.Height)
 
 	imageText, err = client.Text()
 	if err != nil {
@@ -93,23 +97,34 @@ func parseImage(remoteURL string) (imageText string, err error) {
 
 	err = os.Remove("/tmp/" + fileName)
 
-	Log.Debug(imageText)
 	Log.Debug("Image Parsed")
+	Log.Debug(imageText)
 
 	return
 }
 
-func getImageDimension(imagePath string) (int, int) {
+func getImageDimension(imagePath string) (imageData image.Config, err error) {
 	file, err := os.Open(imagePath)
 	if err != nil {
-		Log.Fatal("error sending message", err)
+		Log.Error("error opening file")
+		return
 	}
 
-	image, _, err := image.DecodeConfig(file)
-	if err != nil {
-		Log.Fatal("error sending message", err)
+	switch {
+	case strings.HasSuffix(imagePath, ".png"):
+		imageData, err = png.DecodeConfig(file)
+	case strings.HasSuffix(imagePath, ".jpg"):
+		imageData, _, err = image.DecodeConfig(file)
+	default:
+		err = errors.New("unsupported image type")
 	}
-	return image.Width, image.Height
+
+	if err != nil {
+		Log.Error("error decoding image")
+		return
+	}
+
+	return
 }
 
 // paste site handling
@@ -127,7 +142,7 @@ func parseBin(url, format string) (binText string, err error) {
 		return
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 
 	binText = string(body)
 
