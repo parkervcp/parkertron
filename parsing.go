@@ -1,9 +1,9 @@
 package main
 
 import (
-	"errors"
 	"image"
-	"image/png"
+	_ "image/jpeg"
+	_ "image/png"
 	"io"
 	"net/http"
 	"os"
@@ -110,15 +110,7 @@ func getImageDimension(imagePath string) (imageData image.Config, err error) {
 		return
 	}
 
-	switch {
-	case strings.HasSuffix(imagePath, ".png"):
-		imageData, err = png.DecodeConfig(file)
-	case strings.HasSuffix(imagePath, ".jpg"):
-		imageData, _, err = image.DecodeConfig(file)
-	default:
-		err = errors.New("unsupported image type")
-	}
-
+	imageData, _, err = image.DecodeConfig(file)
 	if err != nil {
 		Log.Error("error decoding image")
 		return
