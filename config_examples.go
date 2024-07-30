@@ -15,7 +15,7 @@ func createExampleBotConfig(confDir, conf, verbose string) (err error) {
 		},
 		Parsing: botParseConfig{
 			Max:      5,
-			Response: []string{"There were too many logs to read @&user&. Please post 5 or less."},
+			Response: []string{"There were too many logs to read &user&. Please post 5 or less."},
 		},
 	}
 
