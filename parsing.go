@@ -26,6 +26,10 @@ func parseImage(remoteURL string) (imageText string, err error) {
 	lastBin := strings.LastIndex(remoteURL, "/")
 	fileName := strings.Split(remoteURL[lastBin+1:], "?")[0]
 
+	if len(fileName) > 150 {
+		fileName = fileName[len(fileName)-50:]
+	}
+
 	Log.Debug("Filename is " + fileName)
 
 	//open a file for writing
