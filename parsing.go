@@ -113,6 +113,7 @@ func getImageDimension(imagePath string) (imageData image.Config, err error) {
 		Log.Error("error opening file")
 		return
 	}
+	defer file.Close()
 
 	imageData, _, err = image.DecodeConfig(file)
 	if err != nil {
@@ -137,6 +138,7 @@ func parseBin(url, format string) (binText string, err error) {
 	if err != nil {
 		return
 	}
+	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 
