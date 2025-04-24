@@ -74,7 +74,14 @@ func discordMessageHandler(botSession *session.Session, messageEvent *gateway.Me
 		Log.Debug("User is a bot and being ignored.")
 		return
 	}
+	// Check if it's an answer or not
+	if messageEvent.ReferencedMessage != nil {
+		Log.Debugf("Message is a reply to message ID: %s", messageEvent.ReferencedMessage.ID)
 
+		originalMessage := messageEvent.ReferencedMessage
+		Log.Debugf("Original message content: %s", originalMessage.Content)
+
+	}
 	// get channel information
 	channel, err := botSession.Channel(messageEvent.ChannelID)
 	if err != nil {
