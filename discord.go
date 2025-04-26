@@ -227,26 +227,25 @@ func discordMessageHandler(botSession *session.Session, messageEvent *gateway.Me
 		}
 	} else {
 		Log.Debugf("no mentions found")
-		if strings.HasPrefix(messageEvent.Content, getPrefix("discord", botName, guildID)) {
-			// command
-			response, reaction = parseCommand(strings.TrimPrefix(messageEvent.Content, getPrefix("discord", botName, guildID)), botName, getCommands("discord", botName, guildID, chanID))
-			// if the flag for clearing commands is set and there is a response
-			if getCommandClear("discord", botName, guildID) && len(response) > 0 {
-				Log.Debugf("removing command message %s", messageEvent.ID.String())
-				if err := deleteDiscordMessages(botSession, channel, []discord.MessageID{0: messageEvent.ID}, ""); err != nil {
-					Log.Error(err)
-				}
-			} else {
+	}
 
+	if strings.HasPrefix(messageEvent.Content, getPrefix("discord", botName, guildID)) {
+		// command
+		response, reaction = parseCommand(strings.TrimPrefix(messageEvent.Content, getPrefix("discord", botName, guildID)), botName, getCommands("discord", botName, guildID, chanID))
+		// if the flag for clearing commands is set and there is a response
+		if getCommandClear("discord", botName, guildID) && len(response) > 0 {
+			Log.Debugf("removing command message %s", messageEvent.ID.String())
+			if err := deleteDiscordMessages(botSession, channel, []discord.MessageID{0: messageEvent.ID}, ""); err != nil {
+				Log.Error(err)
 			}
-		} else {
-			// regex -- priority over keywords
-			response, reaction = parseRegex(messageEvent.Content, botName, getRegexPatterns("discord", botName, guildID, chanID), getParsing("discord", botName, guildID, chanID))
+		}
+	} else {
+		// regex -- priority over keywords
+		response, reaction = parseRegex(messageEvent.Content, botName, getRegexPatterns("discord", botName, guildID, chanID), getParsing("discord", botName, guildID, chanID))
 
-			// keyword
-			if response == nil {
-				response, reaction = parseKeyword(messageEvent.Content, botName, getKeywords("discord", botName, guildID, chanID), getParsing("discord", botName, guildID, chanID))
-			}
+		// keyword
+		if response == nil {
+			response, reaction = parseKeyword(messageEvent.Content, botName, getKeywords("discord", botName, guildID, chanID), getParsing("discord", botName, guildID, chanID))
 		}
 	}
 
