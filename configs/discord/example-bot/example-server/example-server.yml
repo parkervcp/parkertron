@@ -13,7 +13,7 @@ channel_groups:
       response:
       - I see I was pinged.
       - Please just post the issue you are having
-      - Or you can gather your logs and post them
+      - " Or you can gather your logs and post them"
     mention:
       reaction:
       - 👋
@@ -30,24 +30,23 @@ channel_groups:
     response:
     - I have responded to seeing the word example.
   regex:
-  - pattern: ".*example.*"
+  - pattern: .*example.*
     reaction:
     - ""
     response:
-    - I have responded to matching the example regex pattern.
+    - I have found the word example somewhere in there.
   parsing:
     image:
       filetypes:
       - png
       - jpg
-    paste:
       sites:
       - name: pastebin
-        url: 'https://pastebin.com/'
-        format: 'https://pastebin.com/raw/&filename&'
+        url: "'https://pastebin.com/'"
+        format: "'https://pastebin.com/raw/&filename&'"
       - name: hastebin
-        url: 'https://hastebin.com/'
-        format: 'https://hastebin.com/raw/&filename&'
+        url: "'https://hastebin.com/'"
+        format: "'https://hastebin.com/raw/&filename&'"
 permissions:
 - group: admin
 filters:

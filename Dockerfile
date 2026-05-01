@@ -2,7 +2,7 @@
 # parkertron dockerfile
 # ----------------------------------
 
-FROM golang:1.22-bookworm
+FROM golang:1.26-bookworm
 
 COPY . /parkertron
 
