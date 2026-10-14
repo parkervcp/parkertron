@@ -2,9 +2,11 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 	"reflect"
@@ -31,6 +33,8 @@ var (
 
 	botConfig parkertron
 
+	tempDir = "/tmp/parkertron/"
+
 	serviceStart = map[string]func(){
 		"discord": startDiscordsBots,
 		"irc":     startIRCBots,
@@ -50,7 +54,7 @@ var (
 )
 
 const (
-	version  = "v.0.4.0"
+	version  = "v.0.5.0"
 	asciiArt = `
                       __             __
     ____  ____ ______/ /_____  _____/ /__________  ____
@@ -99,8 +103,13 @@ func init() {
 		confDir = confDir + "/"
 	}
 
+	if err := tempSetup(); err != nil {
+		slog.Error("issue setting up temp directory", err.Error())
+		return
+	}
+
 	if newbot, err := loadInitConfig(confDir, conf, verbose); err != nil {
-		log.Fatal(err)
+		slog.Error(err.Error())
 	} else {
 		if !flag.CommandLine.Changed(verbose) {
 			verbose = newbot.Log.Level
@@ -115,7 +124,7 @@ func init() {
 		uploadDiag(logDir)
 	}
 
-	log.Print("starting logging")
+	slog.Info("starting logging")
 	Log = newLogger(logDir, verbose)
 	Log.Infof("logging online\n")
 
@@ -182,6 +191,26 @@ func main() {
 		Log.Debugf("checking for servStopped")
 		<-servStopped
 	}
+}
+
+func tempSetup() error {
+	_, err := os.Stat(tempDir)
+	if errors.Is(err, os.ErrNotExist) {
+		if err = os.MkdirAll(tempDir, os.ModePerm); err != nil {
+			return err
+		}
+	} else if errors.Is(err, os.ErrPermission) {
+		slog.Info("permissions error on temp folder", "running internal temp folder")
+		if err = os.Mkdir("./tmp/", os.ModePerm); err != nil {
+			return err
+
+		}
+		tempDir = "./tmp/"
+	} else if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func console() {

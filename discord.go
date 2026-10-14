@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 	"syscall"
 
@@ -137,7 +138,7 @@ func discordMessageHandler(botSession *session.Session, messageEvent *gateway.Me
 
 	// if the channel isn't in a group drop the message
 	Log.Debugf("checking channels")
-	if !contains(getChannels("discord", botName, guildID), chanID) {
+	if slices.Contains(getChannels("discord", botName, guildID), chanID) {
 		Log.Debugf("channel not found")
 		return
 	}
@@ -277,7 +278,10 @@ func discordMessageHandler(botSession *session.Session, messageEvent *gateway.Me
 			Log.Debugf("reading all attachments and logs")
 			allParsed := make(map[string]string)
 			for _, url := range allURLS {
-				allParsed[url] = parseURL(url, getParsing("discord", botName, guildID, chanID))
+				allParsed[url], err = parseURL(url, getParsing("discord", botName, guildID, chanID))
+				if err != nil {
+					Log.Error(err)
+				}
 			}
 
 			//parse logs and append to current response.

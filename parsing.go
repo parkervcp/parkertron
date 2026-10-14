@@ -1,83 +1,46 @@
 package main
 
 import (
+	"context"
+	"errors"
+	"fmt"
 	"image"
 	_ "image/jpeg"
 	_ "image/png"
 	"io"
 	"net/http"
-	"os"
 	"path"
 	"regexp"
 	"strings"
+	"time"
 
-	"github.com/h2non/filetype"
 	"github.com/otiai10/gosseract/v2"
 )
 
 func parseImage(remoteURL string) (imageText string, err error) {
 	Log.Info("Reading from " + remoteURL)
 
-	remote, err := http.Get(remoteURL)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, "GET", remoteURL, nil)
 	if err != nil {
-		return
+		return "", err
 	}
 
-	lastBin := strings.LastIndex(remoteURL, "/")
-	fileName := strings.Split(remoteURL[lastBin+1:], "?")[0]
-
-	if len(fileName) > 150 {
-		fileName = fileName[len(fileName)-50:]
-	}
-
-	Log.Debug("Filename is " + fileName)
-
-	//open a file for writing
-	file, err := os.Create("/tmp/" + fileName)
+	remote, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return
+		return "", err
 	}
 
-	// Use io.Copy to just dump the response body to the file. This supports huge files
-	_, err = io.Copy(file, remote.Body)
-	if err != nil {
-		return
+	if remote.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("http error code %d", remote.StatusCode)
 	}
 
-	err = remote.Body.Close()
-	if err != nil {
-		return
-	}
+	buf, err := io.ReadAll(remote.Body)
 
-	err = file.Close()
-	if err != nil {
-		return
-	}
-
-	Log.Debug("Image File Pulled and saved to /tmp/" + fileName)
-
-	//load file to read
-	buf, err := os.ReadFile("/tmp/" + fileName)
-	if err != nil {
-		return
-	}
-
-	// check filetype
-	if !filetype.IsImage(buf) {
-		Log.Debugf("file is not an image\n")
-		return
-	}
-
-	Log.Debug("File is an image")
-
-	client := gosseract.NewClient()
-
-	err = client.SetImage("/tmp/" + fileName)
-	if err != nil {
-		return
-	}
-
-	imageData, err := getImageDimension("/tmp/" + fileName)
+	// get information on the image
+	imageData, _, err := image.DecodeConfig(remote.Body)
 	if err != nil {
 		return
 	}
@@ -85,41 +48,25 @@ func parseImage(remoteURL string) (imageText string, err error) {
 	Log.Debugf("Image width is %d", imageData.Width)
 	Log.Debugf("Image height is %d", imageData.Height)
 
+	client := gosseract.NewClient()
+	defer client.Close()
+
+	err = client.SetImageFromBytes(buf)
+	if err != nil {
+		return
+	}
+
 	imageText, err = client.Text()
 	if err != nil {
 		return
 	}
 
-	if len(imageText) >= 1 {
+	if len(imageText) > 0 {
 		imageText = imageText[:len(imageText)-1]
 	}
 
-	err = client.Close()
-	if err != nil {
-		return
-	}
-
-	err = os.Remove("/tmp/" + fileName)
-
 	Log.Debug("Image Parsed")
 	Log.Debug(imageText)
-
-	return
-}
-
-func getImageDimension(imagePath string) (imageData image.Config, err error) {
-	file, err := os.Open(imagePath)
-	if err != nil {
-		Log.Error("error opening file")
-		return
-	}
-	defer file.Close()
-
-	imageData, _, err = image.DecodeConfig(file)
-	if err != nil {
-		Log.Error("error decoding image")
-		return
-	}
 
 	return
 }
@@ -132,25 +79,32 @@ func parseBin(url, format string) (binText string, err error) {
 	_, file := path.Split(url)
 	rawURL = strings.Replace(format, "&filename&", file, 1)
 
-	Log.Debug("Raw text URL is " + rawURL)
+	Log.Debug("Raw URL text is " + rawURL)
 
 	resp, err := http.Get(rawURL)
 	if err != nil {
 		return
 	}
+	if resp.StatusCode != http.StatusOK {
+		resp.Body.Close()
+		err = errors.New(resp.Status)
+		return
+	}
+
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("Error reading from %s", url)
+	}
 
 	binText = string(body)
-
-	Log.Debug("Contents = \n" + binText)
 
 	return
 }
 
 // parses url contents for images and paste sites.
-func parseURL(url string, parseConf parsing) (parsedText string) {
+func parseURL(url string, parseConf parsing) (parsedText string, err error) {
 	//Catch domains and route to the proper controllers (image, binsite parsers)
 	Log.Debugf("checking for pastes and images on %s\n", url)
 	// If the url ends with a / remove it. Stupid chrome adds them.
@@ -164,10 +118,10 @@ func parseURL(url string, parseConf parsing) (parsedText string) {
 		// need to remove any flags set for the url by cutting anything from the ? to the end
 		if strings.HasSuffix(strings.Split(url, "?")[0], filetype) {
 			Log.Debug("found image file")
-			if imageText, err := parseImage(url); err != nil {
-				Log.Errorf("%s\n", err)
+			if imageText, parseErr := parseImage(url); parseErr != nil {
+				return "", fmt.Errorf("%s\n", parseErr)
 			} else {
-				Log.Debugf(imageText)
+				Log.Debug(imageText)
 				parsedText = imageText
 				return
 			}
@@ -178,8 +132,8 @@ func parseURL(url string, parseConf parsing) (parsedText string) {
 	Log.Debug("checking if bin file")
 	for _, paste := range parseConf.Paste.Sites {
 		if strings.HasPrefix(url, paste.URL) {
-			if binText, err := parseBin(url, paste.Format); err != nil {
-				Log.Errorf("%s\n", err)
+			if binText, parseErr := parseBin(url, paste.Format); parseErr != nil {
+				Log.Errorf("%s\n", fmt.Errorf("%s\n", parseErr))
 			} else {
 				Log.Debugf(binText)
 				parsedText = binText
@@ -230,8 +184,7 @@ func parseKeyword(message, botName string, channelKeywords []keyword, parseConf 
 		index := strings.LastIndex(message, keyWord.Keyword)
 		if index > lastIndex && !keyWord.Exact {
 			lastIndex = index
-			response = keyWord.Response
-			reaction = keyWord.Reaction
+			return keyWord.Response, keyWord.Reaction
 		}
 	}
 
@@ -287,21 +240,10 @@ func parseCommand(message, botName string, channelCommands []command) (response,
 	Log.Debugf("Parsing inbound command for %s", botName)
 	message = strings.ToLower(message)
 
-	for _, command := range channelCommands {
-		if command.Command == message {
-			response = command.Response
-			reaction = command.Reaction
+	for _, indvCommand := range channelCommands {
+		if indvCommand.Command == message {
+			return indvCommand.Response, indvCommand.Reaction
 		}
 	}
 	return
-}
-
-// general funcs
-func contains(array []string, str string) bool {
-	for _, value := range array {
-		if value == str {
-			return true
-		}
-	}
-	return false
 }
